@@ -1,0 +1,7 @@
+영상 학습 : 
+cd C:\Users\user\OneDrive\Documents\workspace_py\candy_soda_agent\candy_soda_agent
+python video_pipeline.py --mode train --start 20 --end 620 --max-events 40 --label train_10m
+
+실제 플레이 적용 : 
+python preview_capture.py
+python main.py

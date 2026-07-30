@@ -36,7 +36,13 @@ candy_soda_agent/
 ├─ image_utils.py          # 격자 추가와 Base64 변환
 ├─ schemas.py              # LLM JSON 응답 구조
 ├─ agent.py                # OpenAI API 호출과 행동 검증
+├─ usage.py                # API 호출·토큰 예산과 사용량 집계
+├─ memory.py               # 영상 경험을 짧은 전략 메모리로 압축
 ├─ storage.py              # 이미지 및 JSONL 로그 저장
+├─ calibrate_video.py      # 영상 속 보드·점수 영역 선택
+├─ video_pipeline.py       # 영상 학습·평가 이벤트 추출
+├─ evaluate_video.py       # 메모리 크기별 정확도 그래프
+├─ tests/                  # API를 호출하지 않는 로컬 테스트
 ├─ requirements.txt        # 설치할 라이브러리
 ├─ .gitignore              # API 관련 파일과 결과 제외
 └─ output/                 # 실행 후 자동 생성
@@ -162,27 +168,28 @@ output/preview_grid.png
 
 ## 8단계: OpenAI API Key 설정
 
+프로젝트의 `.env` 파일에 다음처럼 저장할 수 있습니다.
+
+```dotenv
+OPENAI_API_KEY=발급받은_API_KEY
+OPENAI_MODEL=gpt-4o-mini-2024-07-18
+OPENAI_IMAGE_DETAIL=low
+```
+
 현재 PowerShell 창에서만 사용할 때:
 
 ```powershell
 $env:OPENAI_API_KEY="발급받은_API_KEY"
 ```
 
-환경변수에 계속 저장할 때:
-
-```powershell
-setx OPENAI_API_KEY "발급받은_API_KEY"
-```
-
-`setx`를 사용하면 새 PowerShell 창을 열고 가상환경을 다시 활성화해야 합니다.
-
 모델을 바꾸고 싶을 때:
 
 ```powershell
-$env:OPENAI_MODEL="gpt-5-mini"
+$env:OPENAI_MODEL="gpt-4o-mini-2024-07-18"
 ```
 
-API Key를 Python 파일에 직접 작성하거나 GitHub에 올리지 마세요.
+`.env`는 `.gitignore`에 포함되어 있습니다. 그래도 API Key를
+Python 파일에 직접 작성하거나 GitHub에 올리지 마세요.
 
 ---
 
@@ -211,6 +218,8 @@ python main.py
 ```json
 {
   "board_status": "stable",
+  "board_summary": "9×9 보드가 안정된 상태다.",
+  "move_type": "normal_match",
   "visible_elements": ["파란 사탕", "보라 사탕", "장애물"],
   "action": "swap",
   "source": {"row": 4, "col": 5},
@@ -238,6 +247,14 @@ F8 분석이 5~10회 정상적으로 된 뒤에 자동 모드로 넘어갑니다
 다시 F9을 누르면 자동 모드가 멈춥니다.
 ESC를 누르면 프로그램이 종료됩니다.
 
+F8 수동 분석도 같은 예산에 포함됩니다. 기본값은 120회 또는
+누적 450,000토큰이며 먼저 도달한 한도에서 추가 호출을 막습니다.
+
+```python
+MAX_API_CALLS = 120
+MAX_TOTAL_TOKENS = 450_000
+```
+
 ---
 
 ## 11단계: 임계값 조절
@@ -259,7 +276,7 @@ NEW_BOARD_THRESHOLD = 0.06
 ### API 호출 간격을 늘리고 싶을 때
 
 ```python
-API_COOLDOWN = 5.0
+API_COOLDOWN = 30.0
 ```
 
 처음부터 세 값을 모두 바꾸지 말고 한 번에 하나씩 조절합니다.
@@ -281,7 +298,8 @@ output/captures/
 output/runs.jsonl
 ```
 
-각 줄에는 이미지 경로, 모델, LLM 응답, 검증 결과가 저장됩니다.
+각 줄에는 이미지 경로, 모델, LLM 응답, 검증 결과와 실제
+입력·출력·reasoning 토큰 및 예상 비용이 저장됩니다.
 
 발표에서는 다음 자료로 사용할 수 있습니다.
 
@@ -306,4 +324,48 @@ output/runs.jsonl
 9. 프롬프트와 좌표 수정
 10. F9 자동 모드 시험
 11. runs.jsonl을 이용해 결과 평가
+```
+
+---
+
+## 영상 학습·평가
+
+제공된 영상은 시작 부분에 로그인 화면이 있으므로 기본 보정 시점은
+30초입니다. 처리할 레벨이 보이는 시점으로 바꿀 수 있습니다.
+
+```powershell
+python calibrate_video.py --time 30
+```
+
+출력된 `VIDEO_BOARD_ROI`, `VIDEO_SCORE_ROI`를 `config.py`에
+복사합니다. 고정 ROI와 9×9 격자를 사용하므로 서로 다른 레벨은
+`--start`, `--end`로 나눠 처리하는 것이 안전합니다.
+
+학습 경험 추출:
+
+```powershell
+python video_pipeline.py --mode train --start 20 --end 120 --max-events 10 --label level_1
+```
+
+메모리를 사용한 평가:
+
+```powershell
+python video_pipeline.py --mode evaluate --start 20 --end 120 --max-events 10 --memory-limit 20 --label memory_20
+python evaluate_video.py
+```
+
+영상 모드는 유효 이벤트 수와 별도로 다음 두 한도를 적용합니다.
+
+```python
+MAX_VIDEO_API_CALLS = 60
+MAX_VIDEO_TOTAL_TOKENS = 500_000
+```
+
+무효 이벤트도 API 호출을 소비합니다. 실행별 호출 수, 실제 토큰,
+예상 비용과 종료 사유는 `output/video_usage.jsonl`에 저장됩니다.
+
+API를 호출하지 않는 로컬 테스트:
+
+```powershell
+python -m unittest discover -s tests -v
 ```
