@@ -1,0 +1,6 @@
+openai
+mss
+numpy
+opencv-python
+keyboard
+pydantic
