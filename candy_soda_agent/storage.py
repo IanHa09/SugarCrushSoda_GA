@@ -8,16 +8,8 @@ from datetime import datetime
 import cv2
 import numpy as np
 
-from config import (
-    CACHED_INPUT_USD_PER_MILLION_TOKENS,
-    CAPTURE_DIR,
-    INPUT_USD_PER_MILLION_TOKENS,
-    LOG_PATH,
-    MODEL,
-    OUTPUT_USD_PER_MILLION_TOKENS,
-)
+from config import CAPTURE_DIR, LOG_PATH, MODEL
 from schemas import AgentDecision
-from usage import ApiUsage
 
 
 def save_run(
@@ -26,7 +18,6 @@ def save_run(
     decision: AgentDecision,
     is_valid: bool,
     validation_message: str,
-    usage: ApiUsage,
 ) -> None:
     """원본, 격자 이미지, JSONL 로그를 한 번의 실행 기록으로 저장합니다."""
 
@@ -52,12 +43,6 @@ def save_run(
         "valid": is_valid,
         "validation_message": validation_message,
         "decision": decision.model_dump(),
-        "api_usage": usage.to_dict(),
-        "estimated_cost_usd": usage.estimated_cost_usd(
-            INPUT_USD_PER_MILLION_TOKENS,
-            OUTPUT_USD_PER_MILLION_TOKENS,
-            CACHED_INPUT_USD_PER_MILLION_TOKENS,
-        ),
     }
 
     # JSONL은 한 줄에 한 번의 실험 결과가 들어가는 형식입니다.

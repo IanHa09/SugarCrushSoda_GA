@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 import cv2
+import mss
 import numpy as np
 
 
-def print_monitors(sct: Any) -> None:
+def print_monitors(sct: mss.mss) -> None:
     """MSS가 인식한 모니터 번호와 좌표를 콘솔에 출력합니다."""
 
     print("\n[MSS 모니터 목록]")
@@ -18,7 +17,7 @@ def print_monitors(sct: Any) -> None:
 
 
 def make_absolute_region(
-    sct: Any,
+    sct: mss.mss,
     monitor_index: int,
     board_offset: dict[str, int],
 ) -> dict[str, int]:
@@ -46,7 +45,7 @@ def make_absolute_region(
 
 
 def capture_bgr(
-    sct: Any,
+    sct: mss.mss,
     region: dict[str, int],
 ) -> np.ndarray:
     """

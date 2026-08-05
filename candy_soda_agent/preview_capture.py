@@ -34,14 +34,8 @@ def main() -> None:
         raw_path = OUTPUT_DIR / "preview_raw.png"
         grid_path = OUTPUT_DIR / "preview_grid.png"
 
-        if not cv2.imwrite(str(raw_path), raw_image):
-            raise RuntimeError(
-                f"원본 미리보기 저장 실패: {raw_path}"
-            )
-        if not cv2.imwrite(str(grid_path), grid_image):
-            raise RuntimeError(
-                f"격자 미리보기 저장 실패: {grid_path}"
-            )
+        cv2.imwrite(str(raw_path), raw_image)
+        cv2.imwrite(str(grid_path), grid_image)
 
         print(f"원본 미리보기 저장: {raw_path}")
         print(f"격자 미리보기 저장: {grid_path}")

@@ -4,5 +4,3 @@ numpy
 opencv-python
 keyboard
 pydantic
-matplotlib
-python-dotenv
