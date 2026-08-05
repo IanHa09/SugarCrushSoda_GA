@@ -62,3 +62,20 @@ class VideoTransitionLabel(BaseModel):
     )
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str
+
+
+class VideoOutcomeLabel(BaseModel):
+    """로컬에서 확정한 영상 행동의 점수와 결과 분석."""
+
+    move_type: MoveType
+    board_summary: str
+    score_before: int | None = Field(
+        default=None,
+        ge=0,
+    )
+    score_after: int | None = Field(
+        default=None,
+        ge=0,
+    )
+    confidence: float = Field(ge=0.0, le=1.0)
+    reason: str

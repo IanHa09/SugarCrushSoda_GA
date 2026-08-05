@@ -1,5 +1,8 @@
 # Candy Crush Soda LLM Agent
 
+> 최신 기능, 안전 한도 및 영상 최초 swap 검출 방식은
+> [README.md](README.md)를 기준으로 확인하세요.
+
 ## 프로젝트 목표
 
 이 프로젝트는 Candy Crush Soda를 완전히 자동으로 클리어하는 프로그램이 아닙니다.

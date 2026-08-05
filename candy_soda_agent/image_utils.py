@@ -255,3 +255,109 @@ def make_video_observation(
             grid_image,
         ]
     )
+
+
+def make_swap_zoom(
+    before_board: np.ndarray,
+    action_board: np.ndarray,
+    source_row: int,
+    source_col: int,
+    target_row: int,
+    target_col: int,
+    rows: int,
+    cols: int,
+) -> np.ndarray:
+    """확정된 교환 두 칸 주변의 전·중 프레임을 확대해 나란히 표시."""
+
+    if before_board.size == 0 or action_board.size == 0:
+        raise ValueError("교환 확대에 사용할 이미지가 비어 있습니다.")
+    if before_board.shape != action_board.shape:
+        raise ValueError("교환 전·중 이미지 크기가 다릅니다.")
+    if rows <= 0 or cols <= 0:
+        raise ValueError("rows와 cols는 1 이상이어야 합니다.")
+
+    cells = (
+        (source_row, source_col),
+        (target_row, target_col),
+    )
+    for row, col in cells:
+        if not 1 <= row <= rows or not 1 <= col <= cols:
+            raise ValueError(
+                f"교환 좌표가 보드 범위를 벗어났습니다: ({row}, {col})"
+            )
+
+    if (
+        abs(source_row - target_row)
+        + abs(source_col - target_col)
+        != 1
+    ):
+        raise ValueError("교환할 두 칸은 상하좌우로 인접해야 합니다.")
+
+    height, width = before_board.shape[:2]
+    crop_top_row = max(1, min(source_row, target_row) - 1)
+    crop_bottom_row = min(rows, max(source_row, target_row) + 1)
+    crop_left_col = max(1, min(source_col, target_col) - 1)
+    crop_right_col = min(cols, max(source_col, target_col) + 1)
+
+    crop_top = round((crop_top_row - 1) * height / rows)
+    crop_bottom = round(crop_bottom_row * height / rows)
+    crop_left = round((crop_left_col - 1) * width / cols)
+    crop_right = round(crop_right_col * width / cols)
+
+    panels: list[np.ndarray] = []
+    colors = ((0, 255, 0), (0, 165, 255))
+
+    for label, image in (
+        ("BEFORE", before_board),
+        ("ACTION", action_board),
+    ):
+        marked = image.copy()
+        for (row, col), color in zip(cells, colors):
+            left = round((col - 1) * width / cols)
+            right = round(col * width / cols)
+            top = round((row - 1) * height / rows)
+            bottom = round(row * height / rows)
+            cv2.rectangle(
+                marked,
+                (left, top),
+                (right, bottom),
+                color,
+                4,
+                cv2.LINE_AA,
+            )
+
+        crop = marked[
+            crop_top:crop_bottom,
+            crop_left:crop_right,
+        ]
+        target_height = 280
+        scale = target_height / crop.shape[0]
+        resized = cv2.resize(
+            crop,
+            None,
+            fx=scale,
+            fy=scale,
+            interpolation=cv2.INTER_CUBIC,
+        )
+        panel = cv2.copyMakeBorder(
+            resized,
+            top=38,
+            bottom=0,
+            left=0,
+            right=0,
+            borderType=cv2.BORDER_CONSTANT,
+            value=(255, 255, 255),
+        )
+        cv2.putText(
+            panel,
+            label,
+            (10, 27),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.7,
+            (0, 0, 0),
+            2,
+            cv2.LINE_AA,
+        )
+        panels.append(panel)
+
+    return np.hstack(panels)

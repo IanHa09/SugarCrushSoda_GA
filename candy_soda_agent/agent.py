@@ -18,7 +18,12 @@ from config import (
     VIDEO_IMAGE_DETAIL,
 )
 from image_utils import image_to_data_url
-from schemas import AgentDecision, VideoTransitionLabel
+from schemas import (
+    AgentDecision,
+    Cell,
+    VideoOutcomeLabel,
+    VideoTransitionLabel,
+)
 from usage import ApiUsage
 
 
@@ -193,13 +198,15 @@ def validate_decision(
     return True, "기본 규칙 검증을 통과한 swap"
 
 
-def label_video_transition(
+def label_video_outcome(
     client: OpenAI,
     before_image: np.ndarray,
     action_image: np.ndarray,
     after_image: np.ndarray,
-) -> tuple[VideoTransitionLabel, ApiUsage]:
-    """영상의 전·중·후 화면에서 실제 플레이 행동을 추출."""
+    candidate_source: Cell,
+    candidate_target: Cell,
+) -> tuple[VideoOutcomeLabel, ApiUsage]:
+    """로컬에서 확정한 swap의 점수와 결과만 분석."""
 
     before_url = image_to_data_url(before_image)
     action_url = image_to_data_url(action_image)
@@ -207,26 +214,26 @@ def label_video_transition(
 
     prompt = f"""
 세 이미지는 Candy Crush Soda 영상에서 시간 순서대로
-추출한 관측 화면이다. 각 이미지 위쪽에는 현재 점수 패널,
-아래쪽에는 좌표 격자가 표시된 보드가 있다.
+추출한 관측 화면이다.
 
-IMAGE 1: 행동 직전의 안정된 보드
-IMAGE 2: swap 시작 또는 사탕이 움직이는 순간
-IMAGE 3: 연쇄 반응이 끝난 뒤의 안정된 보드
+로컬 연속 프레임 검출기가 아래 swap을 이미 확정했다.
+- 첫 번째 칸: ({candidate_source.row}, {candidate_source.col})
+- 두 번째 칸: ({candidate_target.row}, {candidate_target.col})
 
-좌표 규칙:
-- 행은 위에서 아래로 1부터 {ROWS}까지이다.
-- 열은 왼쪽에서 오른쪽으로 1부터 {COLS}까지이다.
-- 실제 swap은 상하좌우로 인접한 두 칸이다.
+이 좌표와 행동 발생 여부는 재판정하지 않는다. 좌표를 출력하지도 않는다.
+점수, 행동 유형, 반응 결과만 분석한다.
+
+IMAGE 1: 행동 직전의 점수 패널과 안정된 전체 보드
+IMAGE 2: 확정된 두 칸 주변의 BEFORE/ACTION 확대 비교
+IMAGE 3: 반응 종료 뒤의 점수 패널과 안정된 전체 보드
 
 해야 할 일:
-1. IMAGE 1과 IMAGE 2를 중심으로 최초로 바뀐 두 칸을 찾는다.
-2. IMAGE 3의 연쇄 낙하만 보고 최초 행동을 추측하지 않는다.
-3. 행동을 확인할 수 없으면 action_observable=false,
-   actual_action=unknown, source와 target=null로 둔다.
-4. 각 점수 패널에서 행동 전후 누적 점수를 읽는다.
-5. 행동 유형을 move_type으로 분류한다.
-6. board_summary와 reason은 각각 한 문장으로 작성한다.
+1. IMAGE 1과 IMAGE 3의 점수 패널에서 전후 누적 점수를 읽는다.
+2. 확실히 읽을 수 없는 점수는 추측하지 말고 null로 둔다.
+3. 행동 유형을 move_type으로 분류한다.
+4. board_summary에는 교환 뒤 발생한 결과를 한 문장으로 요약한다.
+5. confidence는 좌표가 아니라 결과 분석의 확신도이다.
+6. 결과가 불명확해도 행동을 거부하지 말고 move_type=unknown으로 둔다.
 
 move_type:
 - normal_match: 일반적인 3개 이상 매치
@@ -246,9 +253,10 @@ move_type:
         {
             "role": "system",
             "content": (
-                "You label puzzle-game actions from "
-                "ordered frames. Reject ambiguous "
-                "transitions."
+                "You analyze the outcome of a locally "
+                "verified puzzle-game swap. Never "
+                "re-judge whether the swap occurred "
+                "or change its coordinates."
             ),
         },
         {
@@ -292,16 +300,16 @@ move_type:
     response = client.responses.parse(
         **arguments,
         input=input_payload,
-        text_format=VideoTransitionLabel,
+        text_format=VideoOutcomeLabel,
     )
 
-    label = response.output_parsed
-    if label is None:
+    outcome = response.output_parsed
+    if outcome is None:
         raise RuntimeError(
-            "구조화된 영상 행동 라벨을 받지 못했습니다."
+            "구조화된 영상 결과 라벨을 받지 못했습니다."
         )
 
-    return label, ApiUsage.from_response(response)
+    return outcome, ApiUsage.from_response(response)
 
 
 def validate_transition_label(
