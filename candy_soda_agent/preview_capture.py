@@ -18,7 +18,7 @@ from image_utils import add_grid_overlay
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    with mss.mss() as sct:
+    with mss.MSS() as sct:
         print_monitors(sct)
 
         region = make_absolute_region(

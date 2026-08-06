@@ -23,7 +23,7 @@ MAX_PREVIEW_HEIGHT = 850
 
 
 def main() -> None:
-    with mss.mss() as sct:
+    with mss.MSS() as sct:
         print_monitors(sct)
 
         if MONITOR_INDEX <= 0 or MONITOR_INDEX >= len(sct.monitors):

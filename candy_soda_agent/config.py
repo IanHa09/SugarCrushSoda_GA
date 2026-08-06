@@ -1,21 +1,47 @@
-"""프로젝트에서 자주 바꾸는 설정값만 모아 둔 파일입니다."""
+"""프로젝트 설정과 안전한 환경변수 파싱을 담당합니다."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import TypeVar
 
 
-# ------------------------------------------------------------
-# 화면 캡처 설정
-# ------------------------------------------------------------
+T = TypeVar("T")
+PROJECT_DIR = Path(__file__).resolve().parent
 
-# MSS에서 0번은 모든 모니터를 합친 가상 화면입니다.
-# 일반적으로 1번이 첫 번째 모니터, 2번이 두 번째 모니터입니다.
-MONITOR_INDEX = 2
 
-# 선택한 모니터의 왼쪽 위를 기준으로 한 게임 보드 영역입니다.
-# calibrate_region.py를 실행한 뒤 출력된 값으로 교체하세요.
+def _env_bool(name: str, default: bool) -> bool:
+    """불명확한 값이 실제 행동을 켜지 않도록 엄격하게 파싱합니다."""
+
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+
+    normalized = raw_value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    raise ValueError(
+        f"{name}={raw_value!r}는 올바른 불리언 값이 아닙니다. "
+        "true 또는 false를 사용하세요."
+    )
+
+
+def _env_choice(name: str, default: T, allowed: set[T]) -> T:
+    raw_value = os.getenv(name)
+    value = default if raw_value is None else raw_value.strip()
+    if value not in allowed:
+        choices = ", ".join(sorted(str(item) for item in allowed))
+        raise ValueError(f"{name}={value!r}는 올바르지 않습니다: {choices}")
+    return value  # type: ignore[return-value]
+
+
+# MSS의 0번은 모든 모니터를 합친 가상 화면이므로 행동 좌표에는 사용하지 않습니다.
+MONITOR_INDEX = int(os.getenv("MONITOR_INDEX", "1"))
+
+# 선택한 모니터 왼쪽 위를 기준으로 한 게임 보드 영역입니다.
 BOARD_OFFSET = {
     "left": 370,
     "top": 660,
@@ -23,46 +49,63 @@ BOARD_OFFSET = {
     "height": 580,
 }
 
-# 한 레벨의 바깥쪽 직사각형을 기준으로 행과 열을 셉니다.
-# 실제 선택한 Candy Crush Soda 레벨에 맞게 바꾸세요.
 ROWS = 9
 COLS = 10
 
+# window는 실제 창 추적이 아니라 게임 UI가 들어오는 제한된 고정 영역입니다.
+CAPTURE_MODE = _env_choice(
+    "CAPTURE_MODE",
+    "window",
+    {"board", "window", "monitor"},
+)
+WINDOW_OFFSET = {
+    "left": 200,
+    "top": 150,
+    "width": 590,
+    "height": 580,
+}
 
-# ------------------------------------------------------------
-# 자동 분석 설정
-# ------------------------------------------------------------
+# DRY_RUN은 OpenAI 호출이 아니라 실제 마우스 행동만 차단합니다.
+DRY_RUN = _env_bool("DRY_RUN", True)
+GAME_WINDOW_TITLE = os.getenv("GAME_WINDOW_TITLE", "").strip()
+STORE_FULL_CAPTURE = _env_bool("STORE_FULL_CAPTURE", False)
+ACTION_PAUSE = 0.15
+DRAG_DURATION = 0.20
 
-# 자동 모드에서 화면을 확인하는 간격(초)
+# 자동 분석 및 행동 전후 검증 설정입니다.
 CAPTURE_INTERVAL = 0.5
-
-# 연속 프레임 차이가 이 값보다 작으면 화면이 안정되었다고 봅니다.
-# 반짝임 때문에 분석이 시작되지 않으면 0.03~0.05 정도로 높여 보세요.
 STABLE_THRESHOLD = 0.02
-
-# 이 횟수만큼 연속으로 안정되어야 API에 이미지를 보냅니다.
 STABLE_FRAME_COUNT = 3
-
-# 마지막으로 분석한 보드와 이 값 이상 달라져야 새 보드로 간주
 NEW_BOARD_THRESHOLD = 0.035
+PRE_ACTION_STABILITY_DELAY = 0.25
+PRE_ACTION_MAX_CHANGE = 0.02
+POST_ACTION_WAIT = 1.0
+ACTION_SUCCESS_THRESHOLD = 0.025
 
-# API를 너무 자주 호출하지 않도록 두 요청 사이의 최소 간격
+# API 비용과 장애 확산을 제한합니다.
 API_COOLDOWN = 10.0
-
-# LLM이 swap을 골랐더라도 이 값보다 확신이 낮으면 검증 실패로 표시합니다.
+API_TIMEOUT = 45.0
+MAX_API_CALLS = 250
+MAX_CONSECUTIVE_ERRORS = 5
 MIN_CONFIDENCE = 0.55
 
-# 한 번의 프로그램 실행에서 허용할 최대 API 요청 수
-MAX_API_CALLS = 250
-
-# ------------------------------------------------------------
-# OpenAI 및 결과 저장 설정
-# ------------------------------------------------------------
-
-# PowerShell에서 OPENAI_MODEL을 지정하면 그 값을 우선 사용합니다.
-# 예: $env:OPENAI_MODEL="gpt-4o-mini"
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+MEMORY_CONTEXT_LIMIT = 5
 
-OUTPUT_DIR = Path("output")
+# 실행 위치와 무관하게 패키지 내부 output에만 저장합니다.
+OUTPUT_DIR = PROJECT_DIR / "output"
 CAPTURE_DIR = OUTPUT_DIR / "captures"
 LOG_PATH = OUTPUT_DIR / "runs.jsonl"
+MEMORY_PATH = OUTPUT_DIR / "memory.jsonl"
+SESSION_LOG_PATH = OUTPUT_DIR / "sessions.jsonl"
+AUTO_LOG_DIR = OUTPUT_DIR / "auto_logs"
+
+
+def validate_live_action_settings() -> None:
+    """실제 클릭 설정이 불완전하면 프로그램 시작 단계에서 중단합니다."""
+
+    if not DRY_RUN and not GAME_WINDOW_TITLE:
+        raise RuntimeError(
+            "실제 클릭에는 GAME_WINDOW_TITLE이 필요합니다. "
+            "게임 창 제목 일부를 설정하거나 DRY_RUN=true를 사용하세요."
+        )

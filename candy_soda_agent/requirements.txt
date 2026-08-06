@@ -1,6 +1,8 @@
-openai
-mss
-numpy
-opencv-python
-keyboard
-pydantic
+openai>=1.66,<3
+mss>=9,<11
+numpy>=1.26,<3
+opencv-python>=4.9,<5
+keyboard>=0.13.5,<1
+pydantic>=2.7,<3
+python-dotenv>=1,<2
+pyautogui>=0.9.54,<1
