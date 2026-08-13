@@ -65,6 +65,44 @@ class StorageTests(unittest.TestCase):
             events = [json.loads(line)["event"] for line in path.read_text().splitlines()]
             self.assertEqual(events, ["started", "finished"])
 
+    def test_loads_only_failed_moves_from_same_board(self) -> None:
+        import storage
+
+        fingerprint = "00" * 32
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "memory.jsonl"
+            with patch.object(storage, "MEMORY_PATH", path):
+                storage.save_memory_entry(
+                    session_id="session",
+                    step=1,
+                    mode="manual",
+                    before={
+                        "board_fingerprint": fingerprint,
+                        "grid": {"rows": 7, "cols": 9},
+                    },
+                    decision={
+                        "action": "swap",
+                        "source": {"row": 3, "col": 4},
+                        "target": {"row": 3, "col": 5},
+                    },
+                    execution={"action_outcome": "rejected"},
+                    after={},
+                    reward=-1.0,
+                    success_estimate="negative",
+                    lesson="rejected",
+                )
+                memories, moves = storage.load_failed_moves_for_board(
+                    fingerprint,
+                    7,
+                    9,
+                    scan_limit=10,
+                    context_limit=5,
+                    max_distance=0.12,
+                )
+
+        self.assertEqual(len(memories), 1)
+        self.assertEqual(moves, {(3, 4, 3, 5)})
+
 
 if __name__ == "__main__":
     unittest.main()

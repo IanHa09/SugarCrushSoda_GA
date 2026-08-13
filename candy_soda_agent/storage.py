@@ -18,6 +18,7 @@ from config import (
     MODEL,
     SESSION_LOG_PATH,
 )
+from image_utils import fingerprint_distance
 from schemas import AgentDecision
 
 
@@ -54,6 +55,7 @@ def save_run(
     session_id: str,
     step: int,
     stored_image_scope: str,
+    grid: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     raw_path = save_image(raw_image, "raw")
     grid_path = save_image(grid_image, "grid")
@@ -67,6 +69,7 @@ def save_run(
         "step": step,
         "model": MODEL,
         "stored_image_scope": stored_image_scope,
+        "grid": grid,
         "raw_image": raw_path,
         "grid_image": grid_path,
         "valid": is_valid,
@@ -135,6 +138,53 @@ def load_recent_memories(limit: int) -> list[dict[str, Any]]:
             if isinstance(record, dict):
                 recent.append(record)
     return list(recent)
+
+
+def load_failed_moves_for_board(
+    fingerprint: str,
+    rows: int,
+    cols: int,
+    *,
+    scan_limit: int,
+    context_limit: int,
+    max_distance: float,
+) -> tuple[list[dict[str, Any]], set[tuple[int, int, int, int]]]:
+    """같은 보드에서 게임이 거부했거나 변화가 없던 swap만 반환합니다."""
+
+    matches: list[dict[str, Any]] = []
+    moves: set[tuple[int, int, int, int]] = set()
+    for memory in reversed(load_recent_memories(scan_limit)):
+        before = memory.get("before", {})
+        grid = before.get("grid", {})
+        execution = memory.get("execution", {})
+        if execution.get("action_outcome") not in {"rejected", "no_change"}:
+            continue
+        if grid.get("rows") != rows or grid.get("cols") != cols:
+            continue
+        if fingerprint_distance(
+            fingerprint,
+            str(before.get("board_fingerprint", "")),
+        ) > max_distance:
+            continue
+
+        decision = memory.get("decision", {})
+        source = decision.get("source")
+        target = decision.get("target")
+        if not isinstance(source, dict) or not isinstance(target, dict):
+            continue
+        try:
+            first = (int(source["row"]), int(source["col"]))
+            second = (int(target["row"]), int(target["col"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        move = (*min(first, second), *max(first, second))
+        if move in moves:
+            continue
+        moves.add(move)
+        matches.append(memory)
+        if len(matches) >= context_limit:
+            break
+    return matches, moves
 
 
 def append_session_event(

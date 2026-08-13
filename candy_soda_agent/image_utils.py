@@ -107,3 +107,19 @@ def image_to_data_url(image: np.ndarray) -> str:
 
     base64_image = base64.b64encode(encoded.tobytes()).decode("ascii")
     return f"data:image/png;base64,{base64_image}"
+
+
+def board_fingerprint(image: np.ndarray) -> str:
+    """작은 화면 효과에 덜 민감한 보드 지문을 만듭니다."""
+
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    small = cv2.resize(gray, (17, 16), interpolation=cv2.INTER_AREA)
+    bits = small[:, 1:] > small[:, :-1]
+    return np.packbits(bits).tobytes().hex()
+
+
+def fingerprint_distance(first: str, second: str) -> float:
+    if not first or len(first) != len(second):
+        return 1.0
+    different_bits = (int(first, 16) ^ int(second, 16)).bit_count()
+    return different_bits / (len(first) * 4)

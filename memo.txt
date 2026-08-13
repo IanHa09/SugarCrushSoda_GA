@@ -1,0 +1,5 @@
+/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --once
+한 번 캡처/분석 후 종료합니다.
+자동 분석은:
+/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --auto
+종료는 Ctrl+C입니다.

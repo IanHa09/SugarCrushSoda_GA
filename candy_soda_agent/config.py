@@ -1,111 +1,143 @@
-"""프로젝트 설정과 안전한 환경변수 파싱을 담당합니다."""
+"""프로젝트에서 자주 바꾸는 설정값만 모아 둔 파일입니다."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import TypeVar
-
-
-T = TypeVar("T")
-PROJECT_DIR = Path(__file__).resolve().parent
 
 
 def _env_bool(name: str, default: bool) -> bool:
-    """불명확한 값이 실제 행동을 켜지 않도록 엄격하게 파싱합니다."""
-
     raw_value = os.getenv(name)
     if raw_value is None:
         return default
 
     normalized = raw_value.strip().lower()
-    if normalized in {"1", "true", "yes", "on"}:
-        return True
-    if normalized in {"0", "false", "no", "off"}:
-        return False
-    raise ValueError(
-        f"{name}={raw_value!r}는 올바른 불리언 값이 아닙니다. "
-        "true 또는 false를 사용하세요."
-    )
+    if normalized not in {"true", "false"}:
+        raise ValueError(f"{name}은 true 또는 false만 사용할 수 있습니다.")
+    return normalized == "true"
 
 
-def _env_choice(name: str, default: T, allowed: set[T]) -> T:
-    raw_value = os.getenv(name)
-    value = default if raw_value is None else raw_value.strip()
-    if value not in allowed:
-        choices = ", ".join(sorted(str(item) for item in allowed))
-        raise ValueError(f"{name}={value!r}는 올바르지 않습니다: {choices}")
-    return value  # type: ignore[return-value]
+# ------------------------------------------------------------
+# 화면 캡처 설정
+# ------------------------------------------------------------
 
+# MSS에서 0번은 모든 모니터를 합친 가상 화면, 첫번째 1, 두번째 2 
+MONITOR_INDEX = 1  # 실제 게임이 실행되는 모니터 번호로 수정 필요 !
 
-# MSS의 0번은 모든 모니터를 합친 가상 화면이므로 행동 좌표에는 사용하지 않습니다.
-MONITOR_INDEX = int(os.getenv("MONITOR_INDEX", "1"))
+# 선택한 모니터의 왼쪽 위를 기준으로 한 게임 보드 영역
+# calibrate_region.py를 실행한 뒤 출력된 값으로 교체 필요 !
 
-# 선택한 모니터 왼쪽 위를 기준으로 한 게임 보드 영역입니다.
 BOARD_OFFSET = {
-    "left": 370,
-    "top": 660,
-    "width": 590,
-    "height": 580,
+    "left": 1185,
+    "top": 355,
+    "width": 517,
+    "height": 408,
 }
 
-ROWS = 9
-COLS = 10
+# 한 레벨의 바깥쪽 직사각형을 기준으로 행과 열 세기.
+# 실제 선택한 Candy Crush Soda 레벨에 맞게 수정 필요 !
+ROWS = 7        # 행
+COLS = 7        # 열
 
-# window는 실제 창 추적이 아니라 게임 UI가 들어오는 제한된 고정 영역입니다.
-CAPTURE_MODE = _env_choice(
-    "CAPTURE_MODE",
-    "window",
-    {"board", "window", "monitor"},
-)
+# 보드의 반복 간격으로 행/열을 추정하고, 실패하면 위 고정값을 사용합니다.
+AUTO_GRID = _env_bool("AUTO_GRID", True)
+GRID_MIN_ROWS = 4
+GRID_MAX_ROWS = 12
+GRID_MIN_COLS = 4
+GRID_MAX_COLS = 12
+GRID_MIN_CONFIDENCE = 0.45
+
+
+CAPTURE_MODE = os.getenv("CAPTURE_MODE", "board")  # board | window | monitor
+
+# window 모드에서 쓸 영역. 모니터 상대 좌표로 수정 필요 ! 
+
 WINDOW_OFFSET = {
-    "left": 200,
-    "top": 150,
-    "width": 590,
-    "height": 580,
+    "left": 1168,
+    "top": 43,
+    "width": 536,
+    "height": 1003,
 }
+# True이면 실제 API 호출 없이 로컬에서만 실행, False이면 OpenAI API를 호출(실제작동). 즉 안전모드.
+# 미설정 또는 true 이면 실제 마우스 조작 X, false이면 실제 마우스 조작 O, 오타나 yes, 1 : 프로그램 중단해 실수로 클릭모드 켜짐방지
 
-# DRY_RUN은 OpenAI 호출이 아니라 실제 마우스 행동만 차단합니다.
 DRY_RUN = _env_bool("DRY_RUN", True)
-GAME_WINDOW_TITLE = os.getenv("GAME_WINDOW_TITLE", "").strip()
-STORE_FULL_CAPTURE = _env_bool("STORE_FULL_CAPTURE", False)
-ACTION_PAUSE = 0.15
-DRAG_DURATION = 0.20
 
-# 자동 분석 및 행동 전후 검증 설정입니다.
+ACTION_PAUSE = 0.15                     # 마우스 동작 후 쉬는시간
+DRAG_DURATION = 0.20                    # 드래그 천천히
+
+
+# ------------------------------------------------------------
+# 자동 분석 설정
+# ------------------------------------------------------------
+
+# 자동 모드에서 화면을 확인하는 간격(초)
 CAPTURE_INTERVAL = 0.5
+
+# 연속 프레임 차이가 이 값보다 작으면 화면이 안정되었다고 봅니다.
+# 반짝임 때문에 분석이 시작되지 않으면 0.03~0.05 정도로 높여 보세요.
 STABLE_THRESHOLD = 0.02
+
+# 이 횟수만큼 연속으로 안정되어야 API에 이미지를 보냅니다.
 STABLE_FRAME_COUNT = 3
+
+# 마지막으로 분석한 보드와 이 값 이상 달라져야 새 보드로 간주
 NEW_BOARD_THRESHOLD = 0.035
-PRE_ACTION_STABILITY_DELAY = 0.25
-PRE_ACTION_MAX_CHANGE = 0.02
-POST_ACTION_WAIT = 1.0
-ACTION_SUCCESS_THRESHOLD = 0.025
 
-# API 비용과 장애 확산을 제한합니다.
+# API를 너무 자주 호출하지 않도록 두 요청 사이의 최소 간격
 API_COOLDOWN = 10.0
-API_TIMEOUT = 45.0
+
+# LLM이 swap을 골랐더라도 이 값보다 확신이 낮으면 검증 실패로 표시합니다.
+# stable playing 상태에서 wait가 반복되지 않도록 중간 확신 후보도 허용합니다.
+MIN_CONFIDENCE = 0.45
+
+# 한 번의 프로그램 실행에서 허용할 최대 API 요청 수
 MAX_API_CALLS = 250
-MAX_CONSECUTIVE_ERRORS = 5
-MIN_CONFIDENCE = 0.55
 
-MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+# 실제 swap 뒤 보드가 수락/거부되었는지 관찰하는 설정입니다.
+POST_ACTION_TIMEOUT = 4.0
+POST_ACTION_INTERVAL = 0.15
+POST_ACTION_MIN_WAIT = 0.75
+POST_ACTION_STABLE_FRAMES = 2
+ACTION_ACCEPTED_THRESHOLD = 0.025
+ACTION_ATTEMPT_THRESHOLD = 0.010
+ACTION_RETURNED_THRESHOLD = 0.008
+
+# 같은 보드에서 실패한 수를 다시 추천하지 않도록 조회할 메모리 범위입니다.
+MEMORY_SCAN_LIMIT = 100
 MEMORY_CONTEXT_LIMIT = 5
+BOARD_FINGERPRINT_MAX_DISTANCE = 0.05
 
-# 실행 위치와 무관하게 패키지 내부 output에만 저장합니다.
-OUTPUT_DIR = PROJECT_DIR / "output"
+# ------------------------------------------------------------
+# OpenAI 및 결과 저장 설정
+# ------------------------------------------------------------
+
+# PowerShell에서 OPENAI_MODEL을 지정하면 그 값을 우선 사용합니다.
+# 예: $env:OPENAI_MODEL="gpt-4o-mini"
+MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+GAME_WINDOW_TITLE = os.getenv("GAME_WINDOW_TITLE", "")
+
+# 전체 UI는 상태 확인용으로 저해상도 처리하고, 좌표 판단용 보드는 선명하게 유지합니다.
+FULL_IMAGE_DETAIL = os.getenv("FULL_IMAGE_DETAIL", "low").strip().lower()
+BOARD_IMAGE_DETAIL = os.getenv("BOARD_IMAGE_DETAIL", "high").strip().lower()
+_valid_image_details = {"low", "high", "auto"}
+
+for _name, _value in (
+    ("FULL_IMAGE_DETAIL", FULL_IMAGE_DETAIL),
+    ("BOARD_IMAGE_DETAIL", BOARD_IMAGE_DETAIL),
+):
+    if _value not in _valid_image_details:
+        raise ValueError(
+            f"{_name}은 low, high, auto 중 하나여야 합니다: {_value!r}"
+        )
+
+LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "700"))
+if LLM_MAX_OUTPUT_TOKENS <= 0:
+    raise ValueError("LLM_MAX_OUTPUT_TOKENS는 1 이상이어야 합니다.")
+
+OUTPUT_DIR = Path("output")
 CAPTURE_DIR = OUTPUT_DIR / "captures"
 LOG_PATH = OUTPUT_DIR / "runs.jsonl"
-MEMORY_PATH = OUTPUT_DIR / "memory.jsonl"
-SESSION_LOG_PATH = OUTPUT_DIR / "sessions.jsonl"
 AUTO_LOG_DIR = OUTPUT_DIR / "auto_logs"
-
-
-def validate_live_action_settings() -> None:
-    """실제 클릭 설정이 불완전하면 프로그램 시작 단계에서 중단합니다."""
-
-    if not DRY_RUN and not GAME_WINDOW_TITLE:
-        raise RuntimeError(
-            "실제 클릭에는 GAME_WINDOW_TITLE이 필요합니다. "
-            "게임 창 제목 일부를 설정하거나 DRY_RUN=true를 사용하세요."
-        )
+MEMORY_PATH = Path("memory.jsonl")
+SESSION_LOG_PATH = OUTPUT_DIR / "sessions.jsonl"

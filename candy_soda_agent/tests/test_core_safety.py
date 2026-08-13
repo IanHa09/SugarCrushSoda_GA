@@ -13,7 +13,7 @@ sys.path.insert(0, str(PACKAGE_DIR))
 
 from config import _env_bool
 from coordinate_mapper import Point, cell_center
-from reward import evaluate_reward
+from reward import classify_action_outcome, evaluate_reward
 from safety_guard import cancellation_reason, validate_fresh_board
 
 
@@ -76,6 +76,40 @@ class RewardTests(unittest.TestCase):
         )
         self.assertEqual(result.reward, 0.0)
         self.assertEqual(result.success_estimate, "unknown")
+
+    def test_returned_board_is_rejected(self) -> None:
+        observation = classify_action_outcome(
+            peak_change=0.04,
+            final_change=0.002,
+            settled=True,
+            accepted_threshold=0.025,
+            attempt_threshold=0.01,
+            returned_threshold=0.008,
+        )
+        self.assertEqual(observation.status, "rejected")
+
+    def test_changed_final_board_is_accepted(self) -> None:
+        observation = classify_action_outcome(
+            peak_change=0.06,
+            final_change=0.04,
+            settled=True,
+            accepted_threshold=0.025,
+            attempt_threshold=0.01,
+            returned_threshold=0.008,
+        )
+        self.assertEqual(observation.status, "accepted")
+
+    def test_execution_error_does_not_create_game_rule_penalty(self) -> None:
+        result = evaluate_reward(
+            action="swap",
+            validation_passed=True,
+            executed=False,
+            dry_run=False,
+            screen_change_score=None,
+            success_threshold=0.025,
+            execution_error="focus failed",
+        )
+        self.assertEqual(result.reward, 0.0)
 
 
 if __name__ == "__main__":
