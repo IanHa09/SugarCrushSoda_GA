@@ -28,16 +28,16 @@ MONITOR_INDEX = 1  # 실제 게임이 실행되는 모니터 번호로 수정 �
 # calibrate_region.py를 실행한 뒤 출력된 값으로 교체 필요 !
 
 BOARD_OFFSET = {
-    "left": 1185,
-    "top": 355,
+    "left": 1143,
+    "top": 289,
     "width": 517,
-    "height": 408,
+    "height": 532,
 }
 
 # 한 레벨의 바깥쪽 직사각형을 기준으로 행과 열 세기.
 # 실제 선택한 Candy Crush Soda 레벨에 맞게 수정 필요 !
-ROWS = 7        # 행
-COLS = 7        # 열
+ROWS = 9        # 행
+COLS = 9        # 열
 
 # 보드의 반복 간격으로 행/열을 추정하고, 실패하면 위 고정값을 사용합니다.
 AUTO_GRID = _env_bool("AUTO_GRID", True)
@@ -53,10 +53,10 @@ CAPTURE_MODE = os.getenv("CAPTURE_MODE", "board")  # board | window | monitor
 # window 모드에서 쓸 영역. 모니터 상대 좌표로 수정 필요 ! 
 
 WINDOW_OFFSET = {
-    "left": 1168,
-    "top": 43,
-    "width": 536,
-    "height": 1003,
+    "left": 1136,
+    "top": 76,
+    "width": 546,
+    "height": 973,
 }
 # True이면 실제 API 호출 없이 로컬에서만 실행, False이면 OpenAI API를 호출(실제작동). 즉 안전모드.
 # 미설정 또는 true 이면 실제 마우스 조작 X, false이면 실제 마우스 조작 O, 오타나 yes, 1 : 프로그램 중단해 실수로 클릭모드 켜짐방지

@@ -84,6 +84,7 @@ from storage import (
 from survey import analyze_survey_screen
 from survey_report import write_survey_report
 from survey_utils import button_key, choose_next_button, normalize_text
+from navigation.navigator import run_autodrive
 
 
 # 키보드 콜백과 메인 루프가 상태를 공유할 수 있도록 Event를 사용합니다.
@@ -136,6 +137,17 @@ def parse_args() -> argparse.Namespace:
             "keyboard 패키지로 F8/F9/ESC 단축키를 등록합니다. "
             "macOS 일부 환경에서는 이 패키지가 segfault를 낼 수 있습니다."
         ),
+    )
+    parser.add_argument(
+    "--autodrive",
+    action="store_true",
+    help="게임 화면을 자동 탐색하고 구조도와 대표 화면을 생성합니다.",
+)
+    parser.add_argument(
+        "--autodrive-steps",
+        type=int,
+        default=40,
+        help="자동 탐색의 최대 단계 수입니다.",
     )
     return parser.parse_args()
 
@@ -618,6 +630,16 @@ def main() -> None:
     survey_mode = args.survey_once or args.survey_auto
     survey_allow_taps = SURVEY_ALLOW_TAPS or args.survey_taps
 
+    if args.autodrive and any([
+        args.once,
+        args.auto,
+        args.survey_once,
+        args.survey_auto,
+        args.survey_report,
+        args.hotkeys,
+    ]):
+        raise ValueError("--autodrive는 다른 옵션과 함께 사용할 수 없습니다.")
+    
     if args.survey_report:
         records = load_recent_survey_records(10000)
         report_path = write_survey_report(records)
@@ -633,6 +655,12 @@ def main() -> None:
         )
 
     client = OpenAI()
+    if args.autodrive:
+        run_autodrive(
+            client,
+            max_steps=args.autodrive_steps,
+        )
+        return
 
     keyboard = setup_hotkeys(args.hotkeys)
     if args.once or args.survey_once:
