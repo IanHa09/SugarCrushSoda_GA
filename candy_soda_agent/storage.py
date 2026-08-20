@@ -1,0 +1,378 @@
+"""실행, 학습 메모리, 세션 수명주기 로그를 저장합니다."""
+
+from __future__ import annotations
+
+import json
+from collections import deque
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+import cv2
+import numpy as np
+
+from config import (
+    CAPTURE_DIR,
+    LOG_PATH,
+    MEMORY_PATH,
+    MODEL,
+    SESSION_LOG_PATH,
+    SURVEY_DEDUP_SCAN_LIMIT,
+    SURVEY_LOG_PATH,
+)
+from image_utils import fingerprint_distance
+from schemas import AgentDecision, SurveyDecision
+from survey_utils import (
+    button_key,
+    collect_button_keys,
+    collect_element_keys,
+    element_key,
+    screen_signature,
+)
+
+
+def _now() -> str:
+    return datetime.now().astimezone().isoformat()
+
+
+def _append_jsonl(path: Path, record: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    line = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
+    with path.open("a", encoding="utf-8") as output_file:
+        output_file.write(line + "\n")
+
+
+def save_image(image: np.ndarray, label: str) -> str | None:
+    """캡처 이미지를 저장하고 실패하면 존재하지 않는 경로를 반환하지 않습니다."""
+
+    CAPTURE_DIR.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S_%f")
+    path = CAPTURE_DIR / f"{timestamp}_{label}.png"
+    if not cv2.imwrite(str(path), image):
+        print(f"[WARNING] 이미지 저장 실패: {path}")
+        return None
+    return str(path)
+
+
+def save_run(
+    raw_image: np.ndarray,
+    grid_image: np.ndarray,
+    decision: AgentDecision,
+    is_valid: bool,
+    validation_message: str,
+    *,
+    session_id: str,
+    step: int,
+    stored_image_scope: str,
+    grid: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    raw_path = save_image(raw_image, "raw")
+    grid_path = save_image(grid_image, "grid")
+    if raw_path is None or grid_path is None:
+        raise OSError("분석 이미지를 완전하게 저장하지 못해 행동을 차단합니다.")
+
+    record = {
+        "schema_version": 2,
+        "timestamp": _now(),
+        "session_id": session_id,
+        "step": step,
+        "model": MODEL,
+        "stored_image_scope": stored_image_scope,
+        "grid": grid,
+        "raw_image": raw_path,
+        "grid_image": grid_path,
+        "valid": is_valid,
+        "validation_message": validation_message,
+        "decision": decision.model_dump(),
+    }
+    _append_jsonl(LOG_PATH, record)
+    return record
+
+
+def save_memory_entry(
+    *,
+    session_id: str,
+    step: int,
+    mode: str,
+    before: dict,
+    decision: dict,
+    execution: dict,
+    after: dict,
+    reward: float,
+    success_estimate: str,
+    lesson: str,
+    failure_reason: str | None = None,
+) -> dict[str, Any]:
+    if reward not in {-1.0, 0.0, 1.0}:
+        raise ValueError("reward는 -1.0, 0.0, 1.0 중 하나여야 합니다.")
+
+    record = {
+        "schema_version": 2,
+        "timestamp": _now(),
+        "session_id": session_id,
+        "step": step,
+        "model": MODEL,
+        "mode": mode,
+        "before": before,
+        "decision": decision,
+        "execution": execution,
+        "after": after,
+        "outcome": {
+            "reward": reward,
+            "success_estimate": success_estimate,
+            "failure_reason": failure_reason,
+        },
+        "lesson": lesson,
+    }
+    _append_jsonl(MEMORY_PATH, record)
+    return record
+
+
+def load_recent_memories(limit: int) -> list[dict[str, Any]]:
+    """손상된 줄을 건너뛰며 최근 학습 기록만 반환합니다."""
+
+    if limit <= 0 or not MEMORY_PATH.exists():
+        return []
+
+    recent: deque[dict[str, Any]] = deque(maxlen=limit)
+    with MEMORY_PATH.open("r", encoding="utf-8") as memory_file:
+        for line_number, line in enumerate(memory_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                print(f"[WARNING] memory.jsonl {line_number}번 줄을 건너뜁니다.")
+                continue
+            if isinstance(record, dict):
+                recent.append(record)
+    return list(recent)
+
+
+def _load_recent_jsonl(path: Path, limit: int) -> list[dict[str, Any]]:
+    if limit <= 0 or not path.exists():
+        return []
+
+    recent: deque[dict[str, Any]] = deque(maxlen=limit)
+    with path.open("r", encoding="utf-8") as input_file:
+        for line_number, line in enumerate(input_file, start=1):
+            if not line.strip():
+                continue
+            try:
+                record = json.loads(line)
+            except json.JSONDecodeError:
+                print(f"[WARNING] {path} {line_number}번 줄을 건너뜁니다.")
+                continue
+            if isinstance(record, dict):
+                recent.append(record)
+    return list(recent)
+
+
+def load_recent_survey_records(limit: int) -> list[dict[str, Any]]:
+    """최근 게임 구조 조사 기록을 반환합니다."""
+
+    return _load_recent_jsonl(SURVEY_LOG_PATH, limit)
+
+
+def _known_survey_keys(
+    recent_records: list[dict[str, Any]],
+) -> tuple[set[str], set[str], set[str]]:
+    screen_keys: set[str] = set()
+    element_keys: set[str] = set()
+    button_keys: set[str] = set()
+
+    for record in recent_records:
+        dedupe = record.get("dedupe", {})
+        screen_key = dedupe.get("screen_signature")
+        if isinstance(screen_key, str) and screen_key:
+            screen_keys.add(screen_key)
+        for key in dedupe.get("all_element_keys", []):
+            if isinstance(key, str):
+                element_keys.add(key)
+        for key in dedupe.get("all_button_keys", []):
+            if isinstance(key, str):
+                button_keys.add(key)
+    return screen_keys, element_keys, button_keys
+
+
+def save_survey_record(
+    *,
+    session_id: str,
+    step: int,
+    mode: str,
+    raw_image: np.ndarray,
+    grid_image: np.ndarray | None,
+    decision: SurveyDecision,
+    stored_image_scope: str,
+    screen_fingerprint: str,
+    grid: dict[str, Any] | None = None,
+    action: dict[str, Any] | None = None,
+    recent_records: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """조사 모드 분석 결과를 이미지 증거와 함께 저장합니다."""
+
+    raw_path = save_image(raw_image, "survey_raw")
+    if raw_path is None:
+        raise OSError("조사 원본 이미지를 저장하지 못했습니다.")
+    grid_path = save_image(grid_image, "survey_grid") if grid_image is not None else None
+    if grid_image is not None and grid_path is None:
+        raise OSError("조사 보드 이미지를 저장하지 못했습니다.")
+
+    recent = (
+        recent_records
+        if recent_records is not None
+        else load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
+    )
+    known_screens, known_elements, known_buttons = _known_survey_keys(recent)
+
+    current_screen = screen_signature(decision)
+    all_element_keys = collect_element_keys(decision)
+    all_button_keys = collect_button_keys(decision)
+    new_element_keys = [key for key in all_element_keys if key not in known_elements]
+    duplicate_element_keys = [
+        key for key in all_element_keys if key in known_elements
+    ]
+    new_button_keys = [key for key in all_button_keys if key not in known_buttons]
+    duplicate_button_keys = [key for key in all_button_keys if key in known_buttons]
+
+    element_records = []
+    for element in decision.game_elements:
+        key = element_key(element.category, element.name)
+        element_records.append({
+            "key": key,
+            "is_duplicate": key in known_elements,
+            **element.model_dump(),
+        })
+
+    button_records = []
+    for button in decision.button_candidates:
+        key = button_key(button.role, button.label)
+        button_records.append({
+            "key": key,
+            "is_duplicate": key in known_buttons,
+            **button.model_dump(),
+        })
+
+    record = {
+        "schema_version": 1,
+        "timestamp": _now(),
+        "session_id": session_id,
+        "step": step,
+        "model": MODEL,
+        "mode": mode,
+        "stored_image_scope": stored_image_scope,
+        "raw_image": raw_path,
+        "grid_image": grid_path,
+        "screen_fingerprint": screen_fingerprint,
+        "grid": grid,
+        "survey": decision.model_dump(),
+        "elements": element_records,
+        "buttons": button_records,
+        "dedupe": {
+            "screen_signature": current_screen,
+            "is_duplicate_screen": current_screen in known_screens,
+            "all_element_keys": all_element_keys,
+            "new_element_keys": new_element_keys,
+            "duplicate_element_keys": duplicate_element_keys,
+            "all_button_keys": all_button_keys,
+            "new_button_keys": new_button_keys,
+            "duplicate_button_keys": duplicate_button_keys,
+        },
+        "action": action or {"type": "record_only"},
+    }
+    _append_jsonl(SURVEY_LOG_PATH, record)
+    return record
+
+
+def load_failed_moves_for_board(
+    fingerprint: str,
+    rows: int,
+    cols: int,
+    *,
+    scan_limit: int,
+    context_limit: int,
+    max_distance: float,
+) -> tuple[list[dict[str, Any]], set[tuple[int, int, int, int]]]:
+    """같은 보드에서 게임이 거부했거나 변화가 없던 swap만 반환합니다."""
+
+    matches: list[dict[str, Any]] = []
+    moves: set[tuple[int, int, int, int]] = set()
+    for memory in reversed(load_recent_memories(scan_limit)):
+        before = memory.get("before", {})
+        grid = before.get("grid", {})
+        execution = memory.get("execution", {})
+        if execution.get("action_outcome") not in {"rejected", "no_change"}:
+            continue
+        if grid.get("rows") != rows or grid.get("cols") != cols:
+            continue
+        if fingerprint_distance(
+            fingerprint,
+            str(before.get("board_fingerprint", "")),
+        ) > max_distance:
+            continue
+
+        decision = memory.get("decision", {})
+        source = decision.get("source")
+        target = decision.get("target")
+        if not isinstance(source, dict) or not isinstance(target, dict):
+            continue
+        try:
+            first = (int(source["row"]), int(source["col"]))
+            second = (int(target["row"]), int(target["col"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        move = (*min(first, second), *max(first, second))
+        if move in moves:
+            continue
+        moves.add(move)
+        matches.append(memory)
+        if len(matches) >= context_limit:
+            break
+    return matches, moves
+
+
+def append_session_event(
+    session_id: str,
+    event: str,
+    **details: Any,
+) -> dict[str, Any]:
+    record = {
+        "schema_version": 1,
+        "timestamp": _now(),
+        "session_id": session_id,
+        "event": event,
+        **details,
+    }
+    _append_jsonl(SESSION_LOG_PATH, record)
+    return record
+
+
+def start_session(session_id: str, settings: dict[str, Any]) -> None:
+    append_session_event(
+        session_id,
+        "started",
+        model=MODEL,
+        settings=settings,
+    )
+
+
+def finish_session(
+    session_id: str,
+    *,
+    stop_reason: str,
+    api_call_count: int,
+    successful_actions: int,
+    failed_actions: int,
+    blocked_actions: int,
+    last_error: str | None,
+) -> None:
+    append_session_event(
+        session_id,
+        "finished",
+        stop_reason=stop_reason,
+        api_call_count=api_call_count,
+        successful_actions=successful_actions,
+        failed_actions=failed_actions,
+        blocked_actions=blocked_actions,
+        last_error=last_error,
+    )
