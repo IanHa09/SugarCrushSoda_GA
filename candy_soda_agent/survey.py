@@ -1,4 +1,4 @@
-"""게임 플레이보다 게임 구조를 기록하는 조사 모드 분석기입니다."""
+"""게임 구조 조사 분석기."""
 
 from __future__ import annotations
 
@@ -10,13 +10,26 @@ from openai import OpenAI
 
 from agent import model_supports_reasoning
 from config import (
+    AUTO_GRID,
     BOARD_IMAGE_DETAIL,
+    CAPTURE_MODE,
+    COLS,
     FULL_IMAGE_DETAIL,
+    GRID_MAX_COLS,
+    GRID_MAX_ROWS,
+    GRID_MIN_COLS,
+    GRID_MIN_CONFIDENCE,
+    GRID_MIN_ROWS,
     MODEL,
+    ROWS,
+    SURVEY_DEDUP_SCAN_LIMIT,
     SURVEY_LLM_MAX_OUTPUT_TOKENS,
 )
-from image_utils import image_to_data_url
+from grid_detector import detect_grid_shape
+from image_utils import board_fingerprint, image_to_data_url
 from schemas import SurveyDecision
+from storage import load_recent_survey_records, save_survey_record
+from survey_report import write_survey_report
 from survey_utils import RATING_SIGNAL_FIELDS
 
 
@@ -42,7 +55,7 @@ def analyze_survey_screen(
     board_image: np.ndarray | None = None,
     survey_context: list[dict] | None = None,
 ) -> SurveyDecision:
-    """현재 화면에서 게임 요소, 버튼 후보, 문서화 증거를 추출합니다."""
+    """화면 요소, 버튼 후보, 문서화 증거 추출."""
 
     total_started = time.perf_counter()
     encode_started = time.perf_counter()
@@ -160,3 +173,53 @@ def analyze_survey_screen(
     if response.output_parsed is None:
         raise RuntimeError("구조화된 조사 응답을 받지 못했습니다.")
     return response.output_parsed
+
+
+def record_survey_screen(
+    bundle,
+    decision: SurveyDecision,
+    *,
+    session_id: str,
+    step: int,
+    mode: str,
+    action: dict | None = None,
+    recent_records: list[dict] | None = None,
+    graph=None,
+):
+    """화면 조사 기록과 통합 보고서 생성."""
+
+    recent = recent_records
+    if recent is None:
+        recent = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
+
+    shape = detect_grid_shape(
+        bundle.board_image,
+        ROWS,
+        COLS,
+        enabled=AUTO_GRID,
+        min_rows=GRID_MIN_ROWS,
+        max_rows=GRID_MAX_ROWS,
+        min_cols=GRID_MIN_COLS,
+        max_cols=GRID_MAX_COLS,
+        min_confidence=GRID_MIN_CONFIDENCE,
+    )
+    record = save_survey_record(
+        session_id=session_id,
+        step=step,
+        mode=mode,
+        raw_image=bundle.full_image,
+        grid_image=None,
+        decision=decision,
+        stored_image_scope=CAPTURE_MODE,
+        screen_fingerprint=board_fingerprint(bundle.full_image),
+        grid={
+            "rows": shape.rows,
+            "cols": shape.cols,
+            "confidence": shape.confidence,
+            "source": shape.source,
+        },
+        action=action,
+        recent_records=recent,
+    )
+    report = write_survey_report([*recent, record], graph=graph)
+    return record, report

@@ -3,3 +3,19 @@
 자동 분석은:
 /opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --auto
 종료는 Ctrl+C입니다.
+
+/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --once
+
+/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --auto
+
+python candy_soda_agent/main.py --autodrive
+
+.venv/bin/python candy_soda_agent/main.py --survey-once --survey-taps
+
+--once : 현재 화면 한 번 분석
+--auto : 자동 분석 바로 시작
+--survey-once : 현재 화면 한 번 구조 조사
+--survey-auto : 자동 구조 조사 바로 시작
+--survey-report : 조사 보고서 생성
+종료   : Ctrl+C	
+MODEL: gpt-5-mini

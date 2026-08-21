@@ -3,13 +3,19 @@ from pathlib import Path
 
 import cv2
 
-from navigation.observer import screen_id
+from navigation.observer import (
+    SINGLETON_SCREEN_TYPES,
+    canonical_screen_id,
+    screen_id,
+)
+from navigation.policy import navigation_action_key_from_label
 from navigation.schemas import NavigationGraph, ScreenNode, NavigationEdge
 
 ROOT = Path("output/navigation")
 GRAPH_PATH = ROOT / "graph.json"
 JOURNEY_PATH = ROOT / "journeys.jsonl"
 IMAGE_DIR = ROOT / "representatives"
+
 
 class GraphStore:
     def __init__(self):
@@ -19,6 +25,65 @@ class GraphStore:
             if GRAPH_PATH.exists()
             else NavigationGraph()
         )
+        if self._normalize_graph():
+            self.save()
+
+    def _normalize_graph(self) -> bool:
+        """기존 화면과 간선 중복 정리."""
+
+        before = self.graph.model_dump()
+        remapped: dict[str, str] = {}
+        nodes: dict[str, ScreenNode] = {}
+
+        for old_id, node in self.graph.nodes.items():
+            node_id = (
+                canonical_screen_id(node.screen_type)
+                if node.screen_type in SINGLETON_SCREEN_TYPES
+                else old_id
+            )
+            remapped[old_id] = node_id
+            existing = nodes.get(node_id)
+            if existing is None:
+                nodes[node_id] = node.model_copy(update={"id": node_id})
+                continue
+
+            existing.visits += node.visits
+            if len(node.summary) > len(existing.summary):
+                existing.summary = node.summary
+            if not existing.representative and node.representative:
+                existing.representative = node.representative
+
+        edges: list[NavigationEdge] = []
+        seen_edges: set[tuple[str, str, str]] = set()
+        for edge in self.graph.edges:
+            source = remapped.get(edge.source, edge.source)
+            target = remapped.get(edge.target, edge.target)
+            action_key = (
+                edge.action_key
+                or navigation_action_key_from_label(edge.action)
+            )
+            identity = (source, target, action_key)
+            if identity in seen_edges:
+                continue
+            seen_edges.add(identity)
+            edges.append(NavigationEdge(
+                source=source,
+                target=target,
+                action=edge.action,
+                action_key=action_key,
+            ))
+
+        self.graph.nodes = nodes
+        self.graph.edges = edges
+        return before != self.graph.model_dump()
+
+    def explored_actions(self) -> set[str]:
+        return {
+            f"{edge.source}:{edge.action_key}"
+            for edge in self.graph.edges
+            if edge.action_key
+        }
+
     def observe(self, decision, image) -> ScreenNode:
         node_id = screen_id(decision)
         image_path = IMAGE_DIR / f"{node_id}.png"
@@ -35,13 +100,33 @@ class GraphStore:
                 representative=str(image_path),
             )
             self.graph.nodes[node_id] = node
+        else:
+            node.representative = str(image_path)
 
         node.visits += 1
         self.save()
         return node
 
-    def connect(self, source: str, target: str, action: str) -> None:
-        edge = NavigationEdge(source=source, target=target, action=action)
+    def connect(
+        self,
+        source: str,
+        target: str,
+        action: str,
+        action_key: str,
+    ) -> None:
+        if any(
+            edge.source == source
+            and edge.target == target
+            and edge.action_key == action_key
+            for edge in self.graph.edges
+        ):
+            return
+        edge = NavigationEdge(
+            source=source,
+            target=target,
+            action=action,
+            action_key=action_key,
+        )
         self.graph.edges.append(edge)
         self.save()
 

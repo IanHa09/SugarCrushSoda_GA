@@ -124,10 +124,10 @@ python candy_soda_agent/main.py --auto
 # 현재 화면의 게임 구조를 한 번 기록
 python candy_soda_agent/main.py --survey-once
 
-# 게임 구조를 계속 조사
-python candy_soda_agent/main.py --survey-auto
+# 화면을 자동 탐색하며 조사 기록과 실제 전환 그래프 생성
+python candy_soda_agent/main.py --autodrive
 
-# 안전 후보 버튼 탐색도 허용
+# --autodrive의 호환 별칭. 실제 탭은 별도 허용
 python candy_soda_agent/main.py --survey-auto --survey-taps
 
 # 저장된 조사 로그로 보고서 재생성
@@ -138,7 +138,7 @@ python candy_soda_agent/main.py --survey-report
 
 실제 동작 전에는 반드시 `DRY_RUN=true`로 캡처 영역, 격자 번호, 추천 좌표를 확인하세요. `DRY_RUN=false`에서는 `GAME_WINDOW_TITLE`이 필요하며, macOS에서는 실행 앱에 **화면 기록**과 **손쉬운 사용** 권한을 부여해야 합니다.
 
-Survey Mode의 실제 탭은 `DRY_RUN=false`와 `SURVEY_ALLOW_TAPS=true` 또는 `--survey-taps`가 함께 적용될 때만 가능합니다. 구매, 광고 시청, 로그인, 계정 연결, 권한 요청 후보는 기록만 하고 누르지 않습니다.
+`--survey-once`는 현재 화면만 기록합니다. `--autodrive`는 화면마다 같은 Survey 기록을 남기면서 실제 전환 그래프를 갱신합니다. `--survey-auto`는 호환 별칭이며, 실제 탭에는 `DRY_RUN=false`와 `SURVEY_ALLOW_TAPS=true` 또는 `--survey-taps`가 필요합니다. 구매, 광고 시청, 로그인, 계정 연결, 권한 요청 후보는 기록만 하고 누르지 않습니다.
 
 ## 저장 결과
 
@@ -151,7 +151,11 @@ output/
 ├── captures/                  분석 전후 및 조사 증거 이미지
 ├── runs.jsonl                 LLM 판단, 그리드, 검증 결과
 ├── game_survey.jsonl          게임 구조 조사 기록
-└── game_survey_report.md      조사 기록 기반 보고서
+├── game_survey_report.md      조사 기록과 실제 전환 통합 보고서
+└── navigation/
+    ├── graph.json             Autodrive 화면 전환 그래프
+    ├── journeys.jsonl         탐색 단계 기록
+    └── representatives/       화면별 대표 이미지
 memory.jsonl                   행동 결과, 보상, fingerprint, 교훈
 ```
 
@@ -177,9 +181,10 @@ SugarCrushSoda_GA/
     ├── safety_guard.py         취소·최신 보드 검사용 유틸리티
     ├── reward.py               행동 결과 분류와 보상 계산
     ├── storage.py              이미지·JSONL·메모리 저장과 조회
-    ├── survey.py               게임 구조 조사 LLM 요청
+    ├── survey.py               조사 분석·기록 공통 계층
     ├── survey_utils.py         조사 중복 키와 버튼 우선순위
-    ├── survey_report.py        조사 Markdown 보고서 생성
+    ├── survey_report.py        조사·전환 통합 보고서 생성
+    ├── navigation/             Autodrive 정책과 전환 그래프
     ├── preview_capture.py      캡처·격자 미리보기
     ├── calibrate_region.py     보드 영역 보정 도구
     ├── .env.example            환경변수 예시
@@ -195,7 +200,7 @@ SugarCrushSoda_GA/
 python -m unittest discover -s candy_soda_agent/tests -v
 ```
 
-현재 37개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 중복 처리와 저장을 검사합니다. 실제 OpenAI API 호출과 BlueStacks 마우스 드래그는 사용자 환경에서 별도로 확인해야 합니다.
+현재 45개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계와 보고서 생성을 검사합니다. 실제 OpenAI API 호출과 BlueStacks 마우스 드래그는 사용자 환경에서 별도로 확인해야 합니다.
 
 ## 현재 한계와 권장 로드맵
 

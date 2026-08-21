@@ -16,7 +16,6 @@ import os
 import argparse
 import threading
 import time
-from types import SimpleNamespace
 
 import cv2
 import mss
@@ -27,7 +26,7 @@ from dotenv import load_dotenv
 
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
-from action_executor import execute_button_tap, execute_decision
+from action_executor import execute_decision
 from agent import analyze_screen, validate_decision
 from capture import (
     frame_difference,
@@ -67,7 +66,6 @@ from config import (
     STABLE_THRESHOLD,
     SURVEY_ALLOW_TAPS,
     SURVEY_DEDUP_SCAN_LIMIT,
-    SURVEY_MIN_BUTTON_CONFIDENCE,
     WINDOW_OFFSET,
 )
 from grid_detector import detect_grid_shape
@@ -79,11 +77,9 @@ from storage import (
     save_image,
     save_memory_entry,
     save_run,
-    save_survey_record,
 )
-from survey import analyze_survey_screen
+from survey import analyze_survey_screen, record_survey_screen
 from survey_report import write_survey_report
-from survey_utils import button_key, choose_next_button, normalize_text
 from navigation.navigator import run_autodrive
 
 
@@ -115,7 +111,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--survey-auto",
         action="store_true",
-        help="자동 게임 구조 조사 모드를 바로 시작합니다.",
+        help="Autodrive 기반 자동 구조 조사를 시작합니다.",
     )
     parser.add_argument(
         "--survey-report",
@@ -126,7 +122,7 @@ def parse_args() -> argparse.Namespace:
         "--survey-taps",
         action="store_true",
         help=(
-            "조사 모드에서 안전 버튼 후보 탭을 이번 실행에 허용합니다. "
+            "--survey-auto에서 안전 버튼 후보 탭을 허용합니다. "
             "DRY_RUN=false 상태에서만 실제 클릭합니다."
         ),
     )
@@ -139,10 +135,10 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-    "--autodrive",
-    action="store_true",
-    help="게임 화면을 자동 탐색하고 구조도와 대표 화면을 생성합니다.",
-)
+        "--autodrive",
+        action="store_true",
+        help="게임 화면을 자동 탐색하고 통합 조사 보고서를 생성합니다.",
+    )
     parser.add_argument(
         "--autodrive-steps",
         type=int,
@@ -309,7 +305,7 @@ def process_frame(
     if decision.action == "wait" and decision.detected_ui_state != "playing":
         print(
             "[MODE HINT] 현재 화면은 플레이 가능한 보드가 아닙니다. "
-            "게임 구조 탐색은 --survey-auto --survey-taps로 실행하세요."
+            "게임 구조 탐색은 --autodrive로 실행하세요."
         )
 
     grid_record = {
@@ -437,7 +433,7 @@ def process_frame(
 
 
 def print_survey_decision(decision) -> None:
-    """조사 모드 판단 결과를 콘솔에 출력합니다."""
+    """조사 판단 결과 출력."""
 
     print("\n[SURVEY 응답]")
     print(
@@ -449,64 +445,16 @@ def print_survey_decision(decision) -> None:
     )
 
 
-def _survey_tap_attempts(button) -> list:
-    """LLM 좌표가 버튼 하단을 찍는 경우를 줄이기 위한 보수적 재시도 좌표입니다."""
-
-    center = getattr(button, "center", None)
-    if center is None:
-        return [button]
-
-    attempts = [button]
-    label = normalize_text(getattr(button, "label", ""))
-    role = getattr(button, "role", "unknown")
-    if role != "progression":
-        return attempts
-    if not any(token in label for token in ("next", "continue", "claim", "ok")):
-        return attempts
-
-    for y_delta in (-0.07, -0.10):
-        adjusted_y = center.y + y_delta
-        if 0.0 <= adjusted_y <= 1.0:
-            attempts.append(
-                SimpleNamespace(
-                    label=getattr(button, "label", ""),
-                    role=role,
-                    center=SimpleNamespace(x=center.x, y=adjusted_y),
-                )
-            )
-    return attempts
-
-
 def process_survey_frame(
     client: OpenAI,
-    sct,
     bundle: CaptureBundle,
     *,
     session_id: str,
     step: int,
     mode: str,
-    blocked_button_keys: set[str],
-    allow_taps: bool,
 ) -> str:
-    """화면을 게임 구조 조사 기록으로 저장하고 안전한 다음 탐색 후보를 처리합니다."""
+    """현재 화면의 조사 기록 저장."""
 
-    shape = detect_grid_shape(
-        bundle.board_image,
-        ROWS,
-        COLS,
-        enabled=AUTO_GRID,
-        min_rows=GRID_MIN_ROWS,
-        max_rows=GRID_MAX_ROWS,
-        min_cols=GRID_MIN_COLS,
-        max_cols=GRID_MAX_COLS,
-        min_confidence=GRID_MIN_CONFIDENCE,
-    )
-    grid_record = {
-        "rows": shape.rows,
-        "cols": shape.cols,
-        "confidence": shape.confidence,
-        "source": shape.source,
-    }
     recent_records = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
     print("\n[SURVEY REQUEST] 전체 게임 화면을 구조 조사 모드로 분석합니다.")
     decision = analyze_survey_screen(
@@ -517,101 +465,14 @@ def process_survey_frame(
     )
     print_survey_decision(decision)
 
-    selected_button = choose_next_button(
+    record, report_path = record_survey_screen(
+        bundle,
         decision,
-        min_confidence=SURVEY_MIN_BUTTON_CONFIDENCE,
-        blocked_button_keys=blocked_button_keys,
-    )
-    action_record = {"type": "record_only"}
-    action_outcome = "record_only"
-
-    if selected_button is not None:
-        selected_key = button_key(selected_button.role, selected_button.label)
-        blocked_button_keys.add(selected_key)
-        execution_error = None
-        executed = False
-        after_image = None
-        tap_change = None
-        tap_attempts = []
-        try:
-            for attempt_index, tap_button in enumerate(_survey_tap_attempts(selected_button)):
-                center = getattr(tap_button, "center", None)
-                print(
-                    "[SURVEY TAP] "
-                    f"{getattr(tap_button, 'label', '')!r}/"
-                    f"{getattr(tap_button, 'role', '')} "
-                    f"attempt={attempt_index + 1} "
-                    f"center=({center.x:.3f},{center.y:.3f})"
-                )
-                executed = execute_button_tap(
-                    tap_button,
-                    bundle.full_region,
-                    dry_run=DRY_RUN,
-                    allow_taps=allow_taps,
-                )
-                attempt_record = {
-                    "label": getattr(tap_button, "label", ""),
-                    "role": getattr(tap_button, "role", ""),
-                    "center": {"x": center.x, "y": center.y},
-                    "executed": executed,
-                    "screen_change": None,
-                }
-                if not executed:
-                    tap_attempts.append(attempt_record)
-                    break
-                time.sleep(POST_ACTION_MIN_WAIT)
-                after_bundle = _capture_current(sct)
-                tap_change = frame_difference(bundle.full_image, after_bundle.full_image)
-                attempt_record["screen_change"] = tap_change
-                after_image = save_image(
-                    after_bundle.full_image,
-                    "survey_after_raw",
-                )
-                tap_attempts.append(attempt_record)
-                print(f"[SURVEY TAP] screen_change={tap_change:.4f}")
-                if tap_change >= ACTION_ATTEMPT_THRESHOLD:
-                    break
-        except Exception as error:
-            execution_error = str(error)
-
-        action_outcome = (
-            "tap_changed"
-            if executed and tap_change is not None and tap_change >= ACTION_ATTEMPT_THRESHOLD
-            else "tap_no_change"
-            if executed
-            else "tap_failed"
-            if execution_error
-            else "tap_dry_run_or_disabled"
-        )
-        action_record = {
-            "type": "tap_button",
-            "outcome": action_outcome,
-            "button_key": selected_key,
-            "button": selected_button.model_dump(),
-            "executed": executed,
-            "dry_run": DRY_RUN,
-            "allow_taps": allow_taps,
-            "after_image": after_image,
-            "screen_change": tap_change,
-            "attempts": tap_attempts,
-            "blocked_reason": execution_error,
-        }
-
-    record = save_survey_record(
         session_id=session_id,
         step=step,
         mode=mode,
-        raw_image=bundle.full_image,
-        grid_image=None,
-        decision=decision,
-        stored_image_scope=CAPTURE_MODE,
-        screen_fingerprint=board_fingerprint(bundle.full_image),
-        grid=grid_record,
-        action=action_record,
         recent_records=recent_records,
     )
-    updated_records = recent_records + [record]
-    report_path = write_survey_report(updated_records)
     print(f"[SURVEY REPORT] {report_path}")
     if record["dedupe"]["is_duplicate_screen"]:
         print("[SURVEY DEDUPE] 이미 기록한 화면과 유사합니다.")
@@ -622,24 +483,26 @@ def process_survey_frame(
         f"new_document_elements={new_count}, "
         f"duplicate_document_elements={duplicate_count}"
     )
-    return action_outcome
+    return "record_only"
 
 
 def main() -> None:
     args = parse_args()
-    survey_mode = args.survey_once or args.survey_auto
-    survey_allow_taps = SURVEY_ALLOW_TAPS or args.survey_taps
+    survey_mode = args.survey_once
+    autodrive_mode = args.autodrive or args.survey_auto
+    autodrive_taps = args.autodrive or SURVEY_ALLOW_TAPS or args.survey_taps
 
-    if args.autodrive and any([
+    if args.autodrive and args.survey_auto:
+        raise ValueError("--autodrive와 --survey-auto는 같은 모드입니다.")
+    if autodrive_mode and any((
         args.once,
         args.auto,
         args.survey_once,
-        args.survey_auto,
         args.survey_report,
         args.hotkeys,
-    ]):
-        raise ValueError("--autodrive는 다른 옵션과 함께 사용할 수 없습니다.")
-    
+    )):
+        raise ValueError("자동 구조 조사는 다른 실행 모드와 함께 사용할 수 없습니다.")
+
     if args.survey_report:
         records = load_recent_survey_records(10000)
         report_path = write_survey_report(records)
@@ -655,17 +518,18 @@ def main() -> None:
         )
 
     client = OpenAI()
-    if args.autodrive:
+    if autodrive_mode:
         run_autodrive(
             client,
             max_steps=args.autodrive_steps,
+            allow_taps=autodrive_taps,
         )
         return
 
     keyboard = setup_hotkeys(args.hotkeys)
     if args.once or args.survey_once:
         ANALYZE_ONCE.set()
-    if args.auto or args.survey_auto:
+    if args.auto:
         AUTO_RUNNING.set()
 
     if args.hotkeys:
@@ -676,21 +540,13 @@ def main() -> None:
         print("--once : 현재 화면 한 번 분석")
         print("--auto : 자동 분석 바로 시작")
         print("--survey-once : 현재 화면 한 번 구조 조사")
-        print("--survey-auto : 자동 구조 조사 바로 시작")
+        print("--survey-auto : Autodrive 기반 자동 구조 조사")
         print("--survey-report : 조사 보고서 생성")
         print("종료   : Ctrl+C")
     print(f"MODEL: {MODEL}")
     print(f"RUN MODE: {'survey' if survey_mode else 'play'}")
     if survey_mode:
-        print(
-            "[SURVEY TAP POLICY] "
-            f"DRY_RUN={DRY_RUN}, SURVEY_ALLOW_TAPS={survey_allow_taps}"
-        )
-        if args.survey_once:
-            print(
-                "[SURVEY ONCE] 한 화면만 기록하고 안전 버튼을 최대 한 번 시도한 뒤 종료합니다. "
-                "계속 탐색하려면 --survey-auto --survey-taps를 사용하세요."
-            )
+        print("[SURVEY ONCE] 현재 화면만 기록하고 종료합니다.")
 
     previous_frame: np.ndarray | None = None
     last_sent_frame: np.ndarray | None = None
@@ -702,7 +558,6 @@ def main() -> None:
     api_call_count = 0
     session_id = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     memory_step_count = 0
-    survey_blocked_button_keys: set[str] = set()
 
     try:
         # MSS 객체는 반복문 안에서 매번 만들지 않고 한 번만 열어 재사용합니다.
@@ -743,13 +598,10 @@ def main() -> None:
                         if survey_mode:
                             action_outcome = process_survey_frame(
                                 client,
-                                sct,
                                 bundle,
                                 session_id=session_id,
                                 step=memory_step_count,
                                 mode="manual_survey",
-                                blocked_button_keys=survey_blocked_button_keys,
-                                allow_taps=survey_allow_taps,
                             )
                         else:
                             action_outcome = process_frame(
@@ -807,7 +659,7 @@ def main() -> None:
                     board_offset=BOARD_OFFSET,
                     window_offset=WINDOW_OFFSET,
                 )
-                current_frame = bundle.full_image if survey_mode else bundle.board_image
+                current_frame = bundle.board_image
                 if DRY_RUN:
                     cv2.imshow("Candy Soda capture preview", bundle.full_image)
 
@@ -861,26 +713,14 @@ def main() -> None:
                 try:
                     memory_step_count += 1
 
-                    if survey_mode:
-                        action_outcome = process_survey_frame(
-                            client,
-                            sct,
-                            bundle,
-                            session_id=session_id,
-                            step=memory_step_count,
-                            mode="auto_survey",
-                            blocked_button_keys=survey_blocked_button_keys,
-                            allow_taps=survey_allow_taps,
-                        )
-                    else:
-                        action_outcome = process_frame(
-                            client,
-                            sct,
-                            bundle,
-                            session_id=session_id,
-                            step=memory_step_count,
-                            mode="auto",
-                        )
+                    action_outcome = process_frame(
+                        client,
+                        sct,
+                        bundle,
+                        session_id=session_id,
+                        step=memory_step_count,
+                        mode="auto",
+                    )
 
                     last_sent_frame = (
                         None

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class ScreenNode(BaseModel):
     id: str
     screen_type: str
@@ -7,10 +8,13 @@ class ScreenNode(BaseModel):
     representative: str = ""
     visits: int = 0
 
+
 class NavigationEdge(BaseModel):
     source: str
     target: str
     action: str = ""
+    action_key: str = ""
+
 
 class NavigationGraph(BaseModel):
     nodes: dict[str, ScreenNode] = Field(default_factory=dict)

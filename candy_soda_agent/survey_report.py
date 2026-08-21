@@ -1,4 +1,4 @@
-"""조사 로그를 사람이 읽을 수 있는 Markdown 문서로 변환합니다."""
+"""조사 로그를 읽기 쉬운 Markdown으로 변환."""
 
 from __future__ import annotations
 
@@ -7,7 +7,28 @@ from pathlib import Path
 from typing import Any
 
 from config import SURVEY_REPORT_PATH
+from navigation.schemas import NavigationGraph
 from survey_utils import RATING_SIGNAL_FIELDS
+
+
+NAVIGATION_GRAPH_PATH = Path("output/navigation/graph.json")
+
+
+SCREEN_TYPE_LABELS = {
+    "playing_board": "Playing Board",
+    "level_start": "Level Start",
+    "level_complete": "Level Complete",
+    "reward_popup": "Reward Popup",
+    "map_or_level_select": "Map / Level Select",
+    "booster_panel": "Booster Panel",
+    "shop_or_currency": "Shop / Currency",
+    "settings_menu": "Settings",
+    "event_or_mission": "Event / Mission",
+    "ad_or_offer": "Ad / Offer",
+    "tutorial": "Tutorial",
+    "loading": "Loading",
+    "unknown_but_recordable": "Unknown Screen",
+}
 
 
 def _display(value: str | None, fallback: str = "unknown") -> str:
@@ -26,8 +47,96 @@ def _relative_link(path: str | None, base: Path) -> str:
         return path
 
 
-def generate_survey_markdown(records: list[dict[str, Any]]) -> str:
-    """중복 요소를 접어 게임 구조 조사 보고서를 만듭니다."""
+def _mermaid_node_id(screen_type: str) -> str:
+    safe_name = "".join(
+        character if character.isalnum() else "_"
+        for character in screen_type
+    ).strip("_")
+    return f"screen_{safe_name or 'unknown'}"
+
+
+def _mermaid_text(value: str) -> str:
+    return value.replace('"', "'").replace("|", "/")
+
+
+def _append_game_structure_diagram(
+    lines: list[str],
+    screen_types: set[str],
+    graph: NavigationGraph | None = None,
+) -> None:
+    """실제 그래프 또는 발견 화면 기반 구조도 추가."""
+
+    actual_graph = graph if graph and graph.edges else None
+    lines.extend([
+        "## Game Structure Diagram",
+        "",
+        (
+            "Autodrive가 관찰한 실제 화면 전환입니다."
+            if actual_graph
+            else "조사에서 확인된 화면입니다. 전환선은 Autodrive 실행 후 추가됩니다."
+        ),
+        "",
+    ])
+    if not screen_types and not actual_graph:
+        lines.extend(["- No survey screens recorded yet.", ""])
+        return
+
+    ordered_screen_types = [
+        screen_type
+        for screen_type in SCREEN_TYPE_LABELS
+        if screen_type in screen_types
+    ]
+    ordered_screen_types.extend(sorted(screen_types - set(ordered_screen_types)))
+
+    lines.extend(["```mermaid", "flowchart LR"])
+    graph_types = set()
+    if actual_graph:
+        for node in actual_graph.nodes.values():
+            graph_types.add(node.screen_type)
+            label = SCREEN_TYPE_LABELS.get(
+                node.screen_type,
+                node.screen_type.replace("_", " ").title(),
+            )
+            lines.append(
+                f'    {_mermaid_node_id(node.id)}["{_mermaid_text(label)}"]'
+            )
+    for screen_type in ordered_screen_types:
+        if screen_type in graph_types:
+            continue
+        label = SCREEN_TYPE_LABELS.get(
+            screen_type,
+            screen_type.replace("_", " ").title(),
+        )
+        suffix = " (survey only)" if actual_graph else ""
+        lines.append(
+            f'    {_mermaid_node_id(screen_type)}["{label}{suffix}"]'
+        )
+
+    if actual_graph:
+        for edge in actual_graph.edges:
+            lines.append(
+                f"    {_mermaid_node_id(edge.source)} "
+                f"-->|{_mermaid_text(edge.action)}| "
+                f"{_mermaid_node_id(edge.target)}"
+            )
+
+    lines.extend([
+        "```",
+        "",
+        (
+            "연결선은 실제 전환, `survey only`는 조사 기록에만 있는 화면입니다."
+            if actual_graph
+            else "현재 화면 간 전환 기록 없음."
+        ),
+        "",
+    ])
+
+
+def generate_survey_markdown(
+    records: list[dict[str, Any]],
+    graph: NavigationGraph | None = None,
+) -> str:
+    """게임 구조 조사 보고서 생성."""
 
     lines = [
         "# Game Structure Survey",
@@ -45,6 +154,12 @@ def generate_survey_markdown(records: list[dict[str, Any]]) -> str:
     }
     lines.append(f"- Unique screen signatures: {len(unique_screen_signatures)}")
     lines.append("")
+
+    observed_screen_types = {
+        _display(record.get("survey", {}).get("screen_type"))
+        for record in records
+    }
+    _append_game_structure_diagram(lines, observed_screen_types, graph)
 
     screen_examples: dict[str, dict[str, Any]] = {}
     elements_by_category: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
@@ -152,7 +267,15 @@ def generate_survey_markdown(records: list[dict[str, Any]]) -> str:
 def write_survey_report(
     records: list[dict[str, Any]],
     output_path: Path = SURVEY_REPORT_PATH,
+    graph: NavigationGraph | None = None,
 ) -> Path:
+    if graph is None and NAVIGATION_GRAPH_PATH.exists():
+        graph = NavigationGraph.model_validate_json(
+            NAVIGATION_GRAPH_PATH.read_text(encoding="utf-8")
+        )
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(generate_survey_markdown(records), encoding="utf-8")
+    output_path.write_text(
+        generate_survey_markdown(records, graph),
+        encoding="utf-8",
+    )
     return output_path
