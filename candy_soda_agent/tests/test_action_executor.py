@@ -1,3 +1,5 @@
+"""action_executor의 앱 활성화·전면전환·swap 실행 로직을 검증합니다."""
+
 from __future__ import annotations
 
 import sys
@@ -20,6 +22,8 @@ from schemas import AgentDecision
 
 class ActionExecutorTests(unittest.TestCase):
     def test_macos_uses_frontmost_application_name(self) -> None:
+        """macOS에서 전면 앱 이름을 AppKit으로 조회하는지 확인합니다."""
+
         application = SimpleNamespace(localizedName=lambda: "BlueStacks Air")
         workspace = SimpleNamespace(frontmostApplication=lambda: application)
         ns_workspace = SimpleNamespace(sharedWorkspace=lambda: workspace)
@@ -32,6 +36,8 @@ class ActionExecutorTests(unittest.TestCase):
             self.assertEqual(active_application_name(), "BlueStacks Air")
 
     def test_live_swap_accepts_bluestacks_name(self) -> None:
+        """이미 전면인 창 이름이 일치하면 그대로 swap을 실행하는지 확인합니다."""
+
         decision = AgentDecision(
             board_status="stable",
             detected_ui_state="playing",
@@ -59,6 +65,8 @@ class ActionExecutorTests(unittest.TestCase):
         drag_to.assert_called_once()
 
     def test_macos_activation_falls_back_to_open_bundle(self) -> None:
+        """직접 활성화가 실패하면 open -b 번들 명령으로 대체하는지 확인합니다."""
+
         application = SimpleNamespace(
             localizedName=lambda: "BlueStacks Air",
             bundleIdentifier=lambda: "com.bluestacks.air",
@@ -90,6 +98,8 @@ class ActionExecutorTests(unittest.TestCase):
         )
 
     def test_live_swap_activates_bluestacks_when_code_is_frontmost(self) -> None:
+        """다른 앱이 전면일 때 게임 창을 활성화한 뒤 swap을 실행하는지 확인합니다."""
+
         decision = AgentDecision(
             board_status="stable",
             detected_ui_state="playing",
@@ -120,6 +130,8 @@ class ActionExecutorTests(unittest.TestCase):
         activate.assert_called_once_with("BlueStacks")
 
     def test_dynamic_grid_shape_is_used_for_coordinates(self) -> None:
+        """rows/cols가 바뀌어도 좌표 계산에 실제 그리드 크기가 반영되는지 확인합니다."""
+
         decision = AgentDecision(
             board_status="stable",
             detected_ui_state="playing",

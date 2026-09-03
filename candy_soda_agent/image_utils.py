@@ -13,12 +13,7 @@ def add_grid_overlay(
     rows: int,
     cols: int,
 ) -> np.ndarray:
-    """
-    보드 위에 행·열 격자와 번호를 추가합니다.
-
-    LLM에 픽셀 좌표를 직접 요구하면 흔들릴 수 있으므로,
-    (행, 열) 단위로 행동을 고르게 만드는 것이 더 단순합니다.
-    """
+    """보드 위에 행·열 격자와 번호를 그려 LLM이 (행,열)로 답하게 돕습니다."""
 
     height, width = image.shape[:2]
     top_margin = 40
@@ -94,12 +89,7 @@ def add_grid_overlay(
 
 
 def image_to_data_url(image: np.ndarray) -> str:
-    """
-    OpenCV 이미지를 PNG로 압축하고 Base64 데이터 URL로 변환합니다.
-
-    캡처 파일을 디스크에서 다시 읽지 않고, 메모리의 이미지를 곧바로
-    OpenAI API에 전달하기 위한 함수입니다.
-    """
+    """OpenCV 이미지를 PNG로 압축해 Base64 데이터 URL로 변환합니다(디스크 저장 없이)."""
 
     success, encoded = cv2.imencode(".png", image)
     if not success:
@@ -119,6 +109,7 @@ def board_fingerprint(image: np.ndarray) -> str:
 
 
 def fingerprint_distance(first: str, second: str) -> float:
+    """두 지문 사이의 정규화된 해밍 거리(0~1)를 계산합니다."""
     if not first or len(first) != len(second):
         return 1.0
     difference = int(first, 16) ^ int(second, 16)

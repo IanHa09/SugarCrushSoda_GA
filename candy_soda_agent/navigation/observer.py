@@ -15,15 +15,18 @@ SINGLETON_SCREEN_TYPES = {
 }
 
 
+# 숫자를 #으로 바꿔 비교용 텍스트를 안정화합니다.
 def _stable_text(value: str) -> str:
     return re.sub(r"\d+", "#", normalize_text(value))
 
 
+# 화면 타입 하나로 고정 ID를 만듭니다.
 def canonical_screen_id(screen_type: str) -> str:
     digest = hashlib.sha1(screen_type.encode()).hexdigest()[:12]
     return f"screen_{digest}"
 
 
+# 텍스트/버튼 내용을 해시해 화면을 식별하는 안정적인 ID를 만듭니다.
 def screen_id(decision) -> str:
     if decision.screen_type in SINGLETON_SCREEN_TYPES:
         return canonical_screen_id(decision.screen_type)

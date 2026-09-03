@@ -11,6 +11,8 @@ def cancellation_reason(
     exit_requested: Event,
     auto_running: Event,
 ) -> str | None:
+    """종료 요청이나 자동 모드 중지로 행동을 취소해야 하면 그 사유를 반환합니다."""
+
     if exit_requested.is_set():
         return "종료 요청이 들어와 행동을 취소했습니다."
     if mode == "auto" and not auto_running.is_set():
@@ -23,6 +25,8 @@ def validate_fresh_board(
     stability_change: float,
     max_change: float,
 ) -> tuple[bool, str]:
+    """LLM 분석 이후와 행동 직전 사이 보드 변화량이 허용치 이내인지 검사합니다."""
+
     if analysis_change > max_change:
         return False, (
             "LLM 분석 후 보드가 변경되었습니다: "
@@ -41,4 +45,6 @@ def make_cancel_check(
     exit_requested: Event,
     auto_running: Event,
 ) -> Callable[[], str | None]:
+    """cancellation_reason을 인자 없이 호출할 수 있게 감싼 콜백을 만듭니다."""
+
     return lambda: cancellation_reason(mode, exit_requested, auto_running)

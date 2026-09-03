@@ -7,6 +7,8 @@ from pathlib import Path
 
 
 def _env_bool(name: str, default: bool) -> bool:
+    """환경변수를 true/false 불리언으로 읽어옵니다."""
+
     raw_value = os.getenv(name)
     if raw_value is None:
         return default
@@ -28,18 +30,21 @@ MONITOR_INDEX = 1  # 실제 게임이 실행되는 모니터 번호로 수정 �
 # calibrate_region.py를 실행한 뒤 출력된 값으로 교체 필요 !
 
 BOARD_OFFSET = {
-    "left": 1143,
-    "top": 289,
-    "width": 517,
-    "height": 532,
-}
+    "left": 1137,
+    "top": 288,
+    "width": 540,
+    "height": 544,
+} 
 
 # 한 레벨의 바깥쪽 직사각형을 기준으로 행과 열 세기.
 # 실제 선택한 Candy Crush Soda 레벨에 맞게 수정 필요 !
 ROWS = 9        # 행
 COLS = 9        # 열
 
-# 보드의 반복 간격으로 행/열을 추정하고, 실패하면 위 고정값을 사용합니다.
+# 보드 한 칸의 화면상 크기(픽셀). 레벨이 바뀌어도 거의 일정하며, 실측상 데스크톱 좌표로 약 60px입니다.
+CELL_SIZE_PX = float(os.getenv("CELL_SIZE_PX", "60"))
+if CELL_SIZE_PX <= 0:
+    raise ValueError("CELL_SIZE_PX는 0보다 커야 합니다.")
 AUTO_GRID = _env_bool("AUTO_GRID", True)
 GRID_MIN_ROWS = 4
 GRID_MAX_ROWS = 12
@@ -58,8 +63,7 @@ WINDOW_OFFSET = {
     "width": 546,
     "height": 973,
 }
-# True이면 실제 API 호출 없이 로컬에서만 실행, False이면 OpenAI API를 호출(실제작동). 즉 안전모드.
-# 미설정 또는 true 이면 실제 마우스 조작 X, false이면 실제 마우스 조작 O, 오타나 yes, 1 : 프로그램 중단해 실수로 클릭모드 켜짐방지
+# 안전모드 스위치: true면 API/마우스 조작 없이 로컬 실행, false면 실제로 API 호출 및 클릭까지 수행합니다.
 
 DRY_RUN = _env_bool("DRY_RUN", True)
 
@@ -112,11 +116,11 @@ BOARD_FINGERPRINT_MAX_DISTANCE = 0.05
 # 게임 구조 조사 설정
 # ------------------------------------------------------------
 
-# 조사 모드에서 안전 버튼을 실제로 누를지 결정합니다.
-# DRY_RUN=false 이고 SURVEY_ALLOW_TAPS=true 일 때만 실제 클릭합니다.
+# 조사 모드에서 안전 버튼을 실제로 누를지 결정합니다(DRY_RUN=false이고 true이거나 --survey-taps일 때만).
 SURVEY_ALLOW_TAPS = _env_bool("SURVEY_ALLOW_TAPS", False)
+# 탐색에서 이 확신도에 못 미치는 버튼 후보는 누르지 않습니다.
 SURVEY_MIN_BUTTON_CONFIDENCE = float(
-    os.getenv("SURVEY_MIN_BUTTON_CONFIDENCE", "0.55")
+    os.getenv("SURVEY_MIN_BUTTON_CONFIDENCE", "0.60")
 )
 if not 0.0 <= SURVEY_MIN_BUTTON_CONFIDENCE <= 1.0:
     raise ValueError("SURVEY_MIN_BUTTON_CONFIDENCE는 0.0~1.0이어야 합니다.")
@@ -126,8 +130,16 @@ SURVEY_DEDUP_SCAN_LIMIT = int(os.getenv("SURVEY_DEDUP_SCAN_LIMIT", "500"))
 if SURVEY_DEDUP_SCAN_LIMIT < 0:
     raise ValueError("SURVEY_DEDUP_SCAN_LIMIT는 0 이상이어야 합니다.")
 
+# 보고서 Evidence Index에 남길 최근 기록 수입니다(다른 목록은 전체 누적, 이 섹션만 제한).
+SURVEY_REPORT_EVIDENCE_LIMIT = int(
+    os.getenv("SURVEY_REPORT_EVIDENCE_LIMIT", "500")
+)
+if SURVEY_REPORT_EVIDENCE_LIMIT <= 0:
+    raise ValueError("SURVEY_REPORT_EVIDENCE_LIMIT는 1 이상이어야 합니다.")
+
+# 스키마 길이를 짧게 강제한 뒤 900으로 낮췄습니다. 파싱 실패가 잦아지면 다시 올리세요.
 SURVEY_LLM_MAX_OUTPUT_TOKENS = int(
-    os.getenv("SURVEY_LLM_MAX_OUTPUT_TOKENS", "1200")
+    os.getenv("SURVEY_LLM_MAX_OUTPUT_TOKENS", "900")
 )
 if SURVEY_LLM_MAX_OUTPUT_TOKENS <= 0:
     raise ValueError("SURVEY_LLM_MAX_OUTPUT_TOKENS는 1 이상이어야 합니다.")
@@ -139,6 +151,9 @@ if SURVEY_LLM_MAX_OUTPUT_TOKENS <= 0:
 # PowerShell에서 OPENAI_MODEL을 지정하면 그 값을 우선 사용합니다.
 # 예: $env:OPENAI_MODEL="gpt-4o-mini"
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+
+# 조사 모드는 관찰·분류만 하면 되어 느린 reasoning 모델 대신 빠른 전용 모델을 씁니다.
+SURVEY_MODEL = os.getenv("OPENAI_SURVEY_MODEL", "gpt-4o-mini")
 GAME_WINDOW_TITLE = os.getenv("GAME_WINDOW_TITLE", "")
 
 # 전체 UI는 상태 확인용으로 저해상도 처리하고, 좌표 판단용 보드는 선명하게 유지합니다.
@@ -155,14 +170,14 @@ for _name, _value in (
             f"{_name}은 low, high, auto 중 하나여야 합니다: {_value!r}"
         )
 
-LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "700"))
+# 목록 항목 수를 줄인 뒤 600으로 낮췄습니다.
+LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "600"))
 if LLM_MAX_OUTPUT_TOKENS <= 0:
     raise ValueError("LLM_MAX_OUTPUT_TOKENS는 1 이상이어야 합니다.")
 
 OUTPUT_DIR = Path("output")
 CAPTURE_DIR = OUTPUT_DIR / "captures"
 LOG_PATH = OUTPUT_DIR / "runs.jsonl"
-AUTO_LOG_DIR = OUTPUT_DIR / "auto_logs"
 MEMORY_PATH = Path("memory.jsonl")
 SESSION_LOG_PATH = OUTPUT_DIR / "sessions.jsonl"
 SURVEY_LOG_PATH = OUTPUT_DIR / "game_survey.jsonl"

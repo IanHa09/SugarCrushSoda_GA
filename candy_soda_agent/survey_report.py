@@ -6,9 +6,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
-from config import SURVEY_REPORT_PATH
-from navigation.schemas import NavigationGraph
-from survey_utils import RATING_SIGNAL_FIELDS
+from config import SURVEY_REPORT_EVIDENCE_LIMIT, SURVEY_REPORT_PATH
+from schemas import NavigationGraph
 
 
 NAVIGATION_GRAPH_PATH = Path("output/navigation/graph.json")
@@ -32,6 +31,7 @@ SCREEN_TYPE_LABELS = {
 
 
 def _display(value: str | None, fallback: str = "unknown") -> str:
+    """값이 비어 있으면 대체 문자열을 반환합니다."""
     if value is None:
         return fallback
     stripped = str(value).strip()
@@ -39,6 +39,7 @@ def _display(value: str | None, fallback: str = "unknown") -> str:
 
 
 def _relative_link(path: str | None, base: Path) -> str:
+    """기준 경로 대비 상대 경로 문자열을 계산합니다."""
     if not path:
         return ""
     try:
@@ -48,6 +49,7 @@ def _relative_link(path: str | None, base: Path) -> str:
 
 
 def _mermaid_node_id(screen_type: str) -> str:
+    """화면 타입 문자열을 mermaid 노드 ID로 변환합니다."""
     safe_name = "".join(
         character if character.isalnum() else "_"
         for character in screen_type
@@ -135,8 +137,10 @@ def _append_game_structure_diagram(
 def generate_survey_markdown(
     records: list[dict[str, Any]],
     graph: NavigationGraph | None = None,
+    *,
+    evidence_limit: int | None = SURVEY_REPORT_EVIDENCE_LIMIT,
 ) -> str:
-    """게임 구조 조사 보고서 생성."""
+    """전체 기록을 누적한 게임 구조 조사 보고서를 생성합니다 (Evidence Index만 최근 건수로 제한)."""
 
     lines = [
         "# Game Structure Survey",
@@ -178,8 +182,13 @@ def generate_survey_markdown(
                 key,
                 {
                     "name": element.get("name", ""),
-                    "description": element.get("description", ""),
-                    "evidence_text": element.get("evidence_text", ""),
+                    # 옛 필드(description/evidence_text)로 저장된 기록도 있어 폴백합니다.
+                    "evidence": (
+                        element.get("evidence")
+                        or element.get("evidence_text")
+                        or element.get("description")
+                        or ""
+                    ),
                     "raw_image": record.get("raw_image"),
                 },
             )
@@ -216,12 +225,10 @@ def generate_survey_markdown(
     for category, items in sorted(elements_by_category.items()):
         lines.append(f"### {category}")
         for item in items.values():
-            detail = _display(item.get("description"), "")
-            evidence = _display(item.get("evidence_text"), "")
-            suffix = f" - {detail}" if detail else ""
-            lines.append(f"- {_display(item.get('name'))}{suffix}")
+            evidence = _display(item.get("evidence"), "")
+            lines.append(f"- {_display(item.get('name'))}")
             if evidence:
-                lines.append(f"  - Evidence text: {evidence}")
+                lines.append(f"  - Evidence: {evidence}")
         lines.append("")
 
     lines.extend(["## Button And Navigation Candidates", ""])
@@ -240,13 +247,17 @@ def generate_survey_markdown(
             )
         lines.append("")
 
-    lines.extend(["## Rating Signal Variables", ""])
-    for field in RATING_SIGNAL_FIELDS:
-        lines.append(f"- `{field}`: unknown")
-    lines.append("")
-
     lines.extend(["## Evidence Index", ""])
-    for record in records:
+    evidence_records = (
+        records[-evidence_limit:] if evidence_limit is not None else records
+    )
+    if len(evidence_records) < len(records):
+        lines.extend([
+            f"- 전체 {len(records)}건 중 최근 {len(evidence_records)}건만 "
+            "표시합니다. 위 목록은 전체 기록 기준입니다.",
+            "",
+        ])
+    for record in evidence_records:
         survey = record.get("survey", {})
         image = _relative_link(record.get("raw_image"), SURVEY_REPORT_PATH.parent)
         duplicate = record.get("dedupe", {}).get("is_duplicate_screen", False)
@@ -269,6 +280,7 @@ def write_survey_report(
     output_path: Path = SURVEY_REPORT_PATH,
     graph: NavigationGraph | None = None,
 ) -> Path:
+    """보고서 Markdown을 생성해 파일로 저장합니다."""
     if graph is None and NAVIGATION_GRAPH_PATH.exists():
         graph = NavigationGraph.model_validate_json(
             NAVIGATION_GRAPH_PATH.read_text(encoding="utf-8")

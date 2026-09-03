@@ -21,12 +21,7 @@ def make_absolute_region(
     monitor_index: int,
     board_offset: dict[str, int],
 ) -> dict[str, int]:
-    """
-    모니터 내부의 상대 좌표를 실제 Windows 화면의 절대 좌표로 바꿉니다.
-
-    보조 모니터가 기본 모니터 왼쪽에 있으면 monitor['left']가
-    음수일 수 있지만, 아래처럼 더해 주면 MSS가 정상적으로 처리합니다.
-    """
+    """모니터 내부의 상대 좌표를 실제 화면의 절대 좌표로 바꿉니다(음수 left 포함)."""
 
     if monitor_index <= 0 or monitor_index >= len(sct.monitors):
         raise ValueError(
@@ -48,12 +43,7 @@ def capture_bgr(
     sct: mss.MSS,
     region: dict[str, int],
 ) -> np.ndarray:
-    """
-    지정한 영역을 캡처해 OpenCV에서 사용하는 BGR 이미지로 반환합니다.
-
-    파일을 먼저 저장할 필요가 없습니다.
-    게임 화면은 메모리 안의 numpy 배열로 바로 처리됩니다.
-    """
+    """지정 영역을 캡처해 파일 저장 없이 BGR numpy 배열로 반환합니다."""
 
     shot = sct.grab(region)
 
@@ -66,13 +56,7 @@ def frame_difference(
     image_a: np.ndarray,
     image_b: np.ndarray,
 ) -> float:
-    """
-    두 프레임의 평균적인 차이를 0에 가까운 값부터 반환합니다.
-
-    값이 작으면 거의 같은 화면이고, 값이 커지면 화면 변화가 큽니다.
-    정확한 게임 규칙 판별이 아니라 애니메이션과 중복 요청을 줄이기 위한
-    간단한 휴리스틱입니다.
-    """
+    """두 프레임의 평균 차이(0~1)를 반환해 애니메이션/중복 요청을 줄이는 휴리스틱입니다."""
 
     gray_a = cv2.cvtColor(image_a, cv2.COLOR_BGR2GRAY)
     gray_b = cv2.cvtColor(image_b, cv2.COLOR_BGR2GRAY)

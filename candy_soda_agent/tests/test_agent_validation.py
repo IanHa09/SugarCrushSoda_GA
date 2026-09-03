@@ -1,3 +1,5 @@
+"""agent.validate_decision과 analyze_screen의 안전 검증 로직을 검사합니다."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -25,6 +27,8 @@ class AgentValidationTests(unittest.TestCase):
         self.AgentDecision = AgentDecision
 
     def _decision(self, **overrides):
+        """기본값이 채워진 stable playing swap AgentDecision을 만들고 overrides로 덮어씁니다."""
+
         data = {
             "board_status": "stable",
             "detected_ui_state": "playing",
@@ -74,6 +78,8 @@ class AgentValidationTests(unittest.TestCase):
         )
 
     def test_analyze_screen_uses_fast_image_settings(self) -> None:
+        """analyze_screen이 전체/보드 이미지에 설정된 detail 값을 그대로 요청에 담는지 확인합니다."""
+
         import numpy as np
 
         from agent import analyze_screen
@@ -107,6 +113,8 @@ class AgentValidationTests(unittest.TestCase):
         self.assertEqual(image_inputs[1]["detail"], BOARD_IMAGE_DETAIL)
 
     def test_analyze_screen_promotes_valid_candidate_when_model_waits(self) -> None:
+        """모델이 wait를 반환해도 유효한 swap 후보가 있으면 승격되는지 확인합니다."""
+
         import numpy as np
 
         from agent import analyze_screen

@@ -1,3 +1,5 @@
+"""survey 기록 저장 시 중복 요소 처리를 검증하는 테스트입니다."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -19,6 +21,7 @@ DEPENDENCIES_AVAILABLE = all(
 @unittest.skipUnless(DEPENDENCIES_AVAILABLE, "survey storage dependencies are not installed")
 class SurveyStorageTests(unittest.TestCase):
     def test_survey_record_marks_duplicate_elements(self) -> None:
+        """동일한 화면을 다시 기록하면 중복 요소로 표시되는지 검증합니다."""
         import numpy as np
 
         import storage

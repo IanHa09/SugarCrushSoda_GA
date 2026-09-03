@@ -1,12 +1,4 @@
-"""
-게임 보드 좌표를 마우스로 선택하는 보조 프로그램입니다.
-
-실행:
-    python calibrate_region.py
-
-게임 보드를 드래그해 선택하고 Enter 또는 Space를 누르면
-config.py에 넣을 BOARD_OFFSET 값이 출력됩니다.
-"""
+"""게임 보드 좌표를 마우스로 드래그해 선택하는 보정(calibration) 도구입니다."""
 
 from __future__ import annotations
 
@@ -23,6 +15,7 @@ MAX_PREVIEW_HEIGHT = 850
 
 
 def main() -> None:
+    # 화면을 캡처해 보드 영역을 마우스로 선택받고 BOARD_OFFSET 값을 출력합니다.
     with mss.MSS() as sct:
         print_monitors(sct)
 

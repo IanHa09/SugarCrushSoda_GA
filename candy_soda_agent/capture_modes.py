@@ -8,6 +8,7 @@ from typing import Literal
 import numpy as np
 
 from capture import capture_bgr, make_absolute_region
+from config import BOARD_OFFSET, CAPTURE_MODE, MONITOR_INDEX, WINDOW_OFFSET
 
 
 CaptureMode = Literal["board", "window", "monitor"]
@@ -16,6 +17,8 @@ VALID_CAPTURE_MODES = {"board", "window", "monitor"}
 
 @dataclass(frozen=True)
 class CaptureBundle:
+    """전체 화면/보드 이미지와 각각의 캡처 영역을 담는 결과 묶음입니다."""
+
     full_image: np.ndarray
     board_image: np.ndarray
     full_region: dict[str, int]
@@ -23,6 +26,7 @@ class CaptureBundle:
 
 
 def _validate_offset(offset: dict[str, int], name: str) -> None:
+    # 오프셋 딕셔너리의 키, 타입, 범위를 검사합니다.
     required_keys = {"left", "top", "width", "height"}
     missing_keys = required_keys.difference(offset)
     if missing_keys:
@@ -42,6 +46,7 @@ def validate_capture_settings(
     board_offset: dict[str, int],
     window_offset: dict[str, int],
 ) -> None:
+    # 캡처 모드, 모니터 인덱스, 오프셋이 유효한지 검사합니다.
     if mode not in VALID_CAPTURE_MODES:
         raise ValueError(f"지원하지 않는 CAPTURE_MODE입니다: {mode!r}")
     if monitor_index <= 0 or monitor_index >= len(sct.monitors):
@@ -73,6 +78,7 @@ def capture_bundle(
     board_offset: dict[str, int],
     window_offset: dict[str, int],
 ) -> CaptureBundle:
+    # 설정된 모드에 맞춰 전체 화면과 보드 영역을 캡처합니다.
     validate_capture_settings(
         sct,
         mode,
@@ -101,3 +107,15 @@ def capture_bundle(
     full_image = capture_bgr(sct, full_region)
     board_image = capture_bgr(sct, board_region)
     return CaptureBundle(full_image, board_image, full_region, board_region)
+
+
+def capture_configured(sct) -> CaptureBundle:
+    """config.py에 설정된 모드와 좌표로 현재 화면을 캡처합니다."""
+
+    return capture_bundle(
+        sct,
+        CAPTURE_MODE,
+        MONITOR_INDEX,
+        BOARD_OFFSET,
+        WINDOW_OFFSET,
+    )

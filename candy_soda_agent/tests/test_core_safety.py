@@ -1,5 +1,8 @@
+"""config/coordinate_mapper/safety_guard/reward/cli의 핵심 안전 로직 단위 테스트입니다."""
+
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import unittest
@@ -11,6 +14,7 @@ from unittest.mock import patch
 PACKAGE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PACKAGE_DIR))
 
+import cli
 from config import _env_bool
 from coordinate_mapper import Point, cell_center
 from reward import classify_action_outcome, evaluate_reward
@@ -59,7 +63,7 @@ class RewardTests(unittest.TestCase):
             executed=True,
             dry_run=False,
             screen_change_score=0.04,
-            success_threshold=0.025,
+            action_outcome="accepted",
         )
         self.assertEqual(result.reward, 1.0)
         self.assertEqual(result.success_estimate, "positive")
@@ -71,7 +75,6 @@ class RewardTests(unittest.TestCase):
             executed=False,
             dry_run=False,
             screen_change_score=None,
-            success_threshold=0.025,
             blocked_reason="자동 모드 중지",
         )
         self.assertEqual(result.reward, 0.0)
@@ -106,10 +109,66 @@ class RewardTests(unittest.TestCase):
             executed=False,
             dry_run=False,
             screen_change_score=None,
-            success_threshold=0.025,
             execution_error="focus failed",
         )
         self.assertEqual(result.reward, 0.0)
+
+    def test_unclassified_outcome_is_held_instead_of_guessed(self) -> None:
+        result = evaluate_reward(
+            action="swap",
+            validation_passed=True,
+            executed=True,
+            dry_run=False,
+            screen_change_score=0.04,
+            action_outcome="something_new",
+        )
+        self.assertEqual(result.reward, 0.0)
+        self.assertEqual(result.success_estimate, "unknown")
+
+
+class AutodriveTapPolicyTests(unittest.TestCase):
+    """--autodrive 도 조사 모드 탭 안전장치를 그대로 따라야 합니다."""
+
+    def _args(self, **overrides) -> argparse.Namespace:
+        """기본 CLI 플래그로 채운 Namespace를 만들고 overrides로 덮어씁니다."""
+
+        args = argparse.Namespace(
+            once=False,
+            auto=False,
+            survey_once=False,
+            survey_auto=False,
+            survey_report=False,
+            survey_taps=False,
+            hotkeys=False,
+            autodrive=False,
+            autodrive_steps=40,
+        )
+        for key, value in overrides.items():
+            setattr(args, key, value)
+        return args
+
+    def test_autodrive_alone_does_not_enable_taps(self) -> None:
+        with patch.object(cli, "SURVEY_ALLOW_TAPS", False):
+            plan = cli.build_run_plan(self._args(autodrive=True))
+        self.assertFalse(plan.autodrive_taps)
+
+    def test_autodrive_and_survey_auto_agree_on_taps(self) -> None:
+        with patch.object(cli, "SURVEY_ALLOW_TAPS", False):
+            autodrive = cli.build_run_plan(self._args(autodrive=True))
+            survey_auto = cli.build_run_plan(self._args(survey_auto=True))
+        self.assertEqual(autodrive.autodrive_taps, survey_auto.autodrive_taps)
+
+    def test_explicit_flag_enables_taps(self) -> None:
+        with patch.object(cli, "SURVEY_ALLOW_TAPS", False):
+            plan = cli.build_run_plan(
+                self._args(autodrive=True, survey_taps=True)
+            )
+        self.assertTrue(plan.autodrive_taps)
+
+    def test_env_setting_enables_taps(self) -> None:
+        with patch.object(cli, "SURVEY_ALLOW_TAPS", True):
+            plan = cli.build_run_plan(self._args(autodrive=True))
+        self.assertTrue(plan.autodrive_taps)
 
 
 if __name__ == "__main__":

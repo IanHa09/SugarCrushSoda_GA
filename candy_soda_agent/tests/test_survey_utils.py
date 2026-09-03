@@ -1,3 +1,5 @@
+"""survey_utils의 정규화, 서명, 버튼 필터링 로직을 검증하는 테스트입니다."""
+
 from __future__ import annotations
 
 import sys
@@ -10,9 +12,9 @@ sys.path.insert(0, str(PACKAGE_DIR))
 
 from schemas import SurveyButtonCandidate, SurveyDecision, SurveyElement
 from survey_utils import (
-    choose_next_button,
     collect_element_keys,
     normalize_text,
+    safe_button_candidates,
     screen_signature,
 )
 
@@ -22,6 +24,7 @@ class SurveyUtilsTests(unittest.TestCase):
         self.assertEqual(normalize_text("  Green   Bear!! "), "green bear")
 
     def test_screen_signature_matches_equivalent_survey(self) -> None:
+        """표기만 다른 동일 화면의 서명과 요소 키가 같은지 검증합니다."""
         first = SurveyDecision(
             screen_type="level_complete",
             visible_text=["Next", "Level 9"],
@@ -40,7 +43,8 @@ class SurveyUtilsTests(unittest.TestCase):
         self.assertEqual(screen_signature(first), screen_signature(second))
         self.assertEqual(collect_element_keys(first), collect_element_keys(second))
 
-    def test_choose_next_button_skips_risky_buttons(self) -> None:
+    def test_risky_buttons_are_never_candidates(self) -> None:
+        """위험군 버튼은 안전 후보에서 제외되는지 검증합니다."""
         decision = SurveyDecision(
             button_candidates=[
                 SurveyButtonCandidate(
@@ -58,12 +62,12 @@ class SurveyUtilsTests(unittest.TestCase):
             ],
         )
 
-        button = choose_next_button(decision, min_confidence=0.55)
+        buttons = safe_button_candidates(decision, min_confidence=0.55)
 
-        self.assertIsNotNone(button)
-        self.assertEqual(button.label, "Next")
+        self.assertEqual([button.label for button in buttons], ["Next"])
 
-    def test_choose_next_button_prefers_progression_over_close(self) -> None:
+    def test_progression_is_preferred_over_going_back(self) -> None:
+        """진행 버튼이 되돌리기 버튼보다 우선하는지 검증합니다."""
         decision = SurveyDecision(
             screen_type="level_complete",
             button_candidates=[
@@ -82,12 +86,13 @@ class SurveyUtilsTests(unittest.TestCase):
             ],
         )
 
-        button = choose_next_button(decision, min_confidence=0.55)
+        buttons = safe_button_candidates(decision, min_confidence=0.55)
 
-        self.assertIsNotNone(button)
-        self.assertEqual(button.label, "Next")
+        self.assertTrue(buttons)
+        self.assertEqual(buttons[0].label, "Next")
 
-    def test_choose_next_button_skips_current_shop_tab(self) -> None:
+    def test_current_shop_tab_is_skipped(self) -> None:
+        """현재 화면과 같은 상점 탭 버튼은 건너뛰는지 검증합니다."""
         decision = SurveyDecision(
             screen_type="shop_or_currency",
             button_candidates=[
@@ -106,10 +111,9 @@ class SurveyUtilsTests(unittest.TestCase):
             ],
         )
 
-        button = choose_next_button(decision, min_confidence=0.55)
+        buttons = safe_button_candidates(decision, min_confidence=0.55)
 
-        self.assertIsNotNone(button)
-        self.assertEqual(button.label, "Close")
+        self.assertEqual([button.label for button in buttons], ["Close"])
 
 
 if __name__ == "__main__":

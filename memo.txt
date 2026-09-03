@@ -1,21 +1,35 @@
-/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --once
-한 번 캡처/분석 후 종료합니다.
-자동 분석은:
-/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --auto
-종료는 Ctrl+C입니다.
+# 전체 CLI 모음
 
-/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --once
+# 전체 옵션 확인
+.venv/bin/python candy_soda_agent/main.py --help
 
-/opt/anaconda3/envs/test/bin/python candy_soda_agent/main.py --auto
+# 플레이
+.venv/bin/python candy_soda_agent/main.py --once
+.venv/bin/python candy_soda_agent/main.py --auto
 
-python candy_soda_agent/main.py --autodrive
+# 구조 조사
+.venv/bin/python candy_soda_agent/main.py --survey-once
+.venv/bin/python candy_soda_agent/main.py --autodrive --survey-taps
+.venv/bin/python candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps 20
 
-.venv/bin/python candy_soda_agent/main.py --survey-once --survey-taps
+# Autodrive 호환 별칭
+.venv/bin/python candy_soda_agent/main.py --survey-auto --survey-taps
+.venv/bin/python candy_soda_agent/main.py --survey-auto --survey-taps --autodrive-steps 20
 
---once : 현재 화면 한 번 분석
---auto : 자동 분석 바로 시작
---survey-once : 현재 화면 한 번 구조 조사
---survey-auto : 자동 구조 조사 바로 시작
---survey-report : 조사 보고서 생성
-종료   : Ctrl+C	
-MODEL: gpt-5-mini
+# 보고서 재생성
+.venv/bin/python candy_soda_agent/main.py --survey-report
+
+# 단축키 모드
+.venv/bin/python candy_soda_agent/main.py --hotkeys
+
+--autodrive와 --survey-auto는 같은 모드라 동시에 사용할 수 없습니다. 
+Autodrive는 --once, --auto, --survey-once, --survey-report, --hotkeys와도 함께 사용할 수 없습니다.
+
+output/captures/
+- 실제로 분석한 화면을 단계별 증거로 저장
+- 같은 화면도 요청마다 별도 저장될 수 있음
+
+output/navigation/representatives/
+- 화면 노드별 대표 이미지 보관
+- 구조도 표시용
+- 분석 입력으로 다시 사용하지 않음

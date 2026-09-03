@@ -34,7 +34,7 @@ flowchart TD
     I --> J[결과·보상 저장]
     J --> F
     A --> K[Survey Mode]
-    K --> L[화면 요소·버튼 후보·등급 신호 기록]
+    K --> L[화면 요소·버튼 후보 기록]
     L --> M[중복 제거 및 Markdown 보고서]
 ```
 
@@ -69,16 +69,17 @@ Windows PowerShell에서는 가상환경 활성화 명령으로 `.\.venv\Scripts
 ```env
 OPENAI_API_KEY=
 OPENAI_MODEL=gpt-5-mini
+OPENAI_SURVEY_MODEL=gpt-4o-mini
 FULL_IMAGE_DETAIL=low
 BOARD_IMAGE_DETAIL=high
-LLM_MAX_OUTPUT_TOKENS=700
-SURVEY_LLM_MAX_OUTPUT_TOKENS=1200
+LLM_MAX_OUTPUT_TOKENS=600
+SURVEY_LLM_MAX_OUTPUT_TOKENS=900
 AUTO_GRID=true
 CAPTURE_MODE=window
 DRY_RUN=true
 GAME_WINDOW_TITLE=BlueStacks
 SURVEY_ALLOW_TAPS=false
-SURVEY_MIN_BUTTON_CONFIDENCE=0.55
+SURVEY_MIN_BUTTON_CONFIDENCE=0.60
 SURVEY_DEDUP_SCAN_LIMIT=500
 ```
 
@@ -92,6 +93,7 @@ SURVEY_DEDUP_SCAN_LIMIT=500
 | `AUTO_GRID` | 이미지 기반 행·열 자동 감지 사용 여부 |
 | `FULL_IMAGE_DETAIL`, `BOARD_IMAGE_DETAIL` | 전체 UI와 보드 이미지의 API detail 수준 |
 | `SURVEY_ALLOW_TAPS` | 조사 모드에서 안전 후보 버튼 탭 허용 여부 |
+| `OPENAI_MODEL` / `OPENAI_SURVEY_MODEL` | 플레이 모드(다음 수 추론, reasoning 모델 필요)와 조사 모드(구조 문서화만, reasoning 불필요)는 필요한 모델이 달라 따로 설정합니다. 기본값은 `gpt-5-mini` / `gpt-4o-mini` |
 
 화면 좌표와 감지 임계값은 `candy_soda_agent/config.py`에서 관리합니다.
 
@@ -106,35 +108,37 @@ SURVEY_DEDUP_SCAN_LIMIT=500
 
 ## 실행
 
-저장소 루트에서 실행합니다.
+저장소 루트에서 `make`만 실행하면 모든 실행 명령을 확인할 수 있습니다. `Makefile`을 실행 명령의 단일 진입점으로 사용합니다.
 
 ```bash
-# 캡처 영역과 감지된 격자를 API 호출 없이 확인
-python candy_soda_agent/preview_capture.py
+# 처음 한 번만 실행: 가상환경·의존성 설치, .env 예시 파일 복사
+make setup
 
-# 마우스로 보드 영역 보정
-python candy_soda_agent/calibrate_region.py
+# 가능한 명령과 설명 확인
+make
 
-# 현재 화면을 한 번 분석
-python candy_soda_agent/main.py --once
+# 캡처/보정
+make preview
+make calibrate
 
-# 안정된 새 보드를 계속 분석
-python candy_soda_agent/main.py --auto
+# 플레이
+make once
+make auto
 
-# 현재 화면의 게임 구조를 한 번 기록
-python candy_soda_agent/main.py --survey-once
+# 구조 조사 및 보고서
+make survey-once
+make autodrive
+make autodrive STEPS=20
+make survey-report
 
-# 화면을 자동 탐색하며 조사 기록과 실제 전환 그래프 생성
-python candy_soda_agent/main.py --autodrive
-
-# --autodrive의 호환 별칭. 실제 탭은 별도 허용
-python candy_soda_agent/main.py --survey-auto --survey-taps
-
-# 저장된 조사 로그로 보고서 재생성
-python candy_soda_agent/main.py --survey-report
+# 단축키 모드와 테스트
+make hotkeys
+make test
 ```
 
-`--hotkeys`를 함께 사용하면 F8은 한 번 분석, F9는 자동 분석 시작·중지, ESC는 종료입니다. macOS에서는 단축키 라이브러리 문제를 피하기 위해 `--once` 또는 `--auto`를 권장합니다.
+기본 파이썬 경로는 `.venv/bin/python`입니다. 다른 가상환경을 쓴다면 `make once PYTHON=python3`처럼 `PYTHON`을 넘길 수 있습니다. `make survey-auto`는 기존 `--survey-auto --survey-taps` 조합을 유지한 호환 명령입니다.
+
+`--hotkeys`를 함께 사용하면 F8은 한 번 분석, F9는 자동 분석 시작·중지, ESC는 종료입니다. macOS에서는 단축키 라이브러리 문제를 피하기 위해 `--once` 또는 `--auto`를 권장합니다. `--autodrive`/`--survey-auto`와도 함께 쓸 수 있으며, 이때는 ESC만 의미가 있고(F8/F9는 대상 없음) 누르면 진행 중이던 탭까지 취소하고 지금까지 기록으로 보고서를 남긴 뒤 멈춥니다.
 
 실제 동작 전에는 반드시 `DRY_RUN=true`로 캡처 영역, 격자 번호, 추천 좌표를 확인하세요. `DRY_RUN=false`에서는 `GAME_WINDOW_TITLE`이 필요하며, macOS에서는 실행 앱에 **화면 기록**과 **손쉬운 사용** 권한을 부여해야 합니다.
 
@@ -178,7 +182,7 @@ SugarCrushSoda_GA/
     ├── agent.py                플레이 모드 LLM 요청과 응답 검증
     ├── coordinate_mapper.py    셀을 화면 좌표로 변환
     ├── action_executor.py      앱 포커스 확인과 마우스 입력
-    ├── safety_guard.py         취소·최신 보드 검사용 유틸리티
+    ├── safety_guard.py         취소 검사(연결됨: play_session/autodrive 실행 직전)
     ├── reward.py               행동 결과 분류와 보상 계산
     ├── storage.py              이미지·JSONL·메모리 저장과 조회
     ├── survey.py               조사 분석·기록 공통 계층
@@ -200,13 +204,14 @@ SugarCrushSoda_GA/
 python -m unittest discover -s candy_soda_agent/tests -v
 ```
 
-현재 45개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계와 보고서 생성을 검사합니다. 실제 OpenAI API 호출과 BlueStacks 마우스 드래그는 사용자 환경에서 별도로 확인해야 합니다.
+현재 57개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계·취소 연결과 보고서 생성을 검사합니다. 실제 OpenAI API 호출과 BlueStacks 마우스 드래그는 사용자 환경에서 별도로 확인해야 합니다.
 
 ## 현재 한계와 권장 로드맵
 
 | 우선순위 | 제안 | 이유 |
 | --- | --- | --- |
-| P0 | `safety_guard.py`의 최신 보드·취소 검사를 `main.py` 실행 직전에 연결 | LLM 응답을 기다리는 동안 화면이 바뀐 경우 오래된 좌표를 실행하지 않도록 보강 |
+| P0 | (완료) `safety_guard.cancellation_reason`을 `execute_decision`/`execute_button_tap` 실행 직전에 연결 | ESC 또는 F9 중지 시 실행 중이던 클릭까지 취소. play 모드는 항상 켜져 있고, autodrive는 `--hotkeys`를 함께 줘야 ESC가 동작 |
+| P0 | `safety_guard.validate_fresh_board`(최신 보드 재검증)는 아직 미연결 | LLM 응답을 기다리는 동안 보드가 바뀐 경우를 잡으려면 실행 직전 재캡처와 임계값 설정이 추가로 필요함(취소 검사와는 별도 작업) |
 | P0 | 점수, 남은 수, 목표 달성, 레벨 완료를 결과 판정에 추가 | 현재는 픽셀 변화량이 주 신호라 애니메이션을 성공으로 오인할 수 있음 |
 | P1 | 실행별 세션 요약과 사람이 읽기 쉬운 로그 포맷 제공 | 저장 헬퍼는 일부 존재하지만 메인 루프와 연결되지 않아 문제 원인과 비용을 한눈에 보기 어려움 |
 | P1 | 제거된 영상 분석을 독립적인 오프라인 도구로 재도입 | 과거 플레이를 학습·회귀 데이터셋으로 활용할 수 있음. 기존 구현은 Git 커밋 `71ef5fd`의 부모에서 복구 가능 |

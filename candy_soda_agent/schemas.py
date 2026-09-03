@@ -4,7 +4,23 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+# 모델이 프롬프트의 개수/길이 제한을 넘겨도 스키마로 강제하면 ValidationError로 응답 전체가 버려지므로, 실패 대신 아래 헬퍼로 조용히 잘라냅니다.
+
+
+def _truncate_text(value: str, limit: int) -> str:
+    """문자열이 limit보다 길면 잘라냅니다."""
+
+    if len(value) <= limit:
+        return value
+    return value[: limit - 1].rstrip() + "…"
+
+
+def _truncate_list(value: list, limit: int) -> list:
+    """리스트 항목이 limit보다 많으면 앞에서부터 limit개만 남깁니다."""
+
+    return value[:limit]
 
 
 class Cell(BaseModel):
@@ -23,6 +39,11 @@ class ActionCandidate(BaseModel):
     target: Optional[Cell] = None
     confidence: float = Field(ge=0.0, le=1.0)
     reason: str = ""
+
+    @field_validator("reason", mode="after")
+    @classmethod
+    def _limit_reason(cls, value: str) -> str:
+        return _truncate_text(value, 160)
 
 
 class AgentDecision(BaseModel):
@@ -54,6 +75,33 @@ class AgentDecision(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     reason: str = ""
 
+    # 리스트 상한(3/2개)과 reason 길이(200자)는 프롬프트의 "응답 간결성" 지시와 같은 값입니다.
+    @field_validator(
+        "visible_elements",
+        "objectives",
+        "collectible_elements",
+        "obstacles",
+        "effects",
+        "uncertainties",
+        "memory_notes",
+        mode="after",
+    )
+    @classmethod
+    def _limit_note_lists(cls, value: list[str]) -> list[str]:
+        return _truncate_list(value, 3)
+
+    @field_validator("action_candidates", mode="after")
+    @classmethod
+    def _limit_action_candidates(
+        cls, value: list[ActionCandidate]
+    ) -> list[ActionCandidate]:
+        return _truncate_list(value, 2)
+
+    @field_validator("reason", mode="after")
+    @classmethod
+    def _limit_reason(cls, value: str) -> str:
+        return _truncate_text(value, 200)
+
 
 class NormalizedPoint(BaseModel):
     """캡처된 전체 화면 안에서 0~1 범위로 표현한 클릭 좌표입니다."""
@@ -79,6 +127,16 @@ class SurveyButtonCandidate(BaseModel):
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     reason: str = ""
 
+    @field_validator("label", mode="after")
+    @classmethod
+    def _limit_label(cls, value: str) -> str:
+        return _truncate_text(value, 40)
+
+    @field_validator("reason", mode="after")
+    @classmethod
+    def _limit_reason(cls, value: str) -> str:
+        return _truncate_text(value, 140)
+
 
 class SurveyElement(BaseModel):
     """등급 문서에 남길 게임 요소 한 건입니다."""
@@ -100,27 +158,18 @@ class SurveyElement(BaseModel):
         "other",
     ]
     name: str
-    description: str = ""
-    evidence_text: str = ""
+    # description과 evidence_text가 내용이 겹쳐 evidence 하나로 합쳐 토큰을 줄였습니다.
+    evidence: str = ""
 
+    @field_validator("name", mode="after")
+    @classmethod
+    def _limit_name(cls, value: str) -> str:
+        return _truncate_text(value, 60)
 
-class RatingSignalVariables(BaseModel):
-    """가이드라인 수령 전까지 변수명만 고정해 두는 등급 판정 신호입니다."""
-
-    monetization: str = "unknown"
-    ads: str = "unknown"
-    loot_or_random_reward: str = "unknown"
-    violence: str = "unknown"
-    fear_or_horror: str = "unknown"
-    sexuality_or_nudity: str = "unknown"
-    profanity: str = "unknown"
-    alcohol_tobacco_drugs: str = "unknown"
-    gambling: str = "unknown"
-    user_generated_content: str = "unknown"
-    social_or_chat: str = "unknown"
-    personal_data_or_account: str = "unknown"
-    location_or_device_permissions: str = "unknown"
-    time_pressure_or_retention: str = "unknown"
+    @field_validator("evidence", mode="after")
+    @classmethod
+    def _limit_evidence(cls, value: str) -> str:
+        return _truncate_text(value, 200)
 
 
 class SurveyDecision(BaseModel):
@@ -145,8 +194,59 @@ class SurveyDecision(BaseModel):
     visible_text: list[str] = Field(default_factory=list)
     game_elements: list[SurveyElement] = Field(default_factory=list)
     button_candidates: list[SurveyButtonCandidate] = Field(default_factory=list)
-    rating_signals: RatingSignalVariables = Field(
-        default_factory=RatingSignalVariables
-    )
     evidence_notes: list[str] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
+
+    # 상한(8/10/6/5)은 프롬프트의 "응답 간결성" 지시와 같은 값입니다.
+    @field_validator("summary", mode="after")
+    @classmethod
+    def _limit_summary(cls, value: str) -> str:
+        return _truncate_text(value, 280)
+
+    @field_validator("visible_text", mode="after")
+    @classmethod
+    def _limit_visible_text(cls, value: list[str]) -> list[str]:
+        return _truncate_list(value, 8)
+
+    @field_validator("game_elements", mode="after")
+    @classmethod
+    def _limit_game_elements(cls, value: list[SurveyElement]) -> list[SurveyElement]:
+        return _truncate_list(value, 10)
+
+    @field_validator("button_candidates", mode="after")
+    @classmethod
+    def _limit_button_candidates(
+        cls, value: list[SurveyButtonCandidate]
+    ) -> list[SurveyButtonCandidate]:
+        return _truncate_list(value, 6)
+
+    @field_validator("evidence_notes", "uncertainties", mode="after")
+    @classmethod
+    def _limit_note_lists(cls, value: list[str]) -> list[str]:
+        return _truncate_list(value, 5)
+
+
+class ScreenNode(BaseModel):
+    """Autodrive가 관찰한 화면 하나를 나타내는 그래프 노드입니다."""
+
+    id: str
+    screen_type: str
+    summary: str = ""
+    representative: str = ""
+    visits: int = 0
+
+
+class NavigationEdge(BaseModel):
+    """두 화면 사이의 실제 전환 한 건입니다."""
+
+    source: str
+    target: str
+    action: str = ""
+    action_key: str = ""
+
+
+class NavigationGraph(BaseModel):
+    """Autodrive가 쌓아 온 화면 전환 그래프 전체입니다(survey_report.py와 navigation 양쪽에서 사용)."""
+
+    nodes: dict[str, ScreenNode] = Field(default_factory=dict)
+    edges: list[NavigationEdge] = Field(default_factory=list)

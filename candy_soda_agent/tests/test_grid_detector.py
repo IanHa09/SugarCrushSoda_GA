@@ -1,3 +1,5 @@
+"""grid_detector의 격자 자동 감지 로직을 검증하는 테스트입니다."""
+
 from __future__ import annotations
 
 import sys
@@ -16,6 +18,7 @@ from grid_detector import detect_grid_shape
 
 class GridDetectorTests(unittest.TestCase):
     def test_detects_repeating_grid(self) -> None:
+        """규칙적인 격자 이미지에서 행/열 수를 올바르게 감지하는지 검사합니다."""
         rows, cols, size = 7, 9, 40
         image = np.zeros((rows * size, cols * size, 3), dtype=np.uint8)
         colors = [(40, 90, 220), (220, 150, 30), (50, 190, 70)]
@@ -37,6 +40,7 @@ class GridDetectorTests(unittest.TestCase):
         self.assertEqual(result.source, "auto")
 
     def test_falls_back_on_blank_image(self) -> None:
+        """무늬 없는 빈 이미지에서는 fallback 값을 반환하는지 검사합니다."""
         image = np.zeros((280, 360, 3), dtype=np.uint8)
         result = detect_grid_shape(image, 7, 9)
         self.assertEqual((result.rows, result.cols), (7, 9))

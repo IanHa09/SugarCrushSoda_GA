@@ -30,6 +30,8 @@ def classify_action_outcome(
     attempt_threshold: float,
     returned_threshold: float,
 ) -> ActionObservation:
+    """화면 변화량 추이로 행동이 accepted/rejected/no_change/unclear 중 무엇인지 분류합니다."""
+
     if final_change >= accepted_threshold:
         status = "accepted"
     elif not settled:
@@ -50,11 +52,12 @@ def evaluate_reward(
     executed: bool,
     dry_run: bool,
     screen_change_score: float | None,
-    success_threshold: float,
     blocked_reason: str | None = None,
     execution_error: str | None = None,
     action_outcome: str | None = None,
 ) -> RewardResult:
+    """검증/실행/결과 정보를 종합해 보수적인 보상 값과 사유를 산출합니다."""
+
     if not validation_passed:
         reason = blocked_reason or "행동 검증 실패"
         return RewardResult(-1.0, "negative", f"검증 실패: {reason}", reason)
@@ -107,12 +110,9 @@ def evaluate_reward(
             "행동 후 보드가 안정되지 않아 결과를 보류함",
         )
 
-    if screen_change_score >= success_threshold:
-        return RewardResult(
-            1.0,
-            "positive",
-            f"swap 후 화면 변화가 확인됨: {screen_change_score:.4f}",
-        )
-
-    reason = f"swap 후 화면 변화가 너무 작음: {screen_change_score:.4f}"
-    return RewardResult(-1.0, "negative", reason, reason)
+    # 분류 밖 결과이므로 잘못된 학습을 남기지 않도록 보상 없이 보류합니다.
+    return RewardResult(
+        0.0,
+        "unknown",
+        f"분류하지 못한 행동 결과라 판단을 보류함: {action_outcome!r}",
+    )

@@ -18,6 +18,8 @@ def cell_center(
     rows: int,
     cols: int,
 ) -> Point:
+    """행/열로 지정한 셀의 중심을 화면 절대 좌표로 계산합니다."""
+
     if rows <= 0 or cols <= 0:
         raise ValueError("rows와 cols는 양수여야 합니다.")
     if not 1 <= row <= rows or not 1 <= col <= cols:

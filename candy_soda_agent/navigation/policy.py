@@ -2,17 +2,12 @@
 
 import re
 
+from config import SURVEY_MIN_BUTTON_CONFIDENCE
 from survey_utils import (
     button_key,
     normalize_text,
     safe_button_candidates,
 )
-
-ROLE_PRIORITY = {
-    "structure": 0,
-    "progression": 1,
-    "safe_navigation": 2,
-}
 
 
 _ACTION_ALIASES = (
@@ -57,24 +52,15 @@ def choose_button(
     node_id: str,
     used_actions: set[str],
 ):
+    """정렬된 안전 버튼 후보 중 아직 안 눌러본 첫 번째를 고릅니다."""
+
     candidates = safe_button_candidates(
         decision,
-        min_confidence=0.60,
+        min_confidence=SURVEY_MIN_BUTTON_CONFIDENCE,
     )
 
-    fresh = [
-        button
-        for button in candidates
-        if navigation_action_id(node_id, button) not in used_actions
-    ]
-
-    if fresh:
-        return min(
-            fresh,
-            key=lambda button: (
-                ROLE_PRIORITY.get(button.role, 99),
-                -button.confidence,
-            ),
-        )
+    for button in candidates:
+        if navigation_action_id(node_id, button) not in used_actions:
+            return button
 
     return None

@@ -8,33 +8,13 @@ from typing import Any
 
 
 SAFE_BUTTON_ROLES = {"safe_navigation", "progression", "structure"}
-BLOCKED_BUTTON_ROLES = {
-    "risky_monetization",
-    "risky_ad",
-    "risky_account",
-    "unknown",
-}
+# 탐색이 목적이라 게임 구조를 더 보여주는 버튼을 먼저 누릅니다.
+# 진행 버튼이 그다음이고, 화면을 되돌리는 버튼이 마지막입니다.
 BUTTON_ROLE_PRIORITY = {
-    "progression": 0,
-    "structure": 1,
+    "structure": 0,
+    "progression": 1,
     "safe_navigation": 2,
 }
-RATING_SIGNAL_FIELDS = [
-    "monetization",
-    "ads",
-    "loot_or_random_reward",
-    "violence",
-    "fear_or_horror",
-    "sexuality_or_nudity",
-    "profanity",
-    "alcohol_tobacco_drugs",
-    "gambling",
-    "user_generated_content",
-    "social_or_chat",
-    "personal_data_or_account",
-    "location_or_device_permissions",
-    "time_pressure_or_retention",
-]
 
 
 def normalize_text(value: str) -> str:
@@ -46,6 +26,7 @@ def normalize_text(value: str) -> str:
 
 
 def stable_hash(parts: list[str]) -> str:
+    """문자열 조각들을 합쳐 SHA1 해시를 반환합니다."""
     payload = "|".join(parts)
     return hashlib.sha1(payload.encode("utf-8")).hexdigest()
 
@@ -59,6 +40,7 @@ def button_key(role: str, label: str) -> str:
 
 
 def _get_value(source: Any, name: str, default: Any = None) -> Any:
+    """dict와 객체 속성 모두에서 값을 꺼냅니다."""
     if isinstance(source, dict):
         return source.get(name, default)
     return getattr(source, name, default)
@@ -88,6 +70,7 @@ def screen_signature(decision: Any) -> str:
 
 
 def collect_element_keys(decision: Any) -> list[str]:
+    """조사 결정에 담긴 게임 요소 키 목록을 중복 없이 수집합니다."""
     keys: list[str] = []
     for element in _get_value(decision, "game_elements", []) or []:
         category = str(_get_value(element, "category", ""))
@@ -99,6 +82,7 @@ def collect_element_keys(decision: Any) -> list[str]:
 
 
 def collect_button_keys(decision: Any) -> list[str]:
+    """조사 결정에 담긴 버튼 키 목록을 중복 없이 수집합니다."""
     keys: list[str] = []
     for button in _get_value(decision, "button_candidates", []) or []:
         role = str(_get_value(button, "role", ""))
@@ -113,9 +97,9 @@ def safe_button_candidates(
     decision: Any,
     *,
     min_confidence: float,
-    blocked_button_keys: set[str] | None = None,
 ) -> list[Any]:
-    blocked = blocked_button_keys or set()
+    """누르기 안전한 버튼만 남기고 역할 우선순위와 확신도로 정렬합니다."""
+
     screen_type = str(_get_value(decision, "screen_type", ""))
     buttons = []
     for button in _get_value(decision, "button_candidates", []) or []:
@@ -124,7 +108,6 @@ def safe_button_candidates(
         normalized_label = normalize_text(label)
         confidence = float(_get_value(button, "confidence", 0.0) or 0.0)
         center = _get_value(button, "center", None)
-        key = button_key(role, label)
         if role not in SAFE_BUTTON_ROLES:
             continue
         if role == "structure" and any(
@@ -135,8 +118,6 @@ def safe_button_candidates(
         if screen_type == "shop_or_currency" and "shop" in normalized_label:
             continue
         if screen_type == "map_or_level_select" and normalized_label == "home":
-            continue
-        if key in blocked:
             continue
         if center is None:
             continue
@@ -150,17 +131,3 @@ def safe_button_candidates(
             -float(_get_value(button, "confidence", 0.0) or 0.0),
         ),
     )
-
-
-def choose_next_button(
-    decision: Any,
-    *,
-    min_confidence: float,
-    blocked_button_keys: set[str] | None = None,
-) -> Any | None:
-    candidates = safe_button_candidates(
-        decision,
-        min_confidence=min_confidence,
-        blocked_button_keys=blocked_button_keys,
-    )
-    return candidates[0] if candidates else None

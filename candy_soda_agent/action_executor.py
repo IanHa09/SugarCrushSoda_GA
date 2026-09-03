@@ -51,6 +51,8 @@ def _wait_until_active(
     timeout: float = 2.0,
     interval: float = 0.1,
 ) -> bool:
+    """지정한 앱이 전면에 나타날 때까지 짧게 재시도합니다."""
+
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if _application_matches(expected, active_application_name()):
@@ -60,6 +62,8 @@ def _wait_until_active(
 
 
 def _run_focus_command(command: list[str]) -> None:
+    """외부 명령을 실행해 앱을 전면 전환하고 실패하면 예외를 냅니다."""
+
     result = subprocess.run(
         command,
         check=False,
@@ -143,6 +147,8 @@ def execute_decision(
     cols: int = COLS,
     cancel_check: Callable[[], str | None] | None = None,
 ) -> bool:
+    """swap 결정을 검증하고 실제 드래그로 실행합니다."""
+
     if decision.action != "swap" or not decision.source or not decision.target:
         return False
     if board_region is None:
@@ -281,5 +287,6 @@ def execute_button_tap(
 
     pyautogui.FAILSAFE = True
     pyautogui.PAUSE = ACTION_PAUSE
-    pyautogui.click(x, y)
+    pyautogui.moveTo(x, y, duration=0.2)
+    pyautogui.click()
     return True

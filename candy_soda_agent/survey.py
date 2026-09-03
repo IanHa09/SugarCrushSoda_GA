@@ -3,37 +3,50 @@
 from __future__ import annotations
 
 import json
-import time
 
 import numpy as np
 from openai import OpenAI
 
-from agent import model_supports_reasoning
+from capture_modes import CaptureBundle
 from config import (
     AUTO_GRID,
-    BOARD_IMAGE_DETAIL,
     CAPTURE_MODE,
     COLS,
-    FULL_IMAGE_DETAIL,
     GRID_MAX_COLS,
     GRID_MAX_ROWS,
     GRID_MIN_COLS,
     GRID_MIN_CONFIDENCE,
     GRID_MIN_ROWS,
-    MODEL,
     ROWS,
     SURVEY_DEDUP_SCAN_LIMIT,
     SURVEY_LLM_MAX_OUTPUT_TOKENS,
+    SURVEY_MODEL,
 )
 from grid_detector import detect_grid_shape
-from image_utils import board_fingerprint, image_to_data_url
+from image_utils import board_fingerprint
+from llm_request import request_structured_vision
 from schemas import SurveyDecision
-from storage import load_recent_survey_records, save_survey_record
+from storage import (
+    load_all_survey_records,
+    load_recent_survey_records,
+    save_survey_record,
+)
 from survey_report import write_survey_report
-from survey_utils import RATING_SIGNAL_FIELDS
+
+
+SYSTEM_PROMPT = (
+    "You are a game survey agent. Record observable game "
+    "structure and never approve purchases, ads, login, or "
+    "permission flows as safe actions."
+)
+BOARD_NOTE = (
+    "아래 이미지는 보드 확대본이다. 보드 구조, 목표, 장애물, 부스터를 "
+    "확인할 때만 참고한다."
+)
 
 
 def _format_survey_context(records: list[dict]) -> str:
+    """최근 조사 기록을 LLM 프롬프트용 요약 문자열로 변환합니다."""
     summaries = []
     for record in records[-8:]:
         survey = record.get("survey", {})
@@ -57,17 +70,7 @@ def analyze_survey_screen(
 ) -> SurveyDecision:
     """화면 요소, 버튼 후보, 문서화 증거 추출."""
 
-    total_started = time.perf_counter()
-    encode_started = time.perf_counter()
-    full_image_data_url = image_to_data_url(full_image)
-    board_image_data_url = (
-        image_to_data_url(board_image)
-        if board_image is not None
-        else None
-    )
-    encode_elapsed = time.perf_counter() - encode_started
     context_text = _format_survey_context(survey_context or [])
-    signal_text = ", ".join(RATING_SIGNAL_FIELDS)
 
     prompt = f"""
 첫 번째 이미지는 게임 UI 전체 또는 게임 창이다. 두 번째 이미지가 있으면 같은 화면의 보드 확대본이다.
@@ -104,10 +107,6 @@ def analyze_survey_screen(
 - 최근 기록과 같은 화면/요소로 보이면 summary와 uncertainties에 그 사실을 적는다.
 - 같은 요소를 여러 표현으로 반복하지 말고 대표 이름 하나로 정리한다.
 
-등급 판정 신호:
-- 아직 세부 가이드라인이 없으므로 다음 변수명을 유지하고, 확실히 보인 것이 아니면 unknown으로 둔다.
-- 변수명: {signal_text}
-
 응답 간결성:
 - visible_text는 화면에 실제로 보이는 핵심 문구만 최대 8개.
 - game_elements는 문서에 남길 핵심 요소만 최대 10개.
@@ -118,61 +117,19 @@ def analyze_survey_screen(
 {context_text}
 """
 
-    content = [
-        {"type": "input_text", "text": prompt},
-        {
-            "type": "input_image",
-            "image_url": full_image_data_url,
-            "detail": FULL_IMAGE_DETAIL,
-        },
-    ]
-    if board_image_data_url is not None:
-        content.extend([
-            {
-                "type": "input_text",
-                "text": "아래 이미지는 보드 확대본이다. 보드 구조, 목표, 장애물, 부스터를 확인할 때만 참고한다.",
-            },
-            {
-                "type": "input_image",
-                "image_url": board_image_data_url,
-                "detail": BOARD_IMAGE_DETAIL,
-            },
-        ])
-
-    request = {
-        "model": MODEL,
-        "max_output_tokens": SURVEY_LLM_MAX_OUTPUT_TOKENS,
-        "input": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a game survey agent. Record observable game "
-                    "structure and never approve purchases, ads, login, or "
-                    "permission flows as safe actions."
-                ),
-            },
-            {"role": "user", "content": content},
-        ],
-        "text_format": SurveyDecision,
-    }
-    if model_supports_reasoning(MODEL):
-        request["reasoning"] = {"effort": "minimal"}
-
-    api_started = time.perf_counter()
-    try:
-        response = client.responses.parse(**request)
-    finally:
-        api_elapsed = time.perf_counter() - api_started
-        total_elapsed = time.perf_counter() - total_started
-        print(
-            "[SURVEY TIMING] "
-            f"image_encode={encode_elapsed:.2f}s, "
-            f"api={api_elapsed:.2f}s, "
-            f"total={total_elapsed:.2f}s"
-        )
-    if response.output_parsed is None:
-        raise RuntimeError("구조화된 조사 응답을 받지 못했습니다.")
-    return response.output_parsed
+    return request_structured_vision(
+        client,
+        model=SURVEY_MODEL,
+        system_prompt=SYSTEM_PROMPT,
+        prompt=prompt,
+        full_image=full_image,
+        board_image=board_image,
+        board_note=BOARD_NOTE,
+        text_format=SurveyDecision,
+        max_output_tokens=SURVEY_LLM_MAX_OUTPUT_TOKENS,
+        timing_label="SURVEY TIMING",
+        missing_response_message="구조화된 조사 응답을 받지 못했습니다.",
+    )
 
 
 def record_survey_screen(
@@ -184,9 +141,8 @@ def record_survey_screen(
     mode: str,
     action: dict | None = None,
     recent_records: list[dict] | None = None,
-    graph=None,
-):
-    """화면 조사 기록과 통합 보고서 생성."""
+) -> dict:
+    """화면 조사 결과를 기록 한 건으로 남깁니다 (보고서는 별도 요청 시 생성)."""
 
     recent = recent_records
     if recent is None:
@@ -210,6 +166,7 @@ def record_survey_screen(
         raw_image=bundle.full_image,
         grid_image=None,
         decision=decision,
+        model=SURVEY_MODEL,
         stored_image_scope=CAPTURE_MODE,
         screen_fingerprint=board_fingerprint(bundle.full_image),
         grid={
@@ -221,5 +178,59 @@ def record_survey_screen(
         action=action,
         recent_records=recent,
     )
-    report = write_survey_report([*recent, record], graph=graph)
-    return record, report
+    return record
+
+
+def print_survey_decision(decision) -> None:
+    """조사 판단 결과 출력."""
+
+    print("\n[SURVEY 응답]")
+    print(
+        json.dumps(
+            decision.model_dump(),
+            ensure_ascii=False,
+            indent=2,
+        )
+    )
+
+
+def process_survey_frame(
+    client: OpenAI,
+    bundle: CaptureBundle,
+    *,
+    session_id: str,
+    step: int,
+    mode: str,
+) -> str:
+    """현재 화면의 조사 기록 저장."""
+
+    recent_records = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
+    print("\n[SURVEY REQUEST] 전체 게임 화면을 구조 조사 모드로 분석합니다.")
+    decision = analyze_survey_screen(
+        client,
+        bundle.full_image,
+        None,
+        survey_context=recent_records,
+    )
+    print_survey_decision(decision)
+
+    record = record_survey_screen(
+        bundle,
+        decision,
+        session_id=session_id,
+        step=step,
+        mode=mode,
+        recent_records=recent_records,
+    )
+    report_path = write_survey_report(load_all_survey_records())
+    print(f"[SURVEY REPORT] {report_path}")
+    if record["dedupe"]["is_duplicate_screen"]:
+        print("[SURVEY DEDUPE] 이미 기록한 화면과 유사합니다.")
+    new_count = len(record["dedupe"]["new_element_keys"])
+    duplicate_count = len(record["dedupe"]["duplicate_element_keys"])
+    print(
+        "[SURVEY DEDUPE] "
+        f"new_document_elements={new_count}, "
+        f"duplicate_document_elements={duplicate_count}"
+    )
+    return "record_only"

@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import json
-from collections import deque
+import os
+from collections.abc import Iterable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -36,6 +37,7 @@ def _now() -> str:
 
 
 def _append_jsonl(path: Path, record: dict[str, Any]) -> None:
+    """기록 한 건을 JSONL 파일에 한 줄로 추가합니다."""
     path.parent.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record, ensure_ascii=False, separators=(",", ":"))
     with path.open("a", encoding="utf-8") as output_file:
@@ -66,6 +68,7 @@ def save_run(
     stored_image_scope: str,
     grid: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """원본/그리드 이미지를 저장하고 실행 결과를 기록으로 남깁니다."""
     raw_path = save_image(raw_image, "raw")
     grid_path = save_image(grid_image, "grid")
     if raw_path is None or grid_path is None:
@@ -103,6 +106,7 @@ def save_memory_entry(
     lesson: str,
     failure_reason: str | None = None,
 ) -> dict[str, Any]:
+    """행동-보상-교훈을 하나의 학습 메모리 기록으로 저장합니다."""
     if reward not in {-1.0, 0.0, 1.0}:
         raise ValueError("reward는 -1.0, 0.0, 1.0 중 하나여야 합니다.")
 
@@ -128,55 +132,89 @@ def save_memory_entry(
     return record
 
 
+def _parse_jsonl_records(
+    path: Path,
+    lines: Iterable[str],
+) -> list[dict[str, Any]]:
+    """빈 줄과 손상된 줄은 건너뛰고 dict 기록만 모읍니다."""
+
+    records: list[dict[str, Any]] = []
+    for line in lines:
+        text = line.strip()
+        if not text:
+            continue
+        try:
+            record = json.loads(text)
+        except json.JSONDecodeError:
+            print(f"[WARNING] {path}의 손상된 줄을 건너뜁니다: {text[:60]}")
+            continue
+        if isinstance(record, dict):
+            records.append(record)
+    return records
+
+
+def _read_tail_lines(
+    path: Path,
+    limit: int,
+    chunk_size: int = 65536,
+) -> list[str]:
+    """파일을 끝에서부터 청크 단위로 읽어 마지막 limit개 줄만 반환합니다."""
+
+    with path.open("rb") as binary_file:
+        binary_file.seek(0, os.SEEK_END)
+        position = binary_file.tell()
+        tail = b""
+        # limit개를 온전히 확보하려면 줄바꿈이 limit개보다 많아야 합니다.
+        while position > 0 and tail.count(b"\n") <= limit:
+            step = min(chunk_size, position)
+            position -= step
+            binary_file.seek(position)
+            tail = binary_file.read(step) + tail
+
+    lines = tail.splitlines()
+    if position > 0:
+        # 첫 줄은 청크 경계에서 잘렸을 수 있어 버립니다.
+        lines = lines[1:]
+    # 완성된 줄만 디코딩하므로 경계가 여러 바이트 문자를 갈라도 안전합니다.
+    return [line.decode("utf-8", errors="replace") for line in lines[-limit:]]
+
+
+def _load_recent_jsonl(path: Path, limit: int | None) -> list[dict[str, Any]]:
+    """손상된 줄은 건너뛰고 limit이 None이면 전체를, 정수면 최근 그만큼만 읽습니다."""
+
+    if not path.exists():
+        return []
+    if limit is not None and limit <= 0:
+        return []
+
+    if limit is None:
+        with path.open("r", encoding="utf-8") as input_file:
+            return _parse_jsonl_records(path, input_file)
+    return _parse_jsonl_records(path, _read_tail_lines(path, limit))
+
+
 def load_recent_memories(limit: int) -> list[dict[str, Any]]:
-    """손상된 줄을 건너뛰며 최근 학습 기록만 반환합니다."""
+    """최근 학습 기록을 반환합니다."""
 
-    if limit <= 0 or not MEMORY_PATH.exists():
-        return []
-
-    recent: deque[dict[str, Any]] = deque(maxlen=limit)
-    with MEMORY_PATH.open("r", encoding="utf-8") as memory_file:
-        for line_number, line in enumerate(memory_file, start=1):
-            if not line.strip():
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                print(f"[WARNING] memory.jsonl {line_number}번 줄을 건너뜁니다.")
-                continue
-            if isinstance(record, dict):
-                recent.append(record)
-    return list(recent)
-
-
-def _load_recent_jsonl(path: Path, limit: int) -> list[dict[str, Any]]:
-    if limit <= 0 or not path.exists():
-        return []
-
-    recent: deque[dict[str, Any]] = deque(maxlen=limit)
-    with path.open("r", encoding="utf-8") as input_file:
-        for line_number, line in enumerate(input_file, start=1):
-            if not line.strip():
-                continue
-            try:
-                record = json.loads(line)
-            except json.JSONDecodeError:
-                print(f"[WARNING] {path} {line_number}번 줄을 건너뜁니다.")
-                continue
-            if isinstance(record, dict):
-                recent.append(record)
-    return list(recent)
+    return _load_recent_jsonl(MEMORY_PATH, limit)
 
 
 def load_recent_survey_records(limit: int) -> list[dict[str, Any]]:
-    """최근 게임 구조 조사 기록을 반환합니다."""
+    """중복 판정에 참조할 최근 게임 구조 조사 기록을 반환합니다."""
 
     return _load_recent_jsonl(SURVEY_LOG_PATH, limit)
+
+
+def load_all_survey_records() -> list[dict[str, Any]]:
+    """보고서 생성을 위해 게임 구조 조사 기록 전체를 반환합니다."""
+
+    return _load_recent_jsonl(SURVEY_LOG_PATH, None)
 
 
 def _known_survey_keys(
     recent_records: list[dict[str, Any]],
 ) -> tuple[set[str], set[str], set[str]]:
+    # 최근 기록에서 이미 등장한 화면/요소/버튼 키를 모읍니다.
     screen_keys: set[str] = set()
     element_keys: set[str] = set()
     button_keys: set[str] = set()
@@ -208,6 +246,7 @@ def save_survey_record(
     grid: dict[str, Any] | None = None,
     action: dict[str, Any] | None = None,
     recent_records: list[dict[str, Any]] | None = None,
+    model: str = MODEL,
 ) -> dict[str, Any]:
     """조사 모드 분석 결과를 이미지 증거와 함께 저장합니다."""
 
@@ -258,7 +297,7 @@ def save_survey_record(
         "timestamp": _now(),
         "session_id": session_id,
         "step": step,
-        "model": MODEL,
+        "model": model,
         "mode": mode,
         "stored_image_scope": stored_image_scope,
         "raw_image": raw_path,
@@ -336,6 +375,7 @@ def append_session_event(
     event: str,
     **details: Any,
 ) -> dict[str, Any]:
+    # 세션 이벤트 한 건을 세션 로그에 기록합니다.
     record = {
         "schema_version": 1,
         "timestamp": _now(),
@@ -348,6 +388,7 @@ def append_session_event(
 
 
 def start_session(session_id: str, settings: dict[str, Any]) -> None:
+    # 세션 시작 이벤트를 기록합니다.
     append_session_event(
         session_id,
         "started",
@@ -366,6 +407,7 @@ def finish_session(
     blocked_actions: int,
     last_error: str | None,
 ) -> None:
+    # 세션 종료 이벤트와 최종 통계를 기록합니다.
     append_session_event(
         session_id,
         "finished",

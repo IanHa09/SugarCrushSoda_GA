@@ -1,9 +1,4 @@
-"""
-API를 호출하지 않고 캡처 영역과 격자만 확인하는 프로그램입니다.
-
-실행:
-    python preview_capture.py
-"""
+"""API를 호출하지 않고 캡처 영역과 격자만 확인하는 프리뷰 도구입니다."""
 
 from __future__ import annotations
 
@@ -12,23 +7,19 @@ import mss
 
 from capture import capture_bgr, make_absolute_region, print_monitors
 from config import (
-    AUTO_GRID,
     BOARD_OFFSET,
+    CELL_SIZE_PX,
     COLS,
-    GRID_MAX_COLS,
-    GRID_MAX_ROWS,
-    GRID_MIN_COLS,
-    GRID_MIN_CONFIDENCE,
-    GRID_MIN_ROWS,
     MONITOR_INDEX,
     OUTPUT_DIR,
     ROWS,
 )
-from grid_detector import detect_grid_shape
+from grid_detector import detect_board_geometry, detect_grid_shape
 from image_utils import add_grid_overlay
 
 
 def main() -> None:
+    # 보드를 캡처해 격자를 씌운 뒤 결과 이미지를 저장/표시합니다.
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     with mss.MSS() as sct:
@@ -42,18 +33,23 @@ def main() -> None:
         print(f"\n실제 캡처 영역: {region}")
 
         raw_image = capture_bgr(sct, region)
-        shape = detect_grid_shape(
+        
+        geometry = detect_board_geometry(
             raw_image,
-            ROWS,
-            COLS,
-            enabled=AUTO_GRID,
-            min_rows=GRID_MIN_ROWS,
-            max_rows=GRID_MAX_ROWS,
-            min_cols=GRID_MIN_COLS,
-            max_cols=GRID_MAX_COLS,
-            min_confidence=GRID_MIN_CONFIDENCE,
+            cell_size=CELL_SIZE_PX,
+            fallback_rows=ROWS,
+            fallback_cols=COLS,
         )
-        grid_image = add_grid_overlay(raw_image, shape.rows, shape.cols)
+        board_image = raw_image[
+            geometry.top : geometry.top + geometry.height,
+            geometry.left : geometry.left + geometry.width,
+        ]
+        grid_image = add_grid_overlay(board_image, geometry.rows, geometry.cols)
+        print(
+            f"보드 사각형: ({geometry.left},{geometry.top}) "
+            f"{geometry.width}x{geometry.height}, "
+            f"칸 {geometry.rows}x{geometry.cols}, source={geometry.source}"
+        )
 
         raw_path = OUTPUT_DIR / "preview_raw.png"
         grid_path = OUTPUT_DIR / "preview_grid.png"
@@ -64,8 +60,8 @@ def main() -> None:
         print(f"원본 미리보기 저장: {raw_path}")
         print(f"격자 미리보기 저장: {grid_path}")
         print(
-            f"격자: rows={shape.rows}, cols={shape.cols}, "
-            f"confidence={shape.confidence:.2f}, source={shape.source}"
+            f"격자: rows={geometry.rows}, cols={geometry.cols}, "
+            f"reason: {geometry.reason}"
         )
         print("창을 선택한 뒤 아무 키나 누르면 종료됩니다.")
 

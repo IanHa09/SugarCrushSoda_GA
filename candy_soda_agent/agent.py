@@ -3,30 +3,31 @@
 from __future__ import annotations
 
 import json
-import time
 
 import numpy as np
 from openai import OpenAI
 
 from config import (
-    BOARD_IMAGE_DETAIL,
     COLS,
-    FULL_IMAGE_DETAIL,
     LLM_MAX_OUTPUT_TOKENS,
     MIN_CONFIDENCE,
     MODEL,
     ROWS,
 )
-from image_utils import image_to_data_url
+from llm_request import request_structured_vision
 from schemas import AgentDecision
 
 
-def model_supports_reasoning(model: str) -> bool:
-    normalized = model.lower()
-    return normalized.startswith(("gpt-5", "o1", "o3", "o4"))
+SYSTEM_PROMPT = (
+    "You are a conservative visual puzzle-game agent. "
+    "Never authorize an action outside a stable playing state."
+)
+BOARD_NOTE = "아래 보드 확대본의 빨간 격자와 번호로 셀 좌표를 판단한다."
 
 
 def _format_memory_context(memories: list[dict]) -> str:
+    """이전 학습 기록을 프롬프트에 넣을 짧은 JSON 문자열로 요약합니다."""
+
     summaries = []
     for memory in memories:
         decision = memory.get("decision", {})
@@ -55,15 +56,6 @@ def analyze_screen(
 ) -> AgentDecision:
     """게임 UI와 보드를 분석하되 안전하지 않은 상태에서는 wait를 반환합니다."""
 
-    total_started = time.perf_counter()
-    encode_started = time.perf_counter()
-    full_image_data_url = image_to_data_url(full_image)
-    board_image_data_url = (
-        image_to_data_url(board_image)
-        if board_image is not None
-        else None
-    )
-    encode_elapsed = time.perf_counter() - encode_started
     memory_text = _format_memory_context(memory_context or [])
     prompt = f"""
 첫 번째 이미지는 게임 UI 영역이다. 두 번째 이미지가 있으면 같은 화면의 보드 확대본이다.
@@ -93,61 +85,20 @@ def analyze_screen(
 {memory_text}
 """
 
-    content = [
-        {"type": "input_text", "text": prompt},
-        {
-            "type": "input_image",
-            "image_url": full_image_data_url,
-            "detail": FULL_IMAGE_DETAIL,
-        },
-    ]
-
-    if board_image_data_url is not None:
-        content.extend([
-            {
-                "type": "input_text",
-                "text": "아래 보드 확대본의 빨간 격자와 번호로 셀 좌표를 판단한다.",
-            },
-            {
-                "type": "input_image",
-                "image_url": board_image_data_url,
-                "detail": BOARD_IMAGE_DETAIL,
-            },
-        ])
-
-    request = {
-        "model": MODEL,
-        "max_output_tokens": LLM_MAX_OUTPUT_TOKENS,
-        "input": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a conservative visual puzzle-game agent. "
-                    "Never authorize an action outside a stable playing state."
-                ),
-            },
-            {"role": "user", "content": content},
-        ],
-        "text_format": AgentDecision,
-    }
-    if model_supports_reasoning(MODEL):
-        request["reasoning"] = {"effort": "minimal"}
-
-    api_started = time.perf_counter()
-    try:
-        response = client.responses.parse(**request)
-    finally:
-        api_elapsed = time.perf_counter() - api_started
-        total_elapsed = time.perf_counter() - total_started
-        print(
-            "[TIMING] "
-            f"image_encode={encode_elapsed:.2f}s, "
-            f"api={api_elapsed:.2f}s, "
-            f"total={total_elapsed:.2f}s"
-        )
-    if response.output_parsed is None:
-        raise RuntimeError("구조화된 LLM 응답을 받지 못했습니다.")
-    return _promote_best_candidate(response.output_parsed, rows=rows, cols=cols)
+    decision = request_structured_vision(
+        client,
+        model=MODEL,
+        system_prompt=SYSTEM_PROMPT,
+        prompt=prompt,
+        full_image=full_image,
+        board_image=board_image,
+        board_note=BOARD_NOTE,
+        text_format=AgentDecision,
+        max_output_tokens=LLM_MAX_OUTPUT_TOKENS,
+        timing_label="TIMING",
+        missing_response_message="구조화된 LLM 응답을 받지 못했습니다.",
+    )
+    return _promote_best_candidate(decision, rows=rows, cols=cols)
 
 
 def _promote_best_candidate(
@@ -206,9 +157,15 @@ def validate_decision(
     rows: int = ROWS,
     cols: int = COLS,
     forbidden_moves: set[tuple[int, int, int, int]] | None = None,
+    geometry_ok: bool = True,
 ) -> tuple[bool, str]:
+    """LLM이 고른 swap이 범위, 인접성, 신뢰도 등 안전 규칙을 만족하는지 검사합니다."""
+
     if decision.action == "wait":
         return True, "wait 행동"
+
+    if not geometry_ok:
+        return False, "보드 격자를 확정하지 못해 swap을 보류합니다."
 
     if decision.detected_ui_state != "playing":
         return False, (
