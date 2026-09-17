@@ -1,7 +1,15 @@
 # 프로젝트 실행 명령의 단일 진입점입니다.
 # 필요하면 예: make autodrive STEPS=20 PYTHON=python3
 
+# Windows(PowerShell/cmd)는 .venv/Scripts, 그 외는 .venv/bin을 씁니다.
+ifeq ($(OS),Windows_NT)
+PYTHON ?= .venv/Scripts/python.exe
+BOOTSTRAP_PYTHON ?= python
+else
 PYTHON ?= .venv/bin/python
+BOOTSTRAP_PYTHON ?= python3
+endif
+
 STEPS ?= 40
 
 .PHONY: help setup preview calibrate once auto survey-once autodrive survey-auto survey-report hotkeys test
@@ -9,6 +17,7 @@ STEPS ?= 40
 help:
 	@printf '%s\n' \
 		'사용법: make <명령> [STEPS=숫자] [PYTHON=파이썬경로]' \
+		'(Windows는 PYTHON 기본값이 .venv/Scripts/python.exe 입니다)' \
 		'' \
 		'  setup          가상환경·의존성 설치와 .env 파일 생성' \
 		'  preview        캡처 영역과 감지된 격자 미리보기' \
@@ -25,9 +34,9 @@ help:
 		'예: make autodrive STEPS=20'
 
 setup:
-	python3 -m venv .venv
+	$(BOOTSTRAP_PYTHON) -m venv .venv
 	$(PYTHON) -m pip install -r candy_soda_agent/requirements.txt
-	@test -f candy_soda_agent/.env || cp candy_soda_agent/.env.example candy_soda_agent/.env
+	@$(PYTHON) -c "import pathlib, shutil; dst = pathlib.Path('candy_soda_agent/.env'); dst.exists() or shutil.copyfile('candy_soda_agent/.env.example', dst)"
 
 preview:
 	$(PYTHON) candy_soda_agent/preview_capture.py

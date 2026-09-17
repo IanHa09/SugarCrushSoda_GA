@@ -75,11 +75,63 @@ def _run_focus_command(command: list[str]) -> None:
         raise RuntimeError(detail or f"앱 활성화 명령 실패: {command!r}")
 
 
+def _activate_windows(expected: str) -> None:
+    """Windows에서 제목이 일치하는 창을 전면으로 전환합니다."""
+
+    try:
+        import pygetwindow
+    except ImportError as error:
+        raise RuntimeError(
+            "Windows 앱 활성화에는 pygetwindow가 필요합니다."
+        ) from error
+
+    candidates = [
+        window
+        for window in pygetwindow.getAllWindows()
+        if _application_matches(expected, window.title or "")
+    ]
+    if not candidates:
+        raise RuntimeError(
+            f"제목에 {expected!r}가 포함된 창을 찾지 못했습니다."
+        )
+
+    # 최소화되지 않은 창을 우선 고르고, 없으면 첫 후보를 복원해서 씁니다.
+    window = next(
+        (candidate for candidate in candidates if not candidate.isMinimized),
+        candidates[0],
+    )
+    try:
+        if window.isMinimized:
+            window.restore()
+        window.activate()
+    except Exception:
+        # Windows가 SetForegroundWindow를 거부하면 최소화 후 복원으로 우회합니다.
+        try:
+            window.minimize()
+            window.restore()
+        except Exception as error:
+            raise RuntimeError(
+                f"창 전면 전환에 실패했습니다: expected={expected!r}"
+            ) from error
+
+
 def activate_application(expected: str) -> None:
-    """macOS에서 이름이 일치하는 앱을 전면으로 전환합니다."""
+    """이름이 일치하는 앱/창을 전면으로 전환합니다(macOS·Windows)."""
+
+    if sys.platform == "win32":
+        _activate_windows(expected)
+        if _wait_until_active(expected):
+            return
+        actual = active_application_name()
+        raise RuntimeError(
+            "앱을 활성화했지만 전면 전환을 확인하지 못했습니다: "
+            f"expected={expected!r}, actual={actual!r}"
+        )
 
     if sys.platform != "darwin":
-        raise RuntimeError("자동 앱 활성화는 현재 macOS에서만 지원합니다.")
+        raise RuntimeError(
+            "자동 앱 활성화는 macOS와 Windows에서만 지원합니다."
+        )
 
     try:
         import AppKit

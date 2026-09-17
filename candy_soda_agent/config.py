@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from pathlib import Path
 
 
@@ -145,6 +146,54 @@ if SURVEY_LLM_MAX_OUTPUT_TOKENS <= 0:
     raise ValueError("SURVEY_LLM_MAX_OUTPUT_TOKENS는 1 이상이어야 합니다.")
 
 # ------------------------------------------------------------
+# 탐색 프론티어 · 백트래킹 설정
+# ------------------------------------------------------------
+
+# 탐색 루트(홈) 화면 ID. 비워두면 이번 run에서 처음 관찰한 화면을 루트로 씁니다.
+# (2단계) 루트 리셋이 어디로 "돌아왔다"고 판정할지, (3단계) 보고서 트리의 루트로 씁니다.
+ROOT_SCREEN_ID = os.getenv("ROOT_SCREEN_ID", "").strip() or None
+
+# 루트로 되돌아갈 때 "home" 버튼이 안 보이면 "back"을 최대 이 횟수까지 누릅니다.
+# 그래도 루트에 못 돌아오면 그 목표는 포기(blocked)합니다.
+HOME_RESET_MAX_BACK_TAPS = int(os.getenv("HOME_RESET_MAX_BACK_TAPS", "6"))
+if HOME_RESET_MAX_BACK_TAPS < 0:
+    raise ValueError("HOME_RESET_MAX_BACK_TAPS는 0 이상이어야 합니다.")
+
+# 경로 재생이 예상과 다른 화면에 도착하면(로컬 재생 실패) 루트로 리셋한 뒤 다시
+# 재생을 시도합니다. 같은 목표에 대해 이 횟수를 넘겨도 계속 실패하면 그 목표는
+# blocked로 남기고 다음 프론티어로 넘어갑니다(무한 반복 방지).
+FRONTIER_MAX_REPLAN_ATTEMPTS = int(os.getenv("FRONTIER_MAX_REPLAN_ATTEMPTS", "2"))
+if FRONTIER_MAX_REPLAN_ATTEMPTS < 1:
+    raise ValueError("FRONTIER_MAX_REPLAN_ATTEMPTS는 1 이상이어야 합니다.")
+
+# 같은 화면 타입에서 정규화 버튼 목록이 이 개수 이하로만 다르면(공통 버튼이 1개 이상일 때)
+# 기존 화면으로 봅니다. LLM이 버튼 하나를 빠뜨려 화면이 쪼개지는 것을 막습니다. 0이면 끕니다.
+SCREEN_MATCH_MAX_BUTTON_DIFF = int(os.getenv("SCREEN_MATCH_MAX_BUTTON_DIFF", "1"))
+if SCREEN_MATCH_MAX_BUTTON_DIFF < 0:
+    raise ValueError("SCREEN_MATCH_MAX_BUTTON_DIFF는 0 이상이어야 합니다.")
+
+# 원장에 남은 미시도 버튼이 그 화면을 이 횟수만큼 연속 관찰해도 후보에 안 보이면
+# 프론티어에서 정리(not_visible)합니다. 그 전까지는 탐색을 멈추지 않고 다시 관찰합니다.
+FRONTIER_MAX_MISSES = int(os.getenv("FRONTIER_MAX_MISSES", "2"))
+if FRONTIER_MAX_MISSES < 1:
+    raise ValueError("FRONTIER_MAX_MISSES는 1 이상이어야 합니다.")
+
+# 같은 화면 타입에 노드가 이 개수 이상 생기면 보고서와 실행 로그에 진단 경고를
+# 남깁니다. 화면이 쪼개지고 있다는 신호일 수 있습니다(게임에 실제로 그만큼 다른
+# 화면이 있을 수도 있어 경고일 뿐 자동 병합은 하지 않습니다). 0이면 끕니다.
+SCREEN_FRAGMENTATION_WARN_COUNT = int(
+    os.getenv("SCREEN_FRAGMENTATION_WARN_COUNT", "3")
+)
+if SCREEN_FRAGMENTATION_WARN_COUNT < 0:
+    raise ValueError("SCREEN_FRAGMENTATION_WARN_COUNT는 0 이상이어야 합니다.")
+
+# Mermaid는 노드가 많아지면 레이아웃이 무너지므로, 이 개수를 넘으면 보고서에서
+# 다이어그램 생성을 건너뜁니다(0단계 파편화 진단에서 크게 나오면 낮추세요).
+MERMAID_MAX_NODES = int(os.getenv("MERMAID_MAX_NODES", "50"))
+if MERMAID_MAX_NODES < 0:
+    raise ValueError("MERMAID_MAX_NODES는 0 이상이어야 합니다.")
+
+# ------------------------------------------------------------
 # OpenAI 및 결과 저장 설정
 # ------------------------------------------------------------
 
@@ -175,10 +224,54 @@ LLM_MAX_OUTPUT_TOKENS = int(os.getenv("LLM_MAX_OUTPUT_TOKENS", "600"))
 if LLM_MAX_OUTPUT_TOKENS <= 0:
     raise ValueError("LLM_MAX_OUTPUT_TOKENS는 1 이상이어야 합니다.")
 
+def _resolve_run_id(game_root: Path) -> str:
+    """탐색(survey/navigation) 로그가 속할 run_id를 정합니다.
+
+    - RUN_ID 환경변수가 있으면 그대로 씁니다(재개하거나 강제로 새 run을 지정할 때).
+    - 없으면 game_root/current_run.txt에 적힌 값을 재사용해, 여러 번 나눠 실행해도
+      같은 탐색(같은 그래프·원장)을 이어갑니다.
+    - 그 파일도 없으면(최초 실행) 새 run_id를 만들어 기록합니다.
+    새 탐색을 일부러 새로 시작하려면 RUN_ID를 지정하거나 current_run.txt를 지우세요.
+    """
+
+    env_run_id = os.getenv("RUN_ID", "").strip()
+    if env_run_id:
+        return env_run_id
+
+    pointer_path = game_root / "current_run.txt"
+    if pointer_path.exists():
+        existing = pointer_path.read_text(encoding="utf-8").strip()
+        if existing:
+            return existing
+
+    new_run_id = datetime.now().strftime("run_%Y-%m-%d_%H-%M-%S")
+    pointer_path.parent.mkdir(parents=True, exist_ok=True)
+    pointer_path.write_text(new_run_id, encoding="utf-8")
+    return new_run_id
+
+
+# 게임 식별자. 나중에 게임을 추가해도 로그가 안 섞이도록 출력 경로에 항상 포함합니다.
+GAME_SLUG = os.getenv("GAME_SLUG", "candy_crush_soda")
+
 OUTPUT_DIR = Path("output")
+
+# 플레이 모드(실제 보드 플레이) 로그는 이번 리팩터 대상이 아니라 기존 위치 그대로 둡니다.
 CAPTURE_DIR = OUTPUT_DIR / "captures"
 LOG_PATH = OUTPUT_DIR / "runs.jsonl"
 MEMORY_PATH = Path("memory.jsonl")
 SESSION_LOG_PATH = OUTPUT_DIR / "sessions.jsonl"
-SURVEY_LOG_PATH = OUTPUT_DIR / "game_survey.jsonl"
-SURVEY_REPORT_PATH = OUTPUT_DIR / "game_survey_report.md"
+
+# 조사·탐색(survey/navigation) 로그는 output/<game_slug>/runs/<run_id>/ 아래로 모읍니다.
+# 두 번째 게임을 추가하거나 탐색을 새로 시작해도 이전 기록과 섞이지 않습니다.
+GAME_ROOT_DIR = OUTPUT_DIR / GAME_SLUG
+RUN_ID = _resolve_run_id(GAME_ROOT_DIR)
+RUN_DIR = GAME_ROOT_DIR / "runs" / RUN_ID
+
+SURVEY_LOG_PATH = RUN_DIR / "game_survey.jsonl"
+SURVEY_REPORT_PATH = RUN_DIR / "game_survey_report.md"
+
+NAVIGATION_DIR = RUN_DIR / "navigation"
+NAVIGATION_GRAPH_PATH = NAVIGATION_DIR / "graph.json"
+NAVIGATION_LEDGER_PATH = NAVIGATION_DIR / "ledger.json"
+NAVIGATION_JOURNEY_PATH = NAVIGATION_DIR / "journeys.jsonl"
+NAVIGATION_IMAGE_DIR = NAVIGATION_DIR / "representatives"

@@ -1,9 +1,10 @@
 """LLM 표현 차이에 강한 탐색 화면 ID 생성."""
 
 import hashlib
-import re
 
-from survey_utils import SAFE_BUTTON_ROLES, normalize_text
+from config import SURVEY_MIN_BUTTON_CONFIDENCE
+from navigation.policy import canonical_action_label
+from survey_utils import SAFE_BUTTON_ROLES
 
 
 # 병렬 섹션용 단일 노드 화면
@@ -15,34 +16,42 @@ SINGLETON_SCREEN_TYPES = {
 }
 
 
-# 숫자를 #으로 바꿔 비교용 텍스트를 안정화합니다.
-def _stable_text(value: str) -> str:
-    return re.sub(r"\d+", "#", normalize_text(value))
-
-
 # 화면 타입 하나로 고정 ID를 만듭니다.
 def canonical_screen_id(screen_type: str) -> str:
     digest = hashlib.sha1(screen_type.encode()).hexdigest()[:12]
     return f"screen_{digest}"
 
 
-# 텍스트/버튼 내용을 해시해 화면을 식별하는 안정적인 ID를 만듭니다.
+def screen_buttons(decision) -> list[str]:
+    """화면 식별에 쓰는 버튼 목록(정렬된 정규화 라벨).
+
+    - "Close (X)"와 "Close (x icon)"처럼 표기만 다른 버튼은 행동 키와 같은 규칙
+      (canonical_action_label)으로 같은 라벨이 됩니다.
+    - 확신도가 기준 미만인 버튼은 관찰마다 보였다 안 보였다 해서 뺍니다.
+    """
+
+    labels = {
+        canonical_action_label(button.label)
+        for button in decision.button_candidates
+        if button.role in SAFE_BUTTON_ROLES
+        and button.label
+        and button.confidence >= SURVEY_MIN_BUTTON_CONFIDENCE
+    }
+    labels.discard("")
+    return sorted(labels)
+
+
 def screen_id(decision) -> str:
+    """화면 타입 + 정규화 버튼 목록으로 정확 일치용 ID를 만듭니다.
+
+    visible_text는 LLM이 고르는 문구와 순서가 매번 달라 화면이 쪼개지는 주원인이라
+    뺐습니다. 버튼이 하나 빠진 관찰까지 같은 화면으로 묶는 허용 매칭은
+    GraphStore.observe()가 이 ID로 못 찾았을 때 추가로 합니다.
+    """
+
     if decision.screen_type in SINGLETON_SCREEN_TYPES:
         return canonical_screen_id(decision.screen_type)
 
-    texts = sorted({
-        _stable_text(value)
-        for value in decision.visible_text[:4]
-        if _stable_text(value)
-    })
-
-    buttons = sorted({
-        _stable_text(button.label)
-        for button in decision.button_candidates
-        if button.role in SAFE_BUTTON_ROLES and button.label
-    })
-
-    payload = "|".join([decision.screen_type, *texts, *buttons])
+    payload = "|".join([decision.screen_type, *screen_buttons(decision)])
     digest = hashlib.sha1(payload.encode()).hexdigest()[:12]
     return f"screen_{digest}"

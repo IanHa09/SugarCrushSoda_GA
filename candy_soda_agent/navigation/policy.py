@@ -10,6 +10,24 @@ from survey_utils import (
 )
 
 
+# 같은 버튼인데 LLM이 "Teams (bottom tab)" / "Teams tab (bottom nav)"처럼 UI 명사를
+# 붙였다 뗐다 해서 action_key가 갈라지는 것을 막습니다. 뒤쪽 토큰만 지우므로
+# "Settings"와 "Settings tab"은 합쳐지지만 "Team Shop"의 "Shop"은 남습니다.
+_UI_SUFFIX_TOKENS = frozenset({
+    "tab", "tabs", "button", "buttons", "btn", "icon", "icons",
+    "menu", "bar", "panel", "탭", "버튼", "아이콘", "메뉴",
+})
+
+
+def _strip_ui_suffix_tokens(value: str) -> str:
+    """끝에 붙은 UI 명사를 지웁니다. 라벨이 통째로 UI 명사면(예: "Menu") 그대로 둡니다."""
+
+    tokens = value.split()
+    while len(tokens) > 1 and tokens[-1] in _UI_SUFFIX_TOKENS:
+        tokens.pop()
+    return " ".join(tokens)
+
+
 _ACTION_ALIASES = (
     ("settings", ("settings", "setting", "gear", "cog", "설정")),
     ("home", ("home", "홈")),
@@ -29,6 +47,7 @@ def canonical_action_label(label: str) -> str:
 
     stable = re.sub(r"\([^)]*\)", " ", label)
     stable = re.sub(r"\d+", "#", normalize_text(stable))
+    stable = _strip_ui_suffix_tokens(stable)
     for canonical, aliases in _ACTION_ALIASES:
         if any(alias in stable for alias in aliases):
             return canonical

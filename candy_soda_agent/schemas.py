@@ -234,6 +234,8 @@ class ScreenNode(BaseModel):
     summary: str = ""
     representative: str = ""
     visits: int = 0
+    # 처음 관찰했을 때의 정규화 버튼 목록. 버튼 1개 차이 허용 매칭의 기준(고정)입니다.
+    buttons: list[str] = Field(default_factory=list)
 
 
 class NavigationEdge(BaseModel):
@@ -250,3 +252,36 @@ class NavigationGraph(BaseModel):
 
     nodes: dict[str, ScreenNode] = Field(default_factory=dict)
     edges: list[NavigationEdge] = Field(default_factory=list)
+
+
+# "간선이 있으면 탐색됨"(explored_actions) 대신, (화면,행동) 조합 하나를 "눌러봤는지"와
+# "눌렀더니 무슨 일이 있었는지"로 따로 기록하기 위한 원장입니다. verdict 값:
+# new_screen(새 화면으로 이동) / known_screen(기존 다른 화면으로 이동) /
+# no_change(눌러도 화면 그대로) / blocked(도달 불가로 포기) / failed(탭 자체가 실행 안 됨) /
+# not_visible(그 화면을 다시 봐도 후보에 연속으로 안 나와 정리됨).
+# blocked와 not_visible은 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
+class LedgerEntry(BaseModel):
+    """(screen_id, action_key) 조합 하나의 시도 이력입니다.
+    attempts == 0이고 탭 없이 정리되지도 않았으면 프론티어(미시도)입니다."""
+
+    screen_id: str
+    action_key: str
+    action_label: str = ""
+    attempts: int = 0
+    # pydantic은 from __future__ import annotations가 있어도 필드 힌트를 다시 평가하므로
+    # Python 3.9에서 동작하려면 `X | None`이 아니라 Optional[...]을 써야 합니다.
+    verdict: Optional[
+        Literal[
+            "new_screen", "known_screen", "no_change", "blocked", "failed", "not_visible"
+        ]
+    ] = None
+    target_screen_id: Optional[str] = None
+    last_seen: str = ""
+    # 미시도 상태에서 이 화면을 관찰했는데 후보에 안 보인 연속 횟수.
+    misses: int = 0
+
+
+class ActionLedger(BaseModel):
+    """모든 (화면, 행동) 시도 기록. 키는 f"{screen_id}:{action_key}" 입니다."""
+
+    entries: dict[str, LedgerEntry] = Field(default_factory=dict)

@@ -141,8 +141,12 @@ def record_survey_screen(
     mode: str,
     action: dict | None = None,
     recent_records: list[dict] | None = None,
+    screen_id: str | None = None,
 ) -> dict:
-    """화면 조사 결과를 기록 한 건으로 남깁니다 (보고서는 별도 요청 시 생성)."""
+    """화면 조사 결과를 기록 한 건으로 남깁니다 (보고서는 별도 요청 시 생성).
+
+    screen_id: autodrive에서 이미 만든 navigation 그래프 노드 ID가 있으면 넘겨서
+    저장 기록에 같이 남깁니다(storage.save_survey_record 참고)."""
 
     recent = recent_records
     if recent is None:
@@ -177,6 +181,7 @@ def record_survey_screen(
         },
         action=action,
         recent_records=recent,
+        screen_id=screen_id,
     )
     return record
 

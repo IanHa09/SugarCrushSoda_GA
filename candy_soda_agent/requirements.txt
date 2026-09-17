@@ -7,3 +7,4 @@ pydantic>=2.7,<3
 python-dotenv>=1,<2
 pyautogui>=0.9.54,<1
 pyobjc-framework-Cocoa>=10,<13; sys_platform == "darwin"
+pygetwindow>=0.0.9,<1; sys_platform == "win32"

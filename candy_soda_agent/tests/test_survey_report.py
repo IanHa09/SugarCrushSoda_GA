@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 PACKAGE_DIR = Path(__file__).resolve().parents[1]
@@ -138,6 +139,49 @@ class SurveyReportTests(unittest.TestCase):
         self.assertIn("Autodrive가 관찰한 실제 화면 전환", report)
         self.assertIn("screen_map -->|Settings| screen_settings", report)
         self.assertNotIn("Start level", report)
+
+
+class FragmentationWarningTests(unittest.TestCase):
+    """같은 화면 타입에 노드가 몰리면 Overview가 알아서 짚어 주는지 검증합니다."""
+
+    RECORDS = [
+        {
+            "step": 1,
+            "survey": {"screen_type": "event_or_mission"},
+            "dedupe": {"screen_signature": "event"},
+        }
+    ]
+
+    @staticmethod
+    def _graph_with(node_count: int) -> NavigationGraph:
+        return NavigationGraph(
+            nodes={
+                f"event{index}": ScreenNode(
+                    id=f"event{index}",
+                    screen_type="event_or_mission",
+                )
+                for index in range(node_count)
+            }
+        )
+
+    def test_warns_when_one_screen_type_reaches_threshold(self) -> None:
+        with patch("survey_report.SCREEN_FRAGMENTATION_WARN_COUNT", 3):
+            report = generate_survey_markdown(self.RECORDS, self._graph_with(3))
+
+        self.assertIn("화면 파편화 의심", report)
+        self.assertIn("Event / Mission 3개", report)
+
+    def test_stays_quiet_below_threshold(self) -> None:
+        with patch("survey_report.SCREEN_FRAGMENTATION_WARN_COUNT", 3):
+            report = generate_survey_markdown(self.RECORDS, self._graph_with(2))
+
+        self.assertNotIn("화면 파편화 의심", report)
+
+    def test_diagnosis_can_be_turned_off(self) -> None:
+        with patch("survey_report.SCREEN_FRAGMENTATION_WARN_COUNT", 0):
+            report = generate_survey_markdown(self.RECORDS, self._graph_with(5))
+
+        self.assertNotIn("화면 파편화 의심", report)
 
 
 if __name__ == "__main__":

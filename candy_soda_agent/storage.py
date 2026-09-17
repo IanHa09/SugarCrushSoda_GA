@@ -247,8 +247,14 @@ def save_survey_record(
     action: dict[str, Any] | None = None,
     recent_records: list[dict[str, Any]] | None = None,
     model: str = MODEL,
+    screen_id: str | None = None,
 ) -> dict[str, Any]:
-    """조사 모드 분석 결과를 이미지 증거와 함께 저장합니다."""
+    """조사 모드 분석 결과를 이미지 증거와 함께 저장합니다.
+
+    screen_id: autodrive(3단계)에서 넘겨주는 navigation 그래프 노드 ID입니다. 이걸
+    받으면 보고서가 "이 요소가 정확히 어느 그래프 화면에서 나왔는지"를 dedupe용
+    screen_signature 대신 이 ID로 연결할 수 있습니다(수동 조사 모드처럼 그래프가
+    없을 때는 그냥 None으로 둡니다)."""
 
     raw_path = save_image(raw_image, "survey_raw")
     if raw_path is None:
@@ -303,6 +309,7 @@ def save_survey_record(
         "raw_image": raw_path,
         "grid_image": grid_path,
         "screen_fingerprint": screen_fingerprint,
+        "screen_id": screen_id,
         "grid": grid,
         "survey": decision.model_dump(),
         "elements": element_records,
