@@ -48,7 +48,9 @@ class LedgerStore:
         # 않습니다. 호출 시점에 모듈 전역을 다시 읽도록 본문에서 폴백합니다.
         self._path = path if path is not None else NAVIGATION_LEDGER_PATH
         if self._path.exists():
-            self.ledger = ActionLedger.model_validate_json(self._path.read_text())
+            self.ledger = ActionLedger.model_validate_json(
+                self._path.read_text(encoding="utf-8")
+            )
         else:
             self.ledger = ActionLedger()
 

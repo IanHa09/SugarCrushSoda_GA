@@ -2,9 +2,29 @@
 
 from __future__ import annotations
 
+import ctypes
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
+
+
+def _enable_windows_dpi_awareness() -> None:
+    """MSS 캡처와 PyAutoGUI가 동일한 물리 픽셀 좌표를 사용하게 합니다."""
+
+    if sys.platform != "win32":
+        return
+
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except (AttributeError, OSError):
+        try:
+            ctypes.windll.user32.SetProcessDPIAware()
+        except (AttributeError, OSError):
+            pass
+
+
+_enable_windows_dpi_awareness()
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -31,11 +51,11 @@ MONITOR_INDEX = 1  # 실제 게임이 실행되는 모니터 번호로 수정 �
 # calibrate_region.py를 실행한 뒤 출력된 값으로 교체 필요 !
 
 BOARD_OFFSET = {
-    "left": 1137,
-    "top": 288,
-    "width": 540,
-    "height": 544,
-} 
+    "left": 1854,
+    "top": 357,
+    "width": 581,
+    "height": 719,
+}
 
 # 한 레벨의 바깥쪽 직사각형을 기준으로 행과 열 세기.
 # 실제 선택한 Candy Crush Soda 레벨에 맞게 수정 필요 !
@@ -43,7 +63,7 @@ ROWS = 9        # 행
 COLS = 9        # 열
 
 # 보드 한 칸의 화면상 크기(픽셀). 레벨이 바뀌어도 거의 일정하며, 실측상 데스크톱 좌표로 약 60px입니다.
-CELL_SIZE_PX = float(os.getenv("CELL_SIZE_PX", "60"))
+CELL_SIZE_PX = float(os.getenv("CELL_SIZE_PX", "65"))
 if CELL_SIZE_PX <= 0:
     raise ValueError("CELL_SIZE_PX는 0보다 커야 합니다.")
 AUTO_GRID = _env_bool("AUTO_GRID", True)
@@ -59,10 +79,10 @@ CAPTURE_MODE = os.getenv("CAPTURE_MODE", "board")  # board | window | monitor
 # window 모드에서 쓸 영역. 모니터 상대 좌표로 수정 필요 ! 
 
 WINDOW_OFFSET = {
-    "left": 1136,
-    "top": 76,
-    "width": 546,
-    "height": 973,
+    "left": 1761,
+    "top": 44,
+    "width": 757,
+    "height": 1348,
 }
 # 안전모드 스위치: true면 API/마우스 조작 없이 로컬 실행, false면 실제로 API 호출 및 클릭까지 수행합니다.
 

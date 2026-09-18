@@ -188,7 +188,9 @@ class GraphStore:
         # 그래프 파일을 불러오고, 없으면 새로 만듭니다.
         IMAGE_DIR.mkdir(parents=True, exist_ok=True)
         self.graph = (
-            NavigationGraph.model_validate_json(GRAPH_PATH.read_text())
+            NavigationGraph.model_validate_json(
+                GRAPH_PATH.read_text(encoding="utf-8")
+            )
             if GRAPH_PATH.exists()
             else NavigationGraph()
         )

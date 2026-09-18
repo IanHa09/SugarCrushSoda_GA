@@ -12,11 +12,59 @@ sys.path.insert(0, str(PACKAGE_DIR))
 
 from schemas import SurveyButtonCandidate, SurveyDecision, SurveyElement
 from survey_utils import (
+    canonical_name,
     collect_element_keys,
+    element_key,
+    fold_contained_names,
     normalize_text,
     safe_button_candidates,
     screen_signature,
 )
+
+
+class CanonicalNameTests(unittest.TestCase):
+    """LLM이 같은 요소를 매번 다르게 불러서 한 요소가 여러 항목으로 쪼개졌습니다."""
+
+    def test_presentation_words_are_dropped(self) -> None:
+        self.assertEqual(canonical_name("부스터 아이콘"), "부스터")
+        self.assertEqual(canonical_name("부스터 선택 버튼"), "부스터 선택")
+
+    def test_english_and_korean_names_meet_in_the_middle(self) -> None:
+        self.assertEqual(canonical_name("Coins"), "코인")
+        self.assertEqual(canonical_name("Player Character"), "플레이어 캐릭터")
+
+    def test_names_made_only_of_presentation_words_are_kept(self) -> None:
+        """전부 떼면 빈 이름이 되어 서로 다른 요소가 한 덩어리가 됩니다."""
+        self.assertEqual(canonical_name("UI 요소"), "ui 요소")
+
+    def test_element_key_matches_for_differently_written_names(self) -> None:
+        self.assertEqual(
+            element_key("currency", "Coins"),
+            element_key("currency", "코인"),
+        )
+        self.assertNotEqual(
+            element_key("currency", "코인"),
+            element_key("currency", "골드"),
+        )
+
+
+class FoldContainedNamesTests(unittest.TestCase):
+    def test_longer_name_is_absorbed_by_the_shorter_one(self) -> None:
+        folded = fold_contained_names([("부스터",), ("부스터", "선택"), ("하트",)])
+
+        self.assertEqual(folded[("부스터", "선택")], ("부스터",))
+        self.assertEqual(folded[("부스터",)], ("부스터",))
+        self.assertEqual(folded[("하트",)], ("하트",))
+
+    def test_choice_does_not_depend_on_input_order(self) -> None:
+        """여러 이름에 포함되면 가장 짧은 쪽(같으면 사전순 앞)으로 보냅니다."""
+        groups = [("가격",), ("상품",), ("상품", "가격")]
+
+        first = fold_contained_names(groups)
+        second = fold_contained_names(list(reversed(groups)))
+
+        self.assertEqual(first[("상품", "가격")], second[("상품", "가격")])
+        self.assertEqual(first[("상품", "가격")], ("가격",))
 
 
 class SurveyUtilsTests(unittest.TestCase):

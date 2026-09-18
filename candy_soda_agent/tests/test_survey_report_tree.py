@@ -61,10 +61,71 @@ class ElementCoOccurrenceTests(unittest.TestCase):
 
         report = generate_survey_markdown(records)
 
-        # 두 화면 모두 언급돼야 하고(동시출현), 두 번째 evidence가 첫 번째를 지우면 안 됩니다.
+        # 두 화면 모두 언급돼야 합니다(동시출현).
         star_section = report.split("### reward", 1)[1]
-        self.assertIn("등장 화면(2)", star_section)
-        self.assertIn("level_complete", star_section.lower().replace(" ", "_") + star_section)
+        self.assertIn("2개 화면", star_section)
+        self.assertIn("level_complete", star_section)
+        self.assertIn("reward_popup", star_section)
+
+    def test_one_screen_element_omits_the_screen_suffix(self) -> None:
+        """한 화면에서만 본 요소는 등장 화면을 적어도 정보가 늘지 않습니다."""
+
+        records = [
+            {
+                "step": 1,
+                "screen_id": "screen_a",
+                "survey": {"screen_type": "level_complete"},
+                "elements": [{"category": "reward", "name": "Star"}],
+            }
+        ]
+
+        report = generate_survey_markdown(records)
+
+        star_section = report.split("### reward", 1)[1]
+        self.assertIn("- Star", star_section)
+        self.assertNotIn("개 화면", star_section)
+
+    def test_same_element_under_different_names_becomes_one_entry(self) -> None:
+        """"부스터 / 부스터 아이콘 / 부스터 선택 버튼"은 한 요소입니다."""
+
+        records = [
+            {
+                "step": index,
+                "screen_id": f"screen_{index}",
+                "survey": {"screen_type": "playing_board"},
+                "elements": [{"category": "booster", "name": name}],
+            }
+            for index, name in enumerate(
+                ["부스터", "부스터 아이콘", "부스터 선택 버튼", "부스터"], start=1
+            )
+        ]
+
+        report = generate_survey_markdown(records)
+
+        booster_section = report.split("### booster", 1)[1].split("\n## ", 1)[0]
+        bullets = [line for line in booster_section.splitlines() if line.startswith("- ")]
+        self.assertEqual(len(bullets), 1)
+        # 대표 이름은 가장 자주 나온 표기입니다.
+        self.assertIn("부스터", bullets[0])
+        self.assertNotIn("아이콘", bullets[0])
+
+    def test_element_evidence_lines_are_dropped(self) -> None:
+        """요소마다 붙던 Evidence 줄은 이름을 다시 말하는 수준이라 뺐습니다."""
+
+        records = [
+            {
+                "step": 1,
+                "screen_id": "screen_a",
+                "survey": {"screen_type": "level_complete"},
+                "elements": [
+                    {"category": "reward", "name": "Star", "evidence": "세 개의 별"}
+                ],
+            }
+        ]
+
+        report = generate_survey_markdown(records)
+
+        self.assertNotIn("세 개의 별", report)
 
 
 class ScreenHierarchyTests(unittest.TestCase):
@@ -101,6 +162,118 @@ class ScreenHierarchyTests(unittest.TestCase):
         # 루트가 c이므로 c가 최상위(들여쓰기 없는 첫 항목)여야 합니다.
         first_bullet_line = next(line for line in hierarchy.splitlines() if line.startswith("- "))
         self.assertIn("Settings", first_bullet_line)
+
+
+class SelfLoopTests(unittest.TestCase):
+    """같은 화면으로 돌아오는 간선은 "눌러도 안 바뀌었다"는 뜻 하나뿐입니다."""
+
+    @staticmethod
+    def _graph_with_self_loops() -> NavigationGraph:
+        return NavigationGraph(
+            nodes={
+                "a": ScreenNode(id="a", screen_type="map_or_level_select"),
+                "b": ScreenNode(id="b", screen_type="shop_or_currency"),
+            },
+            edges=[
+                NavigationEdge(source="a", target="b", action="Shop", action_key="shop"),
+                NavigationEdge(source="b", target="b", action="탭1", action_key="t1"),
+                NavigationEdge(source="b", target="b", action="탭2", action_key="t2"),
+            ],
+        )
+
+    def test_self_loops_are_summed_into_one_line(self) -> None:
+        report = generate_survey_markdown([], self._graph_with_self_loops())
+
+        cross_section = report.split("### Cross Links", 1)[1]
+        no_change = [
+            line for line in cross_section.splitlines()
+            if "눌러도 화면이 그대로인 버튼" in line
+        ]
+        self.assertEqual(len(no_change), 1)
+        self.assertIn("2개", no_change[0])
+        self.assertIn("탭1", no_change[0])
+        self.assertIn("탭2", no_change[0])
+
+    def test_self_loops_are_not_drawn_in_the_diagram(self) -> None:
+        report = generate_survey_markdown([], self._graph_with_self_loops())
+
+        diagram = report.split("```mermaid", 1)[1].split("```", 1)[0]
+        self.assertNotIn("탭1", diagram)
+        self.assertIn("Shop", diagram)
+        self.assertIn("간선 2개는 그리지 않았습니다", report)
+
+
+class OrphanScreenTests(unittest.TestCase):
+    def test_nodes_unreachable_from_root_are_listed(self) -> None:
+        """트리에서 그냥 빠지면 관찰했는지조차 알 수 없었습니다."""
+        graph = _graph_a_b_c_with_cycle()
+        graph.nodes["lost"] = ScreenNode(id="lost", screen_type="booster_panel")
+
+        report = generate_survey_markdown([], graph)
+
+        hierarchy = report.split("## Screen Hierarchy", 1)[1]
+        self.assertIn("트리에 없는 화면", hierarchy)
+        orphan_section = hierarchy.split("트리에 없는 화면", 1)[1]
+        self.assertIn("Booster Panel", orphan_section)
+
+    def test_section_is_absent_when_every_node_is_reachable(self) -> None:
+        report = generate_survey_markdown([], _graph_a_b_c_with_cycle())
+
+        self.assertNotIn("트리에 없는 화면", report)
+
+
+class EvidenceIndexTests(unittest.TestCase):
+    def test_repeated_screen_type_collapses_into_one_line(self) -> None:
+        """같은 화면을 연달아 보면 한 줄로 묶고 건수만 적습니다."""
+        records = [
+            {
+                "step": index,
+                "session_id": "s1",
+                "survey": {"screen_type": "shop_or_currency", "summary": "상점"},
+            }
+            for index in range(1, 6)
+        ] + [
+            {
+                "step": 6,
+                "session_id": "s1",
+                "survey": {"screen_type": "playing_board", "summary": "보드"},
+            }
+        ]
+
+        report = generate_survey_markdown(records)
+
+        evidence = report.split("## Evidence Index", 1)[1]
+        bullets = [line for line in evidence.splitlines() if line.startswith("- Step")]
+        self.assertEqual(len(bullets), 2)
+        self.assertIn("Step 1–5 (5건)", bullets[0])
+        self.assertIn("Step 6", bullets[1])
+
+    def test_new_session_breaks_the_group(self) -> None:
+        """세션이 바뀌면 step이 1부터 다시 시작하므로 묶으면 안 됩니다."""
+        records = [
+            {"step": 1, "session_id": "s1", "survey": {"screen_type": "tutorial"}},
+            {"step": 1, "session_id": "s2", "survey": {"screen_type": "tutorial"}},
+        ]
+
+        report = generate_survey_markdown(records)
+
+        evidence = report.split("## Evidence Index", 1)[1]
+        bullets = [line for line in evidence.splitlines() if line.startswith("- Step")]
+        self.assertEqual(len(bullets), 2)
+
+
+class EvidenceLinkTests(unittest.TestCase):
+    def test_capture_outside_the_report_folder_becomes_a_relative_link(self) -> None:
+        """캡처는 보고서 폴더 밖(output/captures)에 있어 ..로 올라가야 합니다."""
+        from survey_report import SURVEY_REPORT_PATH, _relative_link
+
+        capture = SURVEY_REPORT_PATH.parent.parents[2] / "captures" / "shot.png"
+
+        link = _relative_link(str(capture), SURVEY_REPORT_PATH.parent)
+
+        self.assertTrue(link.startswith("../"), link)
+        self.assertTrue(link.endswith("captures/shot.png"), link)
+        self.assertNotIn("\\", link)
 
 
 class MermaidCutoffTests(unittest.TestCase):
