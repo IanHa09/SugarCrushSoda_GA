@@ -4,21 +4,31 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Iterable
 from typing import Any
 
 
 SAFE_BUTTON_ROLES = {"safe_navigation", "progression", "structure"}
 
-# 이름에서 "무엇인지"가 아니라 "어떻게 생겼는지"만 말하는 낱말입니다. LLM이 같은
-# 요소를 "부스터", "부스터 아이콘", "부스터 선택 버튼"처럼 매번 다르게 불러서 한
+# 이름에서 "무엇인지"가 아니라 "어떻게 생겼는지 / 어디 있는지"만 말하는 낱말입니다.
+# LLM이 같은 요소를 "부스터", "부스터 아이콘", "부스터 슬롯"처럼 매번 다르게 불러서 한
 # 요소가 여러 항목으로 쪼개지는데, 이 낱말을 떼면 같은 이름으로 모입니다.
+#
+# 이 목록이 병합의 유일한 근거입니다. 남은 낱말은 뜻을 가진 낱말로 보고 다르면 다른
+# 요소로 둡니다. 그래서 목록에 낱말을 더하는 것이 병합을 늘리는 방법이고, 반대로
+# 뜻 있는 낱말을 여기 넣으면 서로 다른 요소가 한 덩어리가 됩니다.
 GENERIC_NAME_TOKENS = frozenset({
-    "버튼", "아이콘", "표시", "창", "팝업", "슬롯", "영역", "목록", "텍스트",
-    "화면", "요소", "항목", "섹션", "태그", "레이아웃", "배경", "이미지", "뷰", "및",
+    # 생김새·형태
+    "버튼", "아이콘", "아이콘들", "표시", "표기", "표현", "창", "팝업", "슬롯", "영역",
+    "목록", "텍스트", "화면", "요소", "항목", "섹션", "태그", "레이아웃", "배경",
+    "이미지", "뷰", "바", "모음", "수치", "및",
+    # 곁가지 설명
+    "안내", "설명", "알림", "옵션", "기능", "상태",
+    # 위치·시점
+    "현재", "상단", "하단", "좌측", "우측", "중앙",
     "button", "buttons", "icon", "icons", "label", "view", "panel", "slot", "list",
     "area", "section", "tag", "popup", "layout", "background", "image", "element",
-    "elements", "ui", "box", "text", "screen", "and", "of", "the", "a",
+    "elements", "ui", "box", "text", "screen", "bar", "display", "indicator",
+    "option", "options", "current", "and", "of", "the", "a",
 })
 
 # LLM이 같은 대상을 영어와 한국어로 번갈아 부릅니다("Coins" / "코인"). 대표 표기로
@@ -81,42 +91,6 @@ def canonical_name_tokens(value: str) -> tuple[str, ...]:
 def canonical_name(value: str) -> str:
     """표기 차이를 지운 대표 이름입니다. 같은 요소면 같은 문자열이 나옵니다."""
     return " ".join(canonical_name_tokens(value))
-
-
-def fold_contained_names(
-    token_groups: Iterable[tuple[str, ...]],
-) -> dict[tuple[str, ...], tuple[str, ...]]:
-    """자세한 이름을 더 짧은 이름으로 흡수시키는 대응표를 만듭니다.
-
-    "부스터 선택"의 낱말이 "부스터"를 전부 포함하므로 같은 요소로 봅니다. 여러
-    이름에 포함될 때는 가장 짧은 쪽(같으면 사전순 앞)으로 보내 결과가 실행마다
-    달라지지 않게 합니다.
-
-    보고서 표시에만 쓰고 저장 키(element_key)에는 쓰지 않습니다. 이 병합은 그때
-    모인 이름 전체를 봐야 정해지므로, 기록이 하나 늘 때마다 예전 기록의 키까지
-    바뀌어 버리기 때문입니다."""
-
-    groups = {tokens: frozenset(tokens) for tokens in token_groups}
-    absorbed_by: dict[tuple[str, ...], tuple[str, ...]] = {}
-    for tokens, token_set in groups.items():
-        contained = [
-            other
-            for other, other_set in groups.items()
-            if other_set < token_set
-        ]
-        if contained:
-            absorbed_by[tokens] = min(contained, key=lambda item: (len(item), item))
-
-    resolved: dict[tuple[str, ...], tuple[str, ...]] = {}
-    for tokens in groups:
-        # 흡수 대상은 항상 더 짧은 이름이라 순환하지 않지만, 방어적으로 막습니다.
-        current = tokens
-        seen = {current}
-        while current in absorbed_by and absorbed_by[current] not in seen:
-            current = absorbed_by[current]
-            seen.add(current)
-        resolved[tokens] = current
-    return resolved
 
 
 def element_key(category: str, name: str) -> str:

@@ -86,7 +86,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
         self.assertNotIn("개 화면", star_section)
 
     def test_same_element_under_different_names_becomes_one_entry(self) -> None:
-        """"부스터 / 부스터 아이콘 / 부스터 선택 버튼"은 한 요소입니다."""
+        """"부스터 / 부스터 아이콘 / 부스터 슬롯"은 한 요소입니다."""
 
         records = [
             {
@@ -96,7 +96,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
                 "elements": [{"category": "booster", "name": name}],
             }
             for index, name in enumerate(
-                ["부스터", "부스터 아이콘", "부스터 선택 버튼", "부스터"], start=1
+                ["부스터", "부스터 아이콘", "부스터 슬롯", "부스터"], start=1
             )
         ]
 
@@ -108,6 +108,69 @@ class ElementCoOccurrenceTests(unittest.TestCase):
         # 대표 이름은 가장 자주 나온 표기입니다.
         self.assertIn("부스터", bullets[0])
         self.assertNotIn("아이콘", bullets[0])
+
+
+class CrossCategoryMergeTests(unittest.TestCase):
+    """LLM이 같은 요소를 매번 다른 분류에 넣어 항목이 분류 수만큼 늘어났습니다."""
+
+    @staticmethod
+    def _records(*categories: str) -> list[dict[str, object]]:
+        return [
+            {
+                "step": index,
+                "screen_id": f"screen_{index}",
+                "survey": {"screen_type": "playing_board"},
+                "elements": [{"category": category, "name": "레벨 번호"}],
+            }
+            for index, category in enumerate(categories, start=1)
+        ]
+
+    def test_one_element_in_several_categories_is_listed_once(self) -> None:
+        report = generate_survey_markdown(
+            self._records("ui", "progression", "core_play", "ui")
+        )
+
+        elements = report.split("## Game Elements", 1)[1].split("\n## ", 1)[0]
+        bullets = [line for line in elements.splitlines() if line.startswith("- ")]
+        self.assertEqual(len(bullets), 1)
+
+    def test_dominant_category_wins_and_the_others_are_noted(self) -> None:
+        report = generate_survey_markdown(
+            self._records("ui", "progression", "core_play", "ui")
+        )
+
+        elements = report.split("## Game Elements", 1)[1].split("\n## ", 1)[0]
+        # ui가 2번으로 가장 많으니 대표 분류입니다.
+        self.assertIn("### ui", elements)
+        self.assertNotIn("### progression", elements)
+        self.assertIn("분류 중복: core_play, progression", elements)
+
+    def test_single_category_element_gets_no_note(self) -> None:
+        report = generate_survey_markdown(self._records("ui", "ui"))
+
+        self.assertNotIn("분류 중복", report)
+
+    def test_items_are_sorted_by_the_name_that_is_shown(self) -> None:
+        """정렬은 정규화한 이름이 아니라 표시하는 이름을 따라야 합니다."""
+        records = [
+            {
+                "step": 1,
+                "screen_id": "screen_a",
+                "survey": {"screen_type": "playing_board"},
+                "elements": [
+                    {"category": "ui", "name": "가 버튼"},
+                    {"category": "ui", "name": "나"},
+                    {"category": "ui", "name": "다 아이콘"},
+                ],
+            }
+        ]
+
+        report = generate_survey_markdown(records)
+
+        elements = report.split("### ui", 1)[1].split("\n## ", 1)[0]
+        shown = [line[2:] for line in elements.splitlines() if line.startswith("- ")]
+        self.assertEqual(shown, sorted(shown))
+        self.assertEqual(shown, ["가 버튼", "나", "다 아이콘"])
 
     def test_element_evidence_lines_are_dropped(self) -> None:
         """요소마다 붙던 Evidence 줄은 이름을 다시 말하는 수준이라 뺐습니다."""

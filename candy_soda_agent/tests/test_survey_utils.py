@@ -15,7 +15,6 @@ from survey_utils import (
     canonical_name,
     collect_element_keys,
     element_key,
-    fold_contained_names,
     normalize_text,
     safe_button_candidates,
     screen_signature,
@@ -27,7 +26,20 @@ class CanonicalNameTests(unittest.TestCase):
 
     def test_presentation_words_are_dropped(self) -> None:
         self.assertEqual(canonical_name("부스터 아이콘"), "부스터")
+        self.assertEqual(canonical_name("부스터 슬롯"), "부스터")
         self.assertEqual(canonical_name("부스터 선택 버튼"), "부스터 선택")
+
+    def test_position_and_side_explanation_words_are_dropped(self) -> None:
+        self.assertEqual(canonical_name("현재 레벨 목표"), "레벨 목표")
+        self.assertEqual(canonical_name("우측 하트 아이콘"), "하트")
+        self.assertEqual(canonical_name("장애물 표현"), "장애물")
+        self.assertEqual(canonical_name("보상 알림"), "보상")
+
+    def test_meaningful_words_keep_elements_apart(self) -> None:
+        """뜻 있는 낱말이 다르면 다른 요소입니다 — 여기까지 합치면 자료가 망가집니다."""
+        self.assertNotEqual(canonical_name("레벨 목표"), canonical_name("레벨 번호"))
+        self.assertNotEqual(canonical_name("할인 정보"), canonical_name("통화 정보"))
+        self.assertNotEqual(canonical_name("부스터"), canonical_name("부스터 선택"))
 
     def test_english_and_korean_names_meet_in_the_middle(self) -> None:
         self.assertEqual(canonical_name("Coins"), "코인")
@@ -46,25 +58,6 @@ class CanonicalNameTests(unittest.TestCase):
             element_key("currency", "코인"),
             element_key("currency", "골드"),
         )
-
-
-class FoldContainedNamesTests(unittest.TestCase):
-    def test_longer_name_is_absorbed_by_the_shorter_one(self) -> None:
-        folded = fold_contained_names([("부스터",), ("부스터", "선택"), ("하트",)])
-
-        self.assertEqual(folded[("부스터", "선택")], ("부스터",))
-        self.assertEqual(folded[("부스터",)], ("부스터",))
-        self.assertEqual(folded[("하트",)], ("하트",))
-
-    def test_choice_does_not_depend_on_input_order(self) -> None:
-        """여러 이름에 포함되면 가장 짧은 쪽(같으면 사전순 앞)으로 보냅니다."""
-        groups = [("가격",), ("상품",), ("상품", "가격")]
-
-        first = fold_contained_names(groups)
-        second = fold_contained_names(list(reversed(groups)))
-
-        self.assertEqual(first[("상품", "가격")], second[("상품", "가격")])
-        self.assertEqual(first[("상품", "가격")], ("가격",))
 
 
 class SurveyUtilsTests(unittest.TestCase):

@@ -41,7 +41,7 @@ from navigation.graph import (
 )
 from navigation.ledger import LedgerStore, is_open_entry
 from schemas import NavigationGraph
-from survey_utils import canonical_name_tokens, fold_contained_names
+from survey_utils import canonical_name_tokens
 
 
 SCREEN_TYPE_LABELS = {
@@ -395,27 +395,48 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
         lines.append("")
 
 
-def _merge_element_names(
-    items: dict[tuple[str, ...], dict[str, Any]],
-) -> dict[tuple[str, ...], dict[str, Any]]:
-    """한 분류 안에서 더 자세한 이름을 짧은 이름으로 흡수시켜 합칩니다."""
+def _group_by_category(
+    merged: dict[tuple[str, ...], dict[str, Any]],
+) -> dict[str, list[tuple[str, dict[str, Any]]]]:
+    """요소를 대표 분류별로 담고, 각 묶음을 표시 이름 사전순으로 둡니다.
 
-    folded = fold_contained_names(items.keys())
-    merged: dict[tuple[str, ...], dict[str, Any]] = {}
-    for tokens, item in items.items():
-        target = folded[tokens]
-        entry = merged.get(target)
-        if entry is None:
-            entry = {"names": Counter(), "screens": set()}
-            merged[target] = entry
-        entry["names"].update(item["names"])
-        entry["screens"] |= item["screens"]
-    return merged
+    전에는 분류별로 따로 모아서 같은 요소가 분류 수만큼 실렸습니다. LLM은 같은
+    요소를 매번 다른 분류에 넣기 때문입니다("레벨 번호"가 core_play·other·
+    progression·ui 넷에 걸쳐 있었습니다). 이제 이름으로 먼저 묶고(그 묶음이
+    elements_by_name), 분류는 결과에 붙는 표시로 내렸습니다.
+
+    분류를 아예 버리지는 않습니다. 등급분류는 기준별로 봐야 하므로 어떤 분류의
+    요소인지가 판단 재료입니다. 가장 자주 붙은 분류를 대표로 쓰고(같으면 사전순),
+    나머지 분류는 항목 옆에 적어 분류가 흔들렸다는 사실 자체를 남깁니다."""
+
+    grouped: dict[str, list[tuple[str, dict[str, Any]]]] = defaultdict(list)
+    for entry in merged.values():
+        counts = entry["categories"]
+        dominant = min(counts, key=lambda name: (-counts[name], name))
+        grouped[dominant].append((_representative_name(entry["names"]), entry))
+    for items in grouped.values():
+        # 표시 이름으로 정렬합니다. 전에는 정규화한 이름으로 정렬하면서 표시는
+        # 대표 이름으로 해서 목록이 사전순으로 보이지 않았습니다.
+        items.sort(key=lambda item: item[0])
+    return grouped
 
 
 def _representative_name(names: Counter[str]) -> str:
     """묶인 표기 중 대표를 고릅니다: 많이 나온 것 → 짧은 것 → 사전순."""
     return min(names, key=lambda name: (-names[name], len(name), name))
+
+
+def _element_line(name: str, entry: dict[str, Any], dominant: str, labels: dict[str, str]) -> str:
+    """요소 한 줄: 이름, (분류가 흔들렸으면) 다른 분류, (2개 이상이면) 등장 화면."""
+
+    line = f"- {name}"
+    others = sorted(category for category in entry["categories"] if category != dominant)
+    if others:
+        line += f" (분류 중복: {', '.join(others)})"
+    screens = sorted({labels.get(key, key) for key in entry["screens"]})
+    if len(screens) > 1:
+        line += f" — {len(screens)}개 화면: {', '.join(screens)}"
+    return line
 
 
 def _append_evidence_index(
@@ -518,7 +539,8 @@ def generate_survey_markdown(
     #
     # 저장된 key 대신 이름에서 키를 다시 계산해 묶습니다. 키 만드는 방식이 바뀌어도
     # 옛 기록과 새 기록이 같은 요소로 모이고, 표기만 다른 이름도 한 항목이 됩니다.
-    elements_by_category: dict[str, dict[tuple[str, ...], dict[str, Any]]] = defaultdict(dict)
+    # 분류는 묶는 기준이 아니라 결과에 붙는 표시입니다(_merge_elements 설명 참고).
+    elements_by_name: dict[tuple[str, ...], dict[str, Any]] = {}
     buttons_by_role: dict[str, dict[str, dict[str, Any]]] = defaultdict(dict)
 
     for record in records:
@@ -532,12 +554,12 @@ def generate_survey_markdown(
             tokens = canonical_name_tokens(name)
             if not tokens:
                 continue
-            bucket = elements_by_category[element.get("category", "other")]
-            item = bucket.get(tokens)
+            item = elements_by_name.get(tokens)
             if item is None:
-                item = {"names": Counter(), "screens": set()}
-                bucket[tokens] = item
+                item = {"names": Counter(), "screens": set(), "categories": Counter()}
+                elements_by_name[tokens] = item
             item["names"][name] += 1
+            item["categories"][element.get("category", "other")] += 1
             item["screens"].add(screen_key)
 
         for button in record.get("buttons", []):
@@ -579,27 +601,19 @@ def generate_survey_markdown(
     lines.extend([
         "## Game Elements",
         "",
-        "표기만 다른 이름은 한 항목으로 묶었고, 대표 이름은 가장 자주 나온 표기입니다. "
-        "두 화면 이상에 나온 요소만 등장 화면을 적습니다.",
+        "이름이 같으면 분류가 달라도 한 항목으로 묶었습니다. 대표 이름은 가장 자주 나온 "
+        "표기, 대표 분류는 가장 자주 붙은 분류이고, 다른 분류에도 기록됐으면 옆에 "
+        "적었습니다. 등장 화면은 두 화면 이상일 때만 적습니다.",
         "",
     ])
-    if not elements_by_category:
+    if not elements_by_name:
         lines.append("- No game elements recorded yet.")
         lines.append("")
-    for category, items in sorted(elements_by_category.items()):
-        merged = _merge_element_names(items)
+    grouped = _group_by_category(elements_by_name)
+    for category, items in sorted(grouped.items()):
         lines.append(f"### {category}")
-        for tokens in sorted(merged, key=lambda item: " ".join(item)):
-            entry = merged[tokens]
-            screens = sorted(
-                {screen_label_by_key.get(key, key) for key in entry["screens"]}
-            )
-            screen_suffix = (
-                f" — {len(screens)}개 화면: {', '.join(screens)}"
-                if len(screens) > 1
-                else ""
-            )
-            lines.append(f"- {_representative_name(entry['names'])}{screen_suffix}")
+        for name, entry in items:
+            lines.append(_element_line(name, entry, category, screen_label_by_key))
         lines.append("")
 
     lines.extend(["## Button And Navigation Candidates", ""])
