@@ -37,7 +37,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_GAME_ROOT = REPO_ROOT / "output" / "candy_crush_soda"
 # config.SAME_SCREEN_PIXEL_THRESHOLD와 같은 값입니다(config를 import하지 않으려고 복사).
 DEFAULT_CHANGE_THRESHOLD = 0.01
-TAP_ACTION_TYPES = {"tap_button", "back_key"}
+TAP_ACTION_TYPES = {"tap_button", "back_key", "escape"}
 
 
 @dataclass
@@ -59,6 +59,8 @@ class SessionMetrics:
     refine_errors: int = 0
     refine_median_shift_px: float | None = None
     back_keys: int = 0
+    escapes: int = 0
+    restarts: int = 0
     new_screens: int = 0
     cum_screens: int = 0
     new_transitions: int = 0
@@ -158,8 +160,14 @@ def compute_session_metrics(
 
             if action.get("type") not in TAP_ACTION_TYPES or not action.get("executed"):
                 continue
+            if action.get("type") == "escape":
+                metrics.escapes += 1
+                if action.get("stage") == "restart":
+                    # 게임 재시작은 탭이 아니라 적중률 계산에서 뺍니다.
+                    metrics.restarts += 1
+                    continue
             metrics.taps += 1
-            if action.get("type") == "back_key":
+            if action.get("type") == "back_key" or action.get("stage") == "back":
                 metrics.back_keys += 1
 
             following = session_records[position + 1] if position + 1 < len(session_records) else None
@@ -248,6 +256,8 @@ COLUMNS = [
     ("refine_not_found", "재확인 못찾음"),
     ("refine_median_shift_px", "보정 중앙값(px)"),
     ("back_keys", "뒤로키"),
+    ("escapes", "탈출"),
+    ("restarts", "재시작"),
     ("new_screens", "새 화면"),
     ("cum_screens", "누적 화면"),
     ("new_transitions", "새 전환"),

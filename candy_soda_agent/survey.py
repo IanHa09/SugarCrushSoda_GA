@@ -144,6 +144,8 @@ def analyze_survey_screen(
   (x1,y1 = 왼쪽 위, x2,y2 = 오른쪽 아래, 0 <= x < {image_width}, 0 <= y < {image_height}).
 - bbox는 글자만이 아니라 실제로 누르는 버튼/아이콘 전체를 감싼다. 0.5 같은 어림값 대신 보이는 위치를 그대로 적는다.
 - bbox를 적었으면 center는 null로 둔다. 위치를 모르면 bbox와 center를 모두 null로 둔다.
+- region에는 버튼이 놓인 영역을 적는다: bottom_nav(화면 맨 아래에 늘 있는 탭/네비게이션 바),
+  top_bar(화면 맨 위에 늘 있는 재화·설정 바), popup(팝업·대화상자 안), content(그 밖의 본문).
 
 중복 방지:
 - 최근 기록과 같은 화면/요소로 보이면 summary와 uncertainties에 그 사실을 적는다.

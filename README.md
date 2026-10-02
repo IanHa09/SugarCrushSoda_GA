@@ -19,7 +19,9 @@ Candy Crush Soda 화면을 캡처해 비전 LLM으로 분석하고, 로컬 안�
 | 게임 구조 조사 | 구현 | 화면 요소와 안전·위험 버튼 후보를 기록하고 보고서 생성 |
 | 자동 탐색(Autodrive) | 구현 | 프론티어(안 눌러본 화면·행동)를 따라 이동하며 전환 그래프와 시도 원장 갱신 |
 | 화면 식별 | 구현 | 이미지 지문(dHash)을 1차 기준으로, 버튼 목록을 보조 기준으로 같은 화면 판정 |
-| 클릭 정확도 보정 | 구현 | 픽셀 bbox 좌표, 누르기 직전 확대 재확인, 탭 효과(빗나감) 판정, 뒤로 키 탈출 |
+| 클릭 정확도 보정 | 구현 | 픽셀 bbox 좌표, 누르기 직전 확대 재확인, 탭 효과(빗나감) 판정 |
+| 탈출 사다리 | 구현 | 갇히면 Android 뒤로(adb) → 나가기 요소 찾기 → 닫기류 다시 누르기 → 게임 재시작 |
+| 공통 UI(네비게이션 바) | 구현 | 화면들이 공유하는 위/아래 띠를 이미지로 찾고, 공통 버튼은 한 번만 눌러 지름길로 사용 |
 | 탐색 지표 | 구현 | 세션별 탭 적중률과 누적 화면·전환 수를 `metrics.md`/`metrics.csv`로 저장 |
 | 영상 분석 | 현재 미포함 | 과거 파이프라인은 제거되었으며 필요하면 별도 모듈로 복원 가능 |
 | 규칙 기반 최적 솔버 | 미구현 | 가능한 수 전체의 점수·목표 달성도를 계산하지 않음 |
@@ -98,8 +100,14 @@ SURVEY_DEDUP_SCAN_LIMIT=500
 # 클릭 정확도: 누르기 직전 확대 재확인(true/false)과 그때 쓰는 모델
 TAP_REFINE=true
 OPENAI_TAP_MODEL=gpt-4.1-mini
-# 막혔을 때 누를 에뮬레이터 뒤로 키(빈 값이면 끔)
-BACK_KEY=esc
+# 막혔을 때 보낼 Android 뒤로. ADB_PATH가 있으면 adb로 보냅니다(권장, 따옴표 없이 전체 경로)
+ADB_PATH=C:\LDPlayer\LDPlayer14\adb.exe
+ADB_SERIAL=
+# ADB_PATH가 비어 있을 때만 쓰는 키보드 키. 빈 값이면 끔
+BACK_KEY=
+# 탈출 사다리 마지막 단계(게임 재시작)와 공통 UI 감지
+GAME_PACKAGE=com.king.candycrushsodasaga
+CHROME_DETECTION=true
 ```
 
 주요 환경변수는 다음과 같습니다.
@@ -114,7 +122,9 @@ BACK_KEY=esc
 | `SURVEY_ALLOW_TAPS` | 조사 모드에서 안전 후보 버튼 탭 허용 여부 |
 | `OPENAI_MODEL` / `OPENAI_SURVEY_MODEL` / `OPENAI_TAP_MODEL` | 플레이 모드(다음 수 추론, reasoning 모델 필요), 조사 모드(구조 문서화만), 탭 직전 위치 재확인(위치 인식이 나은 모델)에 각각 쓰는 모델. 기본값은 `gpt-5-mini` / `gpt-4o-mini` / `gpt-4.1-mini` |
 | `TAP_REFINE` | 누르기 직전 확대 재확인 사용 여부. `false`면 조사 모델 좌표를 그대로 누름 |
-| `BACK_KEY` | 막혔을 때 누를 에뮬레이터 뒤로 키. 빈 값이면 끔 |
+| `ADB_PATH`, `ADB_SERIAL` | Android 뒤로와 게임 재시작에 쓰는 adb 경로(LDPlayer 설치 폴더의 `adb.exe`, 따옴표 없이)와 기기 이름. 에뮬레이터가 하나면 `ADB_SERIAL`은 비워 둠 |
+| `BACK_KEY` | `ADB_PATH`가 비어 있을 때만 쓰는 키보드 뒤로 키. 기본은 빈 값(끔). LDPlayer는 ESC가 뒤로로 동작하지 않음 |
+| `GAME_PACKAGE` | 게임 재시작에 쓰는 Android 패키지 이름. 기본 `com.king.candycrushsodasaga` |
 
 Autodrive의 세부 동작은 아래 값으로 조정합니다. 모두 선택 항목이며 기본값으로 충분합니다.
 
@@ -129,7 +139,13 @@ Autodrive의 세부 동작은 아래 값으로 조정합니다. 모두 선택 �
 | `POST_TAP_MIN_WAIT`, `POST_TAP_INTERVAL`, `POST_TAP_TIMEOUT` | `0.6`, `0.25`, `5.0` | 탭 뒤 화면이 멈출 때까지 기다리는 최소 대기·캡처 간격·최대 대기(초) |
 | `POST_TAP_STABLE_FRAMES`, `POST_TAP_STABLE_THRESHOLD` | `2`, `0.01` | 연속 몇 프레임이 이 차이보다 작으면 "멈췄다"고 볼지 |
 | `TAP_MISS_RETRIES` | `1` | 빗나감(`missed`) 뒤 다시 누르는 횟수 |
-| `STUCK_BACK_KEY_MAX` | `3` | 막혔을 때 뒤로 키를 누르는 최대 횟수 |
+| `STUCK_BACK_KEY_MAX` | `2` | 탈출 사다리 1단계(뒤로)가 화면을 못 바꾼 횟수가 이만큼 쌓이면 다음 단계로 |
+| `ESCAPE_EXIT_FINDER`, `ESCAPE_EXIT_FINDER_MAX` | `true`, `2` | 2단계(나가기 요소 찾기) 사용 여부와, 효과 없는 시도 허용 횟수 |
+| `ESCAPE_MAX_STREAK` | `8` | 정상 탭 없이 탈출이 이만큼 이어지면 바로 게임 재시작 단계로 |
+| `APP_RESTART_MAX`, `APP_RESTART_WAIT` | `2`, `20` | 세션당 게임 재시작 최대 횟수, 재시작 뒤 대기(초) |
+| `CHROME_DETECTION`, `CHROME_MIN_SCREENS` | `true`, `3` | 공통 띠(네비게이션 바 등) 감지 사용 여부와, 띠로 인정할 최소 화면 수 |
+| `CHROME_MASK_IDENTITY` | `true` | 같은 화면 판정(이미지 지문)에서 공통 띠를 빼고 비교 |
+| `GLOBAL_ACTION_MIN_SCREENS`, `GLOBAL_ACTION_MAX_SPREAD_PX` | `3`, `30` | 같은 이름·같은 자리 버튼을 공통 버튼으로 볼 최소 화면 수와 위치 허용 오차(px) |
 | `AUTODRIVE_STEP_PAUSE` | `0.5` | 스텝 사이 고정 대기(초) |
 | `HOME_RESET_MAX_BACK_TAPS` | `6` | 루트로 돌아갈 때 home 버튼이 안 보이면 back을 누르는 최대 횟수 |
 | `FRONTIER_MAX_REPLAN_ATTEMPTS`, `FRONTIER_MAX_MISSES` | `2`, `2` | 경로 재생 실패 시 루트 리셋 후 다시 시도하는 횟수 / 미시도 버튼이 연속으로 안 보이면 정리(`not_visible`)하는 관찰 횟수 |
@@ -213,9 +229,7 @@ Autodrive는 탭 한 번을 이렇게 처리합니다.
 2. 누르기 직전 그 주변을 잘라 확대하고 열 글자/행 숫자 격자를 그려 `OPENAI_TAP_MODEL`(기본 `gpt-4.1-mini`)에게 위치를 다시 묻습니다(`TAP_REFINE=true`). 못 찾으면 전체 화면으로 한 번 더 찾고, 그래도 없으면 누르지 않습니다(`not_found`). API 호출 자체가 실패하면 탐색을 멈추지 않고 처음 좌표로 누릅니다.
 3. 탭 뒤 화면이 멈출 때까지 기다리고(`POST_TAP_*`), 픽셀이 그대로면 빗나감(`missed`)으로 보고 `TAP_MISS_RETRIES`번 다시 누른 뒤 `no_change`로 닫습니다. 빗나간 탭으로는 간선을 만들지 않습니다.
 4. 다음 캡처가 직전과 픽셀로 같으면(`SAME_SCREEN_PIXEL_THRESHOLD`) LLM이 화면 타입을 다르게 불러도 같은 노드로 셉니다.
-5. 가는 길을 모르는 화면에 갇히면 에뮬레이터 뒤로 키(`BACK_KEY`, 기본 `esc`)를 `STUCK_BACK_KEY_MAX`번까지 누릅니다. 루트에서는 누르지 않습니다. 이어서 하는 run이 루트가 아닌 화면에서 시작하면 먼저 루트로 돌아갑니다.
-
-`BACK_KEY`는 에뮬레이터마다 다릅니다. 게임 화면(LDPlayer 등)에서 그 키를 직접 눌러 Android 뒤로처럼 동작하는지 먼저 확인하고, 아니면 맞는 키로 바꾸거나 빈 값으로 끄세요.
+5. 가는 길을 모르는 화면에 갇히면 아래 [탈출 사다리](#탈출-사다리)로 빠져나옵니다. 루트에서는 탈출하지 않습니다. 이어서 하는 run(또는 게임 재시작 직후)이 루트가 아닌 화면에서 시작하면 먼저 루트로 돌아갑니다.
 
 ```bash
 make autodrive-new REPEAT=5 STEPS=40   # 새 run 폴더에서 40스텝 세션 5번
@@ -228,6 +242,35 @@ make debug-points                      # 클릭 위치·bbox·보정 화살표�
 
 `survey_metrics.py`와 `debug_survey_points.py`는 `config.py`를 불러오지 않아 새 run 포인터를 만들지 않으므로 아무 때나 돌려도 됩니다. 특정 run을 보려면 `--run run_YYYY-MM-DD_HH-MM-SS`를 넘깁니다. 기준선 진단(run_2026-09-21_10-51-14)에서는 탭 24번 중 13번이 화면을 바꾸지 못해 적중률이 46%였습니다.
 
+### Android 뒤로(adb)
+
+뒤로는 `ADB_PATH`가 있으면 adb(`adb shell input keyevent 4`)로 보내고, 없으면 키보드 키 `BACK_KEY`를 누르며, 둘 다 비어 있으면 끕니다. LDPlayer는 ESC가 뒤로로 동작하지 않아(run_2026-10-02_08-33-21에서 73번 중 1번만 화면이 바뀜) adb를 권장합니다.
+
+- 경로는 따옴표 없이 적습니다(큰따옴표 안의 `\a` 같은 글자는 이스케이프로 바뀝니다).
+- LDPlayer 설정 > 기타 설정에서 ADB 디버깅(로컬 연결)을 켜야 할 수 있습니다.
+- 에뮬레이터가 여러 개 떠 있으면 `adb devices`에 나온 이름(예: `emulator-5554`)을 `ADB_SERIAL`에 적습니다.
+- autodrive는 시작할 때 `adb get-state`로 연결을, `pm list packages`로 `GAME_PACKAGE` 설치 여부를 확인합니다. adb 연결이 안 되면 API를 쓰기 전에 멈추고, 패키지만 없으면 게임 재시작 단계만 끕니다.
+
+### 탈출 사다리
+
+갇혔거나(남은 버튼으로 가는 길을 모름) 루트로 돌아가는데 홈/뒤로 버튼이 안 보이면 아래 순서로 시도합니다. 화면을 바꾼 단계는 계속 쓰고, 효과가 없으면 다음 단계로 넘어갑니다.
+
+1. Android 뒤로(adb 또는 `BACK_KEY`): 효과 없으면 `STUCK_BACK_KEY_MAX`번까지
+2. 나가기 요소 찾기(`OPENAI_TAP_MODEL`): 화면 전체에 격자를 그려 X/닫기/확인/홈 탭을 찾고, 없으면 팝업 바깥 어두운 곳을 누릅니다. 결제·광고·로그인 요소는 고르지 않고, 효과 없던 자리는 다시 고르지 않습니다(`ESCAPE_EXIT_FINDER_MAX`번까지).
+3. 화면 후보 중 닫기·뒤로·확인류 버튼을 하나씩 다시 누르기(예전에 빗나간 것 포함, 확대 재확인 적용)
+4. 게임 재시작: `adb shell am force-stop` 후 다시 실행(세션당 `APP_RESTART_MAX`번, 실행 뒤 `APP_RESTART_WAIT`초 대기). 재시작 뒤에는 직전 화면과 잇지 않고 첫 관찰처럼 시작합니다.
+
+정상 탭 없이 탈출이 `ESCAPE_MAX_STREAK`번 이어지면 바로 4단계로 갑니다. 팝업 바깥 탭과 재시작은 다시 재생할 버튼이 없어 그래프 간선으로 남기지 않습니다. `metrics.md`에는 세션별 탈출·재시작 횟수가 나옵니다.
+
+### 공통 UI(네비게이션 바)
+
+- 노드 대표 이미지들을 행 단위로 비교해, 서로 다른 화면 `CHROME_MIN_SCREENS`개 이상이 공유하는 위/아래 띠를 공통 UI로 찾습니다. 무늬 없는 줄(어두운 팝업 배경)은 비교에서 빼서, 실측에서는 아래 150px 탭 바만 잡혔습니다.
+- 공통 버튼 판정(닫기·뒤로·확인류는 제외): ① 같은 이름의 버튼이 서로 다른 화면 `GLOBAL_ACTION_MIN_SCREENS`개에서 같은 자리(`GLOBAL_ACTION_MAX_SPREAD_PX` 이내)에 보임, ② 공통 띠 안에서 2개 화면, ③ 조사 모델이 버튼마다 적는 영역(`region`)이 2개 화면에서 `bottom_nav`/`top_bar`이고 실제로 화면 맨 아래/맨 위에 있음. ③은 조사 모델 좌표가 탭 하나 폭만큼 어긋나는 경우(실측 '홈' 탭 103px 차이)를 보완합니다.
+- 공통 버튼은 화면마다가 아니라 전체에서 한 번만 누릅니다(원장의 `__global__` 항목). 판정 전에 이미 눌러 본 적이 있으면 그 결과를 이어 씁니다.
+- 공통 버튼을 눌러 간 곳은, 그 버튼이 보이는 모든 화면에서 쓰는 지름길로 경로 계획에 씁니다.
+- `CHROME_MASK_IDENTITY=true`면 같은 화면 판정(이미지 지문)에서 공통 띠를 빼고 비교해, 탭 강조나 배지 숫자 차이로 노드가 갈리지 않게 합니다.
+- 결과는 run 폴더의 `navigation/ui_chrome.json`과 보고서의 `Persistent UI` 섹션에 남습니다.
+
 ### 화면 식별과 시도 원장
 
 LLM이 보고하는 버튼 목록은 같은 화면을 봐도 관찰마다 달라 화면 노드가 쪼개지는 주원인이었습니다. 그래서 새 관찰은 다음 순서로 기존 노드에 붙입니다.
@@ -238,7 +281,7 @@ LLM이 보고하는 버튼 목록은 같은 화면을 봐도 관찰마다 달라
 
 어디에도 맞지 않으면 새 노드를 만듭니다. 예전처럼 상점·설정 같은 화면 타입을 이름만으로 한 노드에 묶지 않습니다. 화면 타입에는 `profile`, `social_friends`, `help_support`가 추가되었습니다.
 
-`(화면, 행동)` 시도 결과는 `ledger.json`에 기록되며, 판정 값은 `new_screen`, `known_screen`, `no_change`, `blocked`, `failed`, `not_visible`, `missed`(빗나감, 재시도 대기), `not_found`(확대 재확인에서 못 찾아 정리)입니다. 보고서의 프론티어 섹션도 이 값을 따라 나뉩니다.
+`(화면, 행동)` 시도 결과는 `ledger.json`에 기록되며, 판정 값은 `new_screen`, `known_screen`, `no_change`, `blocked`, `failed`, `not_visible`, `missed`(빗나감, 재시도 대기), `not_found`(확대 재확인에서 못 찾아 정리), `global`(공통 버튼으로 합쳐짐)입니다. 보고서의 프론티어 섹션도 이 값을 따라 나뉩니다.
 
 ## 저장 결과
 
@@ -260,6 +303,7 @@ output/
         └── navigation/
             ├── graph.json          Autodrive 화면 전환 그래프
             ├── ledger.json         (화면, 행동) 시도 원장
+            ├── ui_chrome.json      공통 띠·공통 버튼 관찰
             ├── journeys.jsonl      탐색 단계 기록
             └── representatives/    화면별 대표 이미지
 memory.jsonl                        행동 결과, 보상, fingerprint, 교훈
@@ -290,7 +334,7 @@ SugarCrushSoda_GA/
     ├── image_utils.py          격자 오버레이, 인코딩, fingerprint(dHash)
     ├── agent.py                플레이 모드 LLM 요청과 응답 검증
     ├── coordinate_mapper.py    셀을 화면 좌표로 변환
-    ├── action_executor.py      앱 포커스 확인, 마우스 입력, 뒤로 키 입력
+    ├── action_executor.py      앱 포커스 확인, 마우스 입력, Android 뒤로(adb/키보드), 게임 재시작
     ├── safety_guard.py         취소 검사(연결됨: play_session/autodrive 실행 직전)
     ├── reward.py               행동 결과 분류와 보상 계산
     ├── storage.py              이미지·JSONL·메모리 저장과 조회
@@ -298,7 +342,8 @@ SugarCrushSoda_GA/
     ├── survey_utils.py         조사 중복 키와 버튼 우선순위
     ├── survey_report.py        조사·전환 통합 보고서 생성
     ├── survey_metrics.py       세션별 탐색 지표(metrics.md/csv)
-    ├── tap_refine.py           누르기 직전 확대 재확인
+    ├── tap_refine.py           누르기 직전 확대 재확인, 탈출용 나가기 요소 찾기
+    ├── ui_chrome.py            공통 띠(네비게이션 바) 감지와 공통 버튼 판정
     ├── tap_effect.py           탭 뒤 화면 안정 대기와 빗나감 판정
     ├── debug_survey_points.py  클릭 위치 진단 이미지 생성
     ├── navigation/
@@ -325,7 +370,7 @@ make test
 python -m unittest discover -s candy_soda_agent/tests -v
 ```
 
-현재 161개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계·취소 연결, 보고서 생성에 더해 이미지 지문 기반 화면 식별, bbox 중심 계산, 확대 재확인 좌표 복원, 탭 효과(빗나감) 판정, 뒤로 키 탈출과 반복 실행 지원을 검사합니다. 실제 OpenAI API 호출과 에뮬레이터 마우스 입력은 사용자 환경에서 별도로 확인해야 합니다.
+현재 196개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계·취소 연결, 보고서 생성에 더해 이미지 지문 기반 화면 식별, bbox 중심 계산, 확대 재확인 좌표 복원, 탭 효과(빗나감) 판정, adb 뒤로·게임 재시작·탈출 사다리 단계 전환, 공통 띠 감지와 공통 버튼(한 번만 누르기·지름길), Mermaid 라벨 따옴표 처리, 반복 실행 지원을 검사합니다. 실제 OpenAI API 호출과 에뮬레이터 마우스 입력은 사용자 환경에서 별도로 확인해야 합니다.
 
 ## 현재 한계와 권장 로드맵
 
@@ -334,7 +379,7 @@ python -m unittest discover -s candy_soda_agent/tests -v
 | P0 | (완료) `safety_guard.cancellation_reason`을 `execute_decision`/`execute_button_tap` 실행 직전에 연결 | ESC 또는 F9 중지 시 실행 중이던 클릭까지 취소. play 모드는 항상 켜져 있고, autodrive는 `--hotkeys`를 함께 줘야 ESC가 동작 |
 | P0 | (완료) 클릭 정확도 개선: bbox 좌표, 확대 재확인, 탭 효과 판정, 뒤로 키 탈출, 세션 지표 | 기준선에서 조사 모델 좌표의 58%가 x=0.5였고 탭 적중률이 46%였음 |
 | P0 | `--new-run`으로 40스텝 x 5세션 실험 후 `metrics.md` 비교 | 적중률이 기준선(46%)보다 오르는지, 누적 화면·전환이 평평해지는지 확인 필요 |
-| P0 | 에뮬레이터에서 `BACK_KEY`(기본 ESC)가 Android 뒤로로 동작하는지 확인 | 막힘 탈출과 루트 리셋이 이 키에 의존함 |
+| P0 | `.env`에 `ADB_PATH` 설정, LDPlayer ADB 디버깅 켜기 | LDPlayer는 ESC가 뒤로로 동작하지 않음(73번 중 1번). 탈출 사다리 1·4단계가 adb에 의존함 |
 | P0 | `safety_guard.validate_fresh_board`(최신 보드 재검증)는 아직 미연결 | LLM 응답을 기다리는 동안 보드가 바뀐 경우를 잡으려면 실행 직전 재캡처와 임계값 설정이 추가로 필요함(취소 검사와는 별도 작업) |
 | P0 | 점수, 남은 수, 목표 달성, 레벨 완료를 결과 판정에 추가 | 현재는 픽셀 변화량이 주 신호라 애니메이션을 성공으로 오인할 수 있음 |
 | P1 | 실행별 세션 요약과 사람이 읽기 쉬운 로그 포맷 제공 | Autodrive는 `metrics.md`로 세션 요약이 생겼지만 플레이 모드는 저장 헬퍼가 메인 루프와 연결되지 않아 문제 원인과 비용을 한눈에 보기 어려움 |

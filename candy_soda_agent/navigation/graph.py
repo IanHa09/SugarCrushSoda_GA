@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 import cv2
 
@@ -28,10 +28,14 @@ JOURNEY_PATH = NAVIGATION_JOURNEY_PATH
 IMAGE_DIR = NAVIGATION_IMAGE_DIR
 
 
-def _adjacency(graph: NavigationGraph) -> dict[str, list[NavigationEdge]]:
-    # source 노드별 나가는 간선 목록입니다(BFS용).
+def _adjacency(
+    graph: NavigationGraph,
+    extra_edges: Iterable[NavigationEdge] = (),
+) -> dict[str, list[NavigationEdge]]:
+    # source 노드별 나가는 간선 목록입니다(BFS용). extra_edges는 그래프 파일에 없는
+    # 지름길(공통 버튼 간선, ui_chrome.teleport_edges)이며 실제 간선 뒤에 붙습니다.
     adjacency: dict[str, list[NavigationEdge]] = {}
-    for edge in graph.edges:
+    for edge in list(graph.edges) + list(extra_edges):
         adjacency.setdefault(edge.source, []).append(edge)
     return adjacency
 
@@ -40,6 +44,7 @@ def bfs_nearest_matching(
     graph: NavigationGraph,
     source: str,
     is_target: Callable[[str], bool],
+    extra_edges: Iterable[NavigationEdge] = (),
 ) -> list[NavigationEdge] | None:
     """source에서 시작해 is_target을 만족하는 가장 가까운 노드까지의 간선 경로를
     간선 수 기준 최단으로 찾습니다. source 자신이 만족하면 빈 리스트를 반환합니다.
@@ -51,7 +56,7 @@ def bfs_nearest_matching(
     if is_target(source):
         return []
 
-    adjacency = _adjacency(graph)
+    adjacency = _adjacency(graph, extra_edges)
     visited = {source}
     queue: deque[tuple[str, list[NavigationEdge]]] = deque([(source, [])])
     while queue:
@@ -67,9 +72,16 @@ def bfs_nearest_matching(
     return None
 
 
-def bfs_path(graph: NavigationGraph, source: str, target: str) -> list[NavigationEdge] | None:
+def bfs_path(
+    graph: NavigationGraph,
+    source: str,
+    target: str,
+    extra_edges: Iterable[NavigationEdge] = (),
+) -> list[NavigationEdge] | None:
     """source에서 target까지의 최단 간선 경로. (2단계: 루트 리셋 후 재계획에 씁니다.)"""
-    return bfs_nearest_matching(graph, source, lambda node_id: node_id == target)
+    return bfs_nearest_matching(
+        graph, source, lambda node_id: node_id == target, extra_edges
+    )
 
 
 def bfs_spanning_tree(
@@ -172,6 +184,7 @@ def find_fingerprint_match(
     screen_type: str,
     fingerprint: str,
     max_distance: float,
+    fingerprint_of: Callable[[ScreenNode], str] | None = None,
 ) -> str | None:
     """같은 화면 타입 노드 중 이미지 지문이 가장 가까운 노드를 찾습니다.
 
@@ -189,9 +202,10 @@ def find_fingerprint_match(
         return None
     best: tuple[tuple[float, int, int], str] | None = None
     for index, node in enumerate(graph.nodes.values()):
-        if node.screen_type != screen_type or not node.fingerprint:
+        node_fingerprint = fingerprint_of(node) if fingerprint_of else node.fingerprint
+        if node.screen_type != screen_type or not node_fingerprint:
             continue
-        distance = fingerprint_distance(fingerprint, node.fingerprint)
+        distance = fingerprint_distance(fingerprint, node_fingerprint)
         if distance > max_distance:
             continue
         score = (distance, -node.visits, index)
@@ -204,6 +218,7 @@ def fingerprint_conflicts(
     node: ScreenNode,
     fingerprint: str,
     max_distance: float,
+    fingerprint_of: Callable[[ScreenNode], str] | None = None,
 ) -> bool:
     """지문이 양쪽에 다 있는데 멀면 다른 화면이라고 봅니다.
 
@@ -212,9 +227,10 @@ def fingerprint_conflicts(
     0.46이었습니다(실제로 서로 다른 상점 화면). 지문은 합치는 데만 쓰는 게 아니라
     이렇게 나누는 데도 씁니다."""
 
-    if max_distance <= 0 or not fingerprint or not node.fingerprint:
+    node_fingerprint = fingerprint_of(node) if fingerprint_of else node.fingerprint
+    if max_distance <= 0 or not fingerprint or not node_fingerprint:
         return False
-    return fingerprint_distance(fingerprint, node.fingerprint) > max_distance
+    return fingerprint_distance(fingerprint, node_fingerprint) > max_distance
 
 
 def unique_node_id(graph: NavigationGraph, node_id: str, fingerprint: str) -> str:
@@ -260,6 +276,41 @@ class GraphStore:
         )
         if self._normalize_graph():
             self.save()
+        # 공통 띠(네비게이션 바 등)를 지문 비교에서 뺄 때 씁니다(set_chrome_bands).
+        self.chrome_bands = None
+        self._content_fingerprints: dict[str, str] = {}
+
+    # -- 공통 띠를 뺀 지문 ------------------------------------------------------
+
+    def image_path(self, node_id: str):
+        return IMAGE_DIR / f"{node_id}.png"
+
+    def load_image(self, node_id: str):
+        path = self.image_path(node_id)
+        return cv2.imread(str(path)) if path.exists() else None
+
+    def set_chrome_bands(self, bands) -> None:
+        """공통 띠를 정합니다. None이거나 띠가 없으면 예전처럼 화면 전체 지문을 씁니다."""
+        self.chrome_bands = bands if bands is not None and bands.active else None
+        self._content_fingerprints.clear()
+
+    def _fingerprint_for_image(self, image) -> str:
+        if self.chrome_bands is not None:
+            return board_fingerprint(self.chrome_bands.content(image))
+        return board_fingerprint(image)
+
+    def _node_fingerprint(self, node: ScreenNode) -> str:
+        """노드의 비교용 지문. 공통 띠가 있으면 대표 이미지에서 띠를 빼고 다시 계산합니다
+        (대표 이미지가 없으면 저장된 전체 지문으로 대신합니다)."""
+        if self.chrome_bands is None:
+            return node.fingerprint
+        cached = self._content_fingerprints.get(node.id)
+        if cached is not None:
+            return cached
+        image = self.load_image(node.id)
+        value = self._fingerprint_for_image(image) if image is not None else node.fingerprint
+        self._content_fingerprints[node.id] = value
+        return value
 
     def _normalize_graph(self) -> bool:
         """간선 중복을 정리합니다.
@@ -311,12 +362,20 @@ class GraphStore:
     # 로직을 NavigationGraph 데이터에 바로 쓸 수 있습니다.
 
     def bfs_nearest_matching(
-        self, source: str, is_target: Callable[[str], bool]
+        self,
+        source: str,
+        is_target: Callable[[str], bool],
+        extra_edges: Iterable[NavigationEdge] = (),
     ) -> list[NavigationEdge] | None:
-        return bfs_nearest_matching(self.graph, source, is_target)
+        return bfs_nearest_matching(self.graph, source, is_target, extra_edges)
 
-    def bfs_path(self, source: str, target: str) -> list[NavigationEdge] | None:
-        return bfs_path(self.graph, source, target)
+    def bfs_path(
+        self,
+        source: str,
+        target: str,
+        extra_edges: Iterable[NavigationEdge] = (),
+    ) -> list[NavigationEdge] | None:
+        return bfs_path(self.graph, source, target, extra_edges)
 
     def bfs_spanning_tree(
         self, root: str
@@ -338,7 +397,10 @@ class GraphStore:
 
         natural_id = screen_id(decision)
         buttons = screen_buttons(decision)
+        # 노드에 저장하는 지문은 항상 화면 전체 지문이고, 비교에는 공통 띠를 뺀 지문을
+        # 씁니다(띠가 아직 없으면 둘은 같습니다).
         fingerprint = board_fingerprint(image) if image is not None else ""
+        compare_fingerprint = self._fingerprint_for_image(image) if image is not None else ""
 
         def _usable(candidate_id: str | None) -> str | None:
             if candidate_id is None:
@@ -346,15 +408,21 @@ class GraphStore:
             node = self.graph.nodes.get(candidate_id)
             if node is None:
                 return None
-            if fingerprint_conflicts(node, fingerprint, SCREEN_FINGERPRINT_MAX_DISTANCE):
+            if fingerprint_conflicts(
+                node,
+                compare_fingerprint,
+                SCREEN_FINGERPRINT_MAX_DISTANCE,
+                self._node_fingerprint,
+            ):
                 return None
             return candidate_id
 
         node_id = find_fingerprint_match(
             self.graph,
             decision.screen_type,
-            fingerprint,
+            compare_fingerprint,
             SCREEN_FINGERPRINT_MAX_DISTANCE,
+            self._node_fingerprint,
         )
         if node_id is None:
             node_id = _usable(natural_id)

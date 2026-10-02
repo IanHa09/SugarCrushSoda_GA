@@ -56,6 +56,7 @@ def _patched_storage_paths(directory: str):
         patch("navigation.graph.JOURNEY_PATH", root / "journeys.jsonl"),
         patch("navigation.graph.IMAGE_DIR", root / "representatives"),
         patch("navigation.ledger.NAVIGATION_LEDGER_PATH", root / "ledger.json"),
+        patch("config.NAVIGATION_UI_CHROME_PATH", root / "ui_chrome.json"),
     ):
         yield
 

@@ -139,6 +139,8 @@ class SurveyButtonCandidate(BaseModel):
     # 다시 계산합니다. 실행부(action_executor)는 계속 center(0~1)만 씁니다.
     bbox: Optional[PixelBox] = None
     center: Optional[NormalizedPoint] = None
+    # 버튼이 놓인 영역. 네비게이션 바(공통 버튼) 판정의 보조 신호입니다(ui_chrome.py).
+    region: Literal["bottom_nav", "top_bar", "popup", "content", "unknown"] = "unknown"
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     reason: str = ""
 
@@ -283,7 +285,8 @@ class NavigationGraph(BaseModel):
 # no_change(눌러도 화면 그대로) / blocked(도달 불가로 포기) / failed(탭 자체가 실행 안 됨) /
 # not_visible(그 화면을 다시 봐도 후보에 연속으로 안 나와 정리됨) /
 # missed(눌렀는데 픽셀이 그대로라 빗나감 의심, 재시도 대기 중 = 아직 프론티어) /
-# not_found(확대 재확인에서 그 버튼을 화면에서 찾지 못해 누르지 않고 정리됨).
+# not_found(확대 재확인에서 그 버튼을 화면에서 찾지 못해 누르지 않고 정리됨) /
+# global(네비게이션 바 같은 공통 버튼으로 판정돼 화면별 항목은 닫고 공통 항목으로 옮김).
 # blocked, not_visible, not_found는 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
 class LedgerEntry(BaseModel):
     """(screen_id, action_key) 조합 하나의 시도 이력입니다.
@@ -305,6 +308,7 @@ class LedgerEntry(BaseModel):
             "not_visible",
             "missed",
             "not_found",
+            "global",
         ]
     ] = None
     target_screen_id: Optional[str] = None
@@ -342,3 +346,27 @@ class TapLocation(BaseModel):
     @classmethod
     def _limit_seen_label(cls, value: str) -> str:
         return _truncate_text(value, 60)
+
+
+class ExitLocation(BaseModel):
+    """탈출 사다리의 "나가기 요소 찾기"에서 모델이 돌려주는 위치입니다.
+
+    kind: button(닫기/X/뒤로/확인/홈 탭 같은 나가기 요소) | outside(모달 팝업 바깥의
+    어두운 영역) | none(둘 다 없음). 좌표 규칙은 TapLocation과 같습니다(칸 + 픽셀)."""
+
+    kind: Literal["button", "outside", "none"] = "none"
+    cell: str = ""
+    x: int = Field(default=-1, ge=-1)
+    y: int = Field(default=-1, ge=-1)
+    label: str = ""
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+
+    @field_validator("cell", mode="after")
+    @classmethod
+    def _limit_cell(cls, value: str) -> str:
+        return _truncate_text(value.strip(), 8)
+
+    @field_validator("label", mode="after")
+    @classmethod
+    def _limit_label(cls, value: str) -> str:
+        return _truncate_text(value, 40)

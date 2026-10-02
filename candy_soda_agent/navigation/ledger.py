@@ -22,8 +22,13 @@ from schemas import ActionLedger, LedgerEntry
 # 실행 시점에 알 수 있는 시도 결과. finalize()가 한 스텝 뒤 관찰로 채웁니다.
 Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found"
 
-# 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음).
-CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found"})
+# 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음 /
+# 공통 버튼으로 옮겨짐).
+CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global"})
+
+# 네비게이션 바처럼 여러 화면에 똑같이 있는 공통 버튼의 원장 항목은 화면 ID 대신 이 값을
+# 씁니다. 공통 버튼은 화면마다가 아니라 전체에서 한 번만 눌러 봅니다(ui_chrome.py).
+GLOBAL_SCREEN_ID = "__global__"
 
 
 def _now() -> str:
@@ -161,6 +166,45 @@ class LedgerStore:
             entry.verdict = "not_found"
         entry.last_seen = _now()
         self.save()
+
+    def promote_to_global(self, action_key: str, action_label: str) -> tuple[int, bool]:
+        """이 행동이 공통 버튼(네비게이션 바)으로 판정되면 화면별 항목을 공통 항목 하나로 합칩니다.
+
+        - 화면별로 아직 안 눌러 본 같은 행동 항목은 닫습니다(verdict="global").
+        - 판정 전에 어느 화면에서 이미 눌러 봐서 간 곳을 알면, 그 결과를 공통 항목에
+          옮겨 적어 공통 버튼을 다시 누르지 않게 합니다.
+        반환: (닫은 항목 수, 이전 결과를 옮겨 적었는지)."""
+
+        closed = 0
+        best: LedgerEntry | None = None
+        for entry in self.ledger.entries.values():
+            if entry.action_key != action_key or entry.screen_id == GLOBAL_SCREEN_ID:
+                continue
+            if is_open_entry(entry):
+                entry.verdict = "global"
+                entry.last_seen = _now()
+                closed += 1
+            elif entry.verdict in {"new_screen", "known_screen"} and entry.target_screen_id:
+                if best is None or entry.last_seen > best.last_seen:
+                    best = entry
+
+        seeded = False
+        key = _entry_key(GLOBAL_SCREEN_ID, action_key)
+        current = self.ledger.entries.get(key)
+        if best is not None and (current is None or current.attempts == 0):
+            self.ledger.entries[key] = LedgerEntry(
+                screen_id=GLOBAL_SCREEN_ID,
+                action_key=action_key,
+                action_label=action_label or best.action_label,
+                attempts=max(1, best.attempts),
+                verdict=best.verdict,
+                target_screen_id=best.target_screen_id,
+                last_seen=_now(),
+            )
+            seeded = True
+        if closed or seeded:
+            self.save()
+        return closed, seeded
 
     def block(self, screen_id: str, action_key: str) -> None:
         """경로 자체가 반복 도달 불가라 더 이상 프론티어로 고르지 않을 항목을 막습니다."""

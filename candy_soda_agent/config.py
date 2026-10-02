@@ -280,7 +280,40 @@ TAP_MISS_RETRIES = _env_int("TAP_MISS_RETRIES", "1", 0)
 ADB_PATH = os.getenv("ADB_PATH", "").strip().strip('"').strip("'")
 ADB_SERIAL = os.getenv("ADB_SERIAL", "").strip()
 BACK_KEY = os.getenv("BACK_KEY", "").strip().lower()
-STUCK_BACK_KEY_MAX = _env_int("STUCK_BACK_KEY_MAX", "3", 0)
+# [탈출 사다리] 가는 길을 모르는 화면에 갇혔거나, 루트로 돌아가는데 홈/뒤로 버튼이 안
+# 보일 때 아래 순서로 시도합니다. 한 단계가 화면을 바꾸면 그 단계를 계속 쓰고, 화면이
+# 그대로인 시도가 단계별 한도만큼 쌓이면 다음 단계로 넘어갑니다.
+#   1) Android 뒤로(adb/키보드)           : 화면이 그대로인 시도 STUCK_BACK_KEY_MAX번까지
+#   2) 나가기 요소 찾기(OPENAI_TAP_MODEL)  : X/닫기/확인/홈 탭, 없으면 팝업 바깥 어두운 곳
+#                                           ESCAPE_EXIT_FINDER_MAX번까지
+#   3) 예전에 닫힌 닫기·뒤로·확인 버튼 다시 누르기 : 버튼마다 1번
+#   4) 게임 재시작(adb force-stop 후 실행)  : 세션당 APP_RESTART_MAX번까지
+# 탈출 시도가 연속 ESCAPE_MAX_STREAK번 쌓이면(정상 탭 없이) 바로 4)로 갑니다.
+STUCK_BACK_KEY_MAX = _env_int("STUCK_BACK_KEY_MAX", "2", 0)
+ESCAPE_EXIT_FINDER = _env_bool("ESCAPE_EXIT_FINDER", True)
+ESCAPE_EXIT_FINDER_MAX = _env_int("ESCAPE_EXIT_FINDER_MAX", "2", 0)
+ESCAPE_MAX_STREAK = _env_int("ESCAPE_MAX_STREAK", "8", 1)
+# 게임 재시작에 쓰는 Android 패키지 이름. autodrive 시작 때 adb로 설치 여부를 확인하고,
+# 없으면 재시작 단계만 끕니다(확인: adb shell pm list packages king).
+GAME_PACKAGE = os.getenv("GAME_PACKAGE", "com.king.candycrushsodasaga").strip()
+APP_RESTART_MAX = _env_int("APP_RESTART_MAX", "2", 0)
+# 재시작 뒤 첫 화면이 뜰 때까지 기다리는 시간(초). 로딩 화면이면 탐색이 알아서 더 기다립니다.
+APP_RESTART_WAIT = _env_float("APP_RESTART_WAIT", "20", 0.0, 300.0)
+
+# [공통 UI] 여러 화면에 똑같이 보이는 위/아래 띠(네비게이션 바, 재화 바)를 화면 이미지로
+# 찾습니다. 대표 이미지들끼리 행 단위로 비교해, 서로 다른 화면 CHROME_MIN_SCREENS개 이상이
+# 같은 줄무늬를 공유하면 그 띠를 공통 UI로 봅니다(실측: 아래 150px 탭 바).
+CHROME_DETECTION = _env_bool("CHROME_DETECTION", True)
+CHROME_MIN_SCREENS = _env_int("CHROME_MIN_SCREENS", "3", 2)
+# 찾은 띠는 "같은 화면인가" 지문 비교에서 빼서, 탭 강조·배지 숫자 차이로 노드가 갈리지 않게 합니다.
+CHROME_MASK_IDENTITY = _env_bool("CHROME_MASK_IDENTITY", True)
+# 같은 이름의 버튼이 서로 다른 화면 이 개수 이상에서 같은 위치(GLOBAL_ACTION_MAX_SPREAD_PX
+# 이내)에 보이면 공통 버튼(네비게이션)으로 봅니다. 공통 띠 안의 버튼은 2개 화면이면 충분하고,
+# 조사 모델이 2개 화면에서 bottom_nav/top_bar라고 한 화면 맨 아래/위 버튼도 공통으로 봅니다.
+# 공통 버튼은 화면마다가 아니라 전체에서 한 번만 눌러 보고, 그 결과(어디로 가는지)는 그 버튼이
+# 보이는 모든 화면에서 쓸 수 있는 지름길로 경로 계획에 씁니다.
+GLOBAL_ACTION_MIN_SCREENS = _env_int("GLOBAL_ACTION_MIN_SCREENS", "3", 2)
+GLOBAL_ACTION_MAX_SPREAD_PX = _env_float("GLOBAL_ACTION_MAX_SPREAD_PX", "30", 1.0, 500.0)
 # 탭 뒤에는 위 POST_TAP_* 대기가 있으므로 스텝 사이 고정 대기는 짧게 둡니다.
 AUTODRIVE_STEP_PAUSE = _env_float("AUTODRIVE_STEP_PAUSE", "0.5", 0.0, 30.0)
 
@@ -377,3 +410,4 @@ NAVIGATION_GRAPH_PATH = NAVIGATION_DIR / "graph.json"
 NAVIGATION_LEDGER_PATH = NAVIGATION_DIR / "ledger.json"
 NAVIGATION_JOURNEY_PATH = NAVIGATION_DIR / "journeys.jsonl"
 NAVIGATION_IMAGE_DIR = NAVIGATION_DIR / "representatives"
+NAVIGATION_UI_CHROME_PATH = NAVIGATION_DIR / "ui_chrome.json"

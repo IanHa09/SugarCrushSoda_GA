@@ -369,6 +369,84 @@ def check_adb(adb_path: str = ADB_PATH, serial: str = ADB_SERIAL) -> tuple[bool,
     return True, f"{target} 연결됨"
 
 
+def check_game_package(
+    package: str,
+    adb_path: str = ADB_PATH,
+    serial: str = ADB_SERIAL,
+) -> tuple[bool, str]:
+    """게임 재시작에 쓸 패키지가 에뮬레이터에 설치돼 있는지 확인합니다."""
+
+    if not package:
+        return False, "GAME_PACKAGE가 비어 있습니다."
+    try:
+        result = _run_adb(_adb_command(adb_path, serial, "shell", "pm", "list", "packages", package))
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return False, f"adb 실행 실패: {error}"
+    installed = {
+        line.strip().removeprefix("package:")
+        for line in (result.stdout or "").splitlines()
+        if line.strip().startswith("package:")
+    }
+    if package in installed:
+        return True, package
+    hint = ""
+    try:
+        similar = _run_adb(_adb_command(adb_path, serial, "shell", "pm", "list", "packages", "king"))
+        names = [
+            line.strip().removeprefix("package:")
+            for line in (similar.stdout or "").splitlines()
+            if line.strip().startswith("package:")
+        ]
+        if names:
+            hint = f" (설치된 king 패키지: {', '.join(names[:5])} — 맞는 이름을 GAME_PACKAGE에 적으세요)"
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    return False, f"패키지 {package!r}를 찾지 못했습니다{hint}"
+
+
+def restart_game(
+    *,
+    package: str,
+    wait: float,
+    adb_path: str = ADB_PATH,
+    adb_serial: str = ADB_SERIAL,
+    dry_run: bool = DRY_RUN,
+    allow_taps: bool = SURVEY_ALLOW_TAPS,
+    cancel_check: Callable[[], str | None] | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+) -> bool:
+    """adb로 게임을 강제 종료한 뒤 다시 실행합니다(탈출 사다리의 마지막 단계).
+
+    어떤 화면에 갇혀 있어도 처음 화면으로 돌아옵니다. 실행 뒤 wait초 기다립니다."""
+
+    if not adb_path or not package:
+        return False
+    if cancel_check:
+        reason = cancel_check()
+        if reason:
+            raise RuntimeError(reason)
+    if dry_run or not allow_taps:
+        print(f"[DRY RUN] restart {package}")
+        return False
+
+    steps = (
+        ("shell", "am", "force-stop", package),
+        ("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"),
+    )
+    for index, args in enumerate(steps):
+        try:
+            result = _run_adb(_adb_command(adb_path, adb_serial, *args))
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise RuntimeError(f"게임 재시작 실패({args[1]}): {error}") from error
+        output = f"{result.stdout or ''}{result.stderr or ''}"
+        if result.returncode != 0 or "aborted" in output.casefold():
+            raise RuntimeError(f"게임 재시작 실패({args[1]}): {output.strip()}")
+        if index == 0:
+            sleep(1.0)
+    sleep(wait)
+    return True
+
+
 def execute_back_key(
     *,
     key: str = BACK_KEY,

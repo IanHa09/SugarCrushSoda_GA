@@ -19,6 +19,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -33,13 +34,14 @@ from config import (
 )
 from config import NAVIGATION_GRAPH_PATH as CURRENT_RUN_GRAPH_PATH
 from config import NAVIGATION_LEDGER_PATH as CURRENT_RUN_LEDGER_PATH
+from config import NAVIGATION_UI_CHROME_PATH as CURRENT_RUN_UI_CHROME_PATH
 from navigation.graph import (
     bfs_spanning_tree,
     fragmented_screen_types,
     resolve_root_screen_id,
     unreached_from,
 )
-from navigation.ledger import LedgerStore, is_open_entry
+from navigation.ledger import GLOBAL_SCREEN_ID, LedgerStore, is_open_entry
 from schemas import NavigationGraph
 from survey_utils import canonical_name_tokens
 
@@ -373,6 +375,8 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
     lines.append("")
 
     def _screen_label_for(screen_id: str) -> str:
+        if screen_id == GLOBAL_SCREEN_ID:
+            return "공통 버튼(네비게이션 바)"
         node = graph.nodes.get(screen_id) if graph else None
         return _screen_label(node.screen_type) if node else screen_id
 
@@ -408,6 +412,53 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
                 f"- **{_screen_label_for(screen_id_key)}**: {', '.join(sorted(labels))}"
             )
         lines.append("")
+
+
+def _append_persistent_ui_section(
+    lines: list[str],
+    graph: NavigationGraph | None,
+    ledger: LedgerStore | None,
+    chrome: dict[str, Any] | None,
+) -> None:
+    """여러 화면에 공통으로 보이는 UI(네비게이션 바 등)와 공통 버튼을 보여줍니다."""
+
+    if not chrome:
+        return
+    bands = chrome.get("bands") or {}
+    global_keys = list(chrome.get("global_actions") or [])
+    if not (bands.get("top") or bands.get("bottom") or global_keys):
+        return
+
+    lines.extend(["## Persistent UI", ""])
+    lines.append(
+        "여러 화면에 같은 모습·같은 자리로 보이는 UI입니다. 공통 버튼은 화면마다가 아니라 "
+        "한 번만 눌러 보고, 그 결과는 버튼이 보이는 모든 화면에서 지름길로 씁니다."
+    )
+    lines.append("")
+    if bands.get("top") or bands.get("bottom"):
+        lines.append(
+            f"- 공통 띠: 위 {bands.get('top', 0)}px, 아래 {bands.get('bottom', 0)}px "
+            f"(화면 {bands.get('support', 0)}개가 공유, 화면 높이 {bands.get('height', 0)}px). "
+            "같은 화면 판정에서는 이 영역을 빼고 비교합니다."
+        )
+    actions = chrome.get("actions") or {}
+    for key in global_keys:
+        entry = actions.get(key) or {}
+        label = entry.get("label") or key
+        screens = len(entry.get("positions") or {})
+        result = "아직 안 눌러 봄"
+        if ledger is not None:
+            ledger_entry = ledger.ledger.entries.get(f"{GLOBAL_SCREEN_ID}:{key}")
+            if ledger_entry is not None and ledger_entry.target_screen_id:
+                target = graph.nodes.get(ledger_entry.target_screen_id) if graph else None
+                target_label = (
+                    _screen_label(target.screen_type) if target else ledger_entry.target_screen_id
+                )
+                result = f"→ {target_label}"
+            elif ledger_entry is not None and ledger_entry.verdict:
+                result = ledger_entry.verdict
+        lines.append(f"- 공통 버튼 **{label}**: {screens}개 화면에서 보임, {result}")
+    lines.append("")
 
 
 def _group_by_category(
@@ -504,6 +555,7 @@ def generate_survey_markdown(
     *,
     evidence_limit: int | None = SURVEY_REPORT_EVIDENCE_LIMIT,
     ledger: LedgerStore | None = None,
+    chrome: dict[str, Any] | None = None,
 ) -> str:
     """전체 기록을 누적한 게임 구조 조사 보고서를 생성합니다 (Evidence Index만 최근 건수로 제한)."""
 
@@ -546,6 +598,7 @@ def generate_survey_markdown(
     if actual_graph and root_id:
         _append_screen_hierarchy(lines, graph, root_id, SURVEY_REPORT_PATH.parent)
 
+    _append_persistent_ui_section(lines, graph, ledger, chrome)
     _append_frontier_section(lines, graph, ledger)
 
     screen_examples: dict[str, dict[str, Any]] = {}
@@ -684,9 +737,15 @@ def write_survey_report(
         )
     if ledger is None and CURRENT_RUN_LEDGER_PATH.exists():
         ledger = LedgerStore(CURRENT_RUN_LEDGER_PATH)
+    chrome = None
+    if CURRENT_RUN_UI_CHROME_PATH.exists():
+        try:
+            chrome = json.loads(CURRENT_RUN_UI_CHROME_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            chrome = None
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(
-        generate_survey_markdown(records, graph, ledger=ledger),
+        generate_survey_markdown(records, graph, ledger=ledger, chrome=chrome),
         encoding="utf-8",
     )
     return output_path

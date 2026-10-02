@@ -16,12 +16,12 @@ navigation.navigator가 담당하고, 그 결과(도착 화면, 실행 성공 �
 
 from __future__ import annotations
 
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from dataclasses import dataclass, field
 from typing import Literal
 
 from navigation.graph import GraphStore
-from navigation.ledger import LedgerStore
+from navigation.ledger import GLOBAL_SCREEN_ID, LedgerStore
 from navigation.policy import canonical_action_label
 from schemas import NavigationEdge
 
@@ -57,6 +57,10 @@ class FrontierWalker:
     max_back_taps: int
     max_replan_attempts: int
     root_screen_id: str | None = None
+    # 공통 버튼(네비게이션 바) 지원. extra_edges는 그래프에 없는 지름길 간선을,
+    # global_screens는 공통 action_key가 보이는 화면 목록을 돌려줍니다(ui_chrome.py).
+    extra_edges: Callable[[], list[NavigationEdge]] | None = None
+    global_screens: Callable[[str], list[str]] | None = None
 
     # decide()가 None을 반환했을 때 그 이유(navigator가 종료 메시지에 씁니다).
     stop_reason: StopReason | None = None
@@ -66,6 +70,8 @@ class FrontierWalker:
     _resetting: bool = False
     _back_taps_used: int = 0
     _replan_attempts: dict[str, int] = field(default_factory=dict)
+    # 도달을 포기한 화면. 공통 버튼 목표 때문에 같은 화면을 다시 고르지 않게 합니다.
+    _abandoned: set[str] = field(default_factory=set)
 
     # -- 진행 상태 조회 -----------------------------------------------------
 
@@ -77,6 +83,16 @@ class FrontierWalker:
     @property
     def is_resetting(self) -> bool:
         return self._resetting
+
+    def _extra(self) -> list[NavigationEdge]:
+        return self.extra_edges() if self.extra_edges else []
+
+    def abort(self) -> None:
+        """진행 중인 재생/리셋을 모두 버립니다(게임 재시작 뒤처럼 위치를 모를 때)."""
+        self._replay_queue = []
+        self._replay_target = None
+        self._resetting = False
+        self._back_taps_used = 0
 
     def begin_reset_to_root(self) -> None:
         """목표 없이 루트로 먼저 돌아갑니다(3단계: 시작 화면 정렬).
@@ -96,6 +112,7 @@ class FrontierWalker:
         self,
         current_screen_id: str,
         visible_action_keys: Collection[str] | None = None,
+        visible_global_keys: Collection[str] = (),
     ) -> StepGoal | None:
         """이번 스텝에서 시도할 행동을 정합니다.
 
@@ -123,7 +140,12 @@ class FrontierWalker:
             visible = set(visible_action_keys)
             visible_local = [key for key in open_local if key in visible]
 
-        if visible_local:
+        # 공통 버튼은 화면별이 아니라 GLOBAL 항목 하나로 관리합니다. 이 화면에 보이는
+        # 공통 버튼 중 아직 안 눌러 본 것이 있으면 여기서 누르면 됩니다.
+        open_global = self.ledger.frontier_at(GLOBAL_SCREEN_ID)
+        visible_global = [key for key in open_global if key in set(visible_global_keys)]
+
+        if visible_local or visible_global:
             return StepGoal(kind="frontier")
         if open_local:
             # 원장에는 남아 있는데 이번 후보엔 안 보입니다. 멀리 이동했다가 다시
@@ -131,7 +153,17 @@ class FrontierWalker:
             # 연속으로 안 보이면 원장이 정리하므로 무한 반복되지 않습니다.
             return StepGoal(kind="reobserve")
 
-        frontier = self.ledger.global_frontier()
+        frontier = {
+            screen: keys
+            for screen, keys in self.ledger.global_frontier().items()
+            if screen != GLOBAL_SCREEN_ID
+        }
+        # 아직 안 눌러 본 공통 버튼은 그 버튼이 보였던 화면들을 목표로 삼습니다.
+        if self.global_screens is not None:
+            for key in open_global:
+                for screen in self.global_screens(key):
+                    if screen not in self._abandoned:
+                        frontier.setdefault(screen, []).append(key)
         if not frontier:
             self.stop_reason = "converged"
             return None
@@ -139,6 +171,7 @@ class FrontierWalker:
         path = self.graph.bfs_nearest_matching(
             current_screen_id,
             lambda node_id: node_id != current_screen_id and bool(frontier.get(node_id)),
+            self._extra(),
         )
         if not path:
             # 프론티어는 남아 있지만 지금까지 관찰한 그래프로는 이 화면에서
@@ -207,7 +240,7 @@ class FrontierWalker:
             self._resetting = False
             if target_id is None or arrived_screen_id is None:
                 return
-            path = self.graph.bfs_path(arrived_screen_id, target_id)
+            path = self.graph.bfs_path(arrived_screen_id, target_id, self._extra())
             if path is None:
                 # 루트에서도 목표까지 가는 길을 아직 모릅니다. 포기합니다.
                 self._give_up_on(target_id)
@@ -227,6 +260,7 @@ class FrontierWalker:
         """도달 자체가 반복 실패한 화면의 남은 프론티어 항목을 모두 blocked 처리합니다."""
         for action_key in list(self.ledger.frontier_at(target_screen_id)):
             self.ledger.block(target_screen_id, action_key)
+        self._abandoned.add(target_screen_id)
         self._replay_queue = []
         self._replay_target = None
         self._resetting = False
