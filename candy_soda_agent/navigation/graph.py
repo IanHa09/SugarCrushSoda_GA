@@ -13,14 +13,11 @@ from config import (
     NAVIGATION_GRAPH_PATH,
     NAVIGATION_IMAGE_DIR,
     NAVIGATION_JOURNEY_PATH,
+    SCREEN_FINGERPRINT_MAX_DISTANCE,
     SCREEN_MATCH_MAX_BUTTON_DIFF,
 )
-from navigation.observer import (
-    SINGLETON_SCREEN_TYPES,
-    canonical_screen_id,
-    screen_buttons,
-    screen_id,
-)
+from image_utils import board_fingerprint, fingerprint_distance
+from navigation.observer import screen_buttons, screen_id
 from navigation.policy import navigation_action_key_from_label
 from schemas import NavigationEdge, NavigationGraph, ScreenNode
 
@@ -170,6 +167,73 @@ def find_tolerant_match(
     return best[1] if best else None
 
 
+def find_fingerprint_match(
+    graph: NavigationGraph,
+    screen_type: str,
+    fingerprint: str,
+    max_distance: float,
+) -> str | None:
+    """같은 화면 타입 노드 중 이미지 지문이 가장 가까운 노드를 찾습니다.
+
+    화면 식별의 1차 기준입니다. LLM이 보고하는 버튼 목록은 같은 화면을 봐도 관찰마다
+    달라서 버튼만으로는 같은 화면을 못 알아봅니다(실측: 같은 플레이 화면의 버튼 목록이
+    8~10개 차이). 이미지는 같은 화면이면 거의 같게 나옵니다.
+
+    비교 기준은 각 노드가 처음 관찰될 때 저장한 지문(고정)이라, 조금씩 다른 관찰이
+    이어져도 기준이 떠내려가지 않습니다(find_tolerant_match와 같은 방식).
+
+    화면 타입이 같은 노드만 봅니다. 팝업이 뜬 화면과 그 배경 화면처럼 이미지가 거의
+    같으면서 실제로는 다른 화면인 경우를 타입이 걸러 줍니다."""
+
+    if max_distance <= 0 or not fingerprint:
+        return None
+    best: tuple[tuple[float, int, int], str] | None = None
+    for index, node in enumerate(graph.nodes.values()):
+        if node.screen_type != screen_type or not node.fingerprint:
+            continue
+        distance = fingerprint_distance(fingerprint, node.fingerprint)
+        if distance > max_distance:
+            continue
+        score = (distance, -node.visits, index)
+        if best is None or score < best[0]:
+            best = (score, node.id)
+    return best[1] if best else None
+
+
+def fingerprint_conflicts(
+    node: ScreenNode,
+    fingerprint: str,
+    max_distance: float,
+) -> bool:
+    """지문이 양쪽에 다 있는데 멀면 다른 화면이라고 봅니다.
+
+    버튼 기준 매칭이 붙이려는 노드를 거부하는 데 씁니다. 실측에서 상점 화면 4건이
+    버튼을 'close' 하나만 보고해 버튼 기준으로는 한 화면이 됐는데, 지문 거리는
+    0.46이었습니다(실제로 서로 다른 상점 화면). 지문은 합치는 데만 쓰는 게 아니라
+    이렇게 나누는 데도 씁니다."""
+
+    if max_distance <= 0 or not fingerprint or not node.fingerprint:
+        return False
+    return fingerprint_distance(fingerprint, node.fingerprint) > max_distance
+
+
+def unique_node_id(graph: NavigationGraph, node_id: str, fingerprint: str) -> str:
+    """이미 쓰이는 ID면 지문 앞자리를 붙여 새 ID를 만듭니다.
+
+    화면 타입과 버튼 목록이 같은데 화면은 다른 경우(위 fingerprint_conflicts 참고)
+    자연스러운 ID가 이미 다른 노드 차지라 그대로 쓰면 덮어쓰게 됩니다."""
+
+    if node_id not in graph.nodes:
+        return node_id
+    suffix = (fingerprint or "x")[:6]
+    candidate = f"{node_id}_{suffix}"
+    serial = 2
+    while candidate in graph.nodes:
+        candidate = f"{node_id}_{suffix}{serial}"
+        serial += 1
+    return candidate
+
+
 def resolve_root_screen_id(graph: NavigationGraph, configured_root: str | None) -> str | None:
     """트리 루트를 정합니다: 설정된 ROOT_SCREEN_ID가 그래프에 있으면 그걸 쓰고,
     아니면 이번 그래프에서 가장 먼저 관찰된(=nodes 딕셔너리에 가장 먼저 들어간)
@@ -198,35 +262,20 @@ class GraphStore:
             self.save()
 
     def _normalize_graph(self) -> bool:
-        """기존 화면과 간선 중복 정리."""
+        """간선 중복을 정리합니다.
+
+        전에는 여기서 상점·설정 같은 화면 타입을 타입 이름 하나로 묶는 재매핑도
+        했습니다(SINGLETON_SCREEN_TYPES). 실측해 보니 상점은 서로 다른 화면이 여러
+        개라 과병합이었고, 지금은 화면 이미지 지문이 그 판단을 대신하므로 뺐습니다."""
 
         before = self.graph.model_dump()
-        remapped: dict[str, str] = {}
-        nodes: dict[str, ScreenNode] = {}
-
-        for old_id, node in self.graph.nodes.items():
-            node_id = (
-                canonical_screen_id(node.screen_type)
-                if node.screen_type in SINGLETON_SCREEN_TYPES
-                else old_id
-            )
-            remapped[old_id] = node_id
-            existing = nodes.get(node_id)
-            if existing is None:
-                nodes[node_id] = node.model_copy(update={"id": node_id})
-                continue
-
-            existing.visits += node.visits
-            if len(node.summary) > len(existing.summary):
-                existing.summary = node.summary
-            if not existing.representative and node.representative:
-                existing.representative = node.representative
+        nodes = self.graph.nodes
 
         edges: list[NavigationEdge] = []
         seen_edges: set[tuple[str, str, str]] = set()
         for edge in self.graph.edges:
-            source = remapped.get(edge.source, edge.source)
-            target = remapped.get(edge.target, edge.target)
+            source = edge.source
+            target = edge.target
             action_key = (
                 edge.action_key
                 or navigation_action_key_from_label(edge.action)
@@ -278,22 +327,47 @@ class GraphStore:
         return unreached_from(self.graph, root)
 
     def observe(self, decision, image) -> ScreenNode:
-        # 화면을 노드로 기록하고 대표 이미지를 저장합니다.
-        node_id = screen_id(decision)
+        """화면을 노드로 기록하고 대표 이미지를 저장합니다.
+
+        같은 화면을 알아보는 순서:
+        1. 이미지 지문 — 판단 기준입니다.
+        2. 정확히 같은 ID(화면 타입 + 버튼 목록) — 단, 지문이 충돌하면 쓰지 않습니다.
+        3. 버튼 1개 차이 허용 매칭 — 여기도 지문 충돌은 거부합니다.
+        어디에도 못 붙으면 새 노드입니다.
+        """
+
+        natural_id = screen_id(decision)
         buttons = screen_buttons(decision)
-        if (
-            node_id not in self.graph.nodes
-            and decision.screen_type not in SINGLETON_SCREEN_TYPES
-        ):
-            # 정확히 같은 ID가 없으면 버튼 1개 차이까지 허용해 기존 화면을 찾습니다.
-            matched = find_tolerant_match(
+        fingerprint = board_fingerprint(image) if image is not None else ""
+
+        def _usable(candidate_id: str | None) -> str | None:
+            if candidate_id is None:
+                return None
+            node = self.graph.nodes.get(candidate_id)
+            if node is None:
+                return None
+            if fingerprint_conflicts(node, fingerprint, SCREEN_FINGERPRINT_MAX_DISTANCE):
+                return None
+            return candidate_id
+
+        node_id = find_fingerprint_match(
+            self.graph,
+            decision.screen_type,
+            fingerprint,
+            SCREEN_FINGERPRINT_MAX_DISTANCE,
+        )
+        if node_id is None:
+            node_id = _usable(natural_id)
+        if node_id is None:
+            node_id = _usable(find_tolerant_match(
                 self.graph,
                 decision.screen_type,
                 buttons,
                 SCREEN_MATCH_MAX_BUTTON_DIFF,
-            )
-            if matched is not None:
-                node_id = matched
+            ))
+        if node_id is None:
+            node_id = unique_node_id(self.graph, natural_id, fingerprint)
+
         image_path = IMAGE_DIR / f"{node_id}.png"
 
         if not image_path.exists() and not cv2.imwrite(str(image_path), image):
@@ -307,11 +381,28 @@ class GraphStore:
                 summary=decision.summary,
                 representative=str(image_path),
                 buttons=buttons,
+                fingerprint=fingerprint,
             )
             self.graph.nodes[node_id] = node
         else:
             node.representative = str(image_path)
+            # 지문이 생기기 전에 만들어진 노드는 이번 관찰로 기준을 채워 둡니다.
+            # 그래야 다음 관찰부터 이 노드도 지문으로 찾을 수 있습니다.
+            if not node.fingerprint and fingerprint:
+                node.fingerprint = fingerprint
 
+        node.visits += 1
+        self.save()
+        return node
+
+    def revisit(self, node_id: str) -> ScreenNode:
+        """픽셀로 직전 화면과 같다고 확인된 관찰을 기존 노드의 방문으로만 셉니다.
+
+        같은 화면인데 LLM이 화면 타입을 바꿔 부르면(실측: 프로필·친구·고객센터를
+        모두 settings_menu로, 또는 그 반대) observe()는 타입이 달라 지문 매칭을 못 하고
+        새 노드를 만듭니다. 화면 픽셀이 그대로면 LLM 분류와 무관하게 같은 노드입니다."""
+
+        node = self.graph.nodes[node_id]
         node.visits += 1
         self.save()
         return node

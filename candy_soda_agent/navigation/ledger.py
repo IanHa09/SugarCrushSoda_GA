@@ -20,10 +20,10 @@ from config import NAVIGATION_LEDGER_PATH
 from schemas import ActionLedger, LedgerEntry
 
 # 실행 시점에 알 수 있는 시도 결과. finalize()가 한 스텝 뒤 관찰로 채웁니다.
-Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible"
+Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found"
 
-# 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐).
-CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible"})
+# 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음).
+CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found"})
 
 
 def _now() -> str:
@@ -35,7 +35,10 @@ def _entry_key(screen_id: str, action_key: str) -> str:
 
 
 def is_open_entry(entry: LedgerEntry) -> bool:
-    """아직 눌러보지 않았고, 탭 없이 정리되지도 않은 항목 = 프론티어."""
+    """프론티어 = 아직 눌러보지 않았고 탭 없이 정리되지도 않은 항목, 또는 눌렀는데
+    픽셀이 그대로라 빗나감이 의심돼 재시도를 기다리는 항목(missed)."""
+    if entry.verdict == "missed":
+        return True
     return entry.attempts == 0 and entry.verdict not in CLOSED_WITHOUT_TAP
 
 
@@ -114,6 +117,48 @@ class LedgerStore:
             self.ledger.entries[key] = entry
         entry.verdict = verdict
         entry.target_screen_id = target_screen_id
+        entry.last_seen = _now()
+        self.save()
+
+    def record_miss(
+        self,
+        screen_id: str,
+        action_key: str,
+        max_retries: int,
+    ) -> Verdict:
+        """눌렀는데 화면 픽셀이 그대로였던 시도를 기록합니다(2단계).
+
+        빗나간 탭일 가능성이 커서 바로 no_change로 닫지 않고 missed(프론티어 유지)로
+        두었다가, 다시 눌러도(attempts > max_retries) 그대로면 no_change로 닫습니다.
+        반환: 이번에 남긴 판정."""
+
+        key = _entry_key(screen_id, action_key)
+        entry = self.ledger.entries.get(key)
+        if entry is None:
+            entry = LedgerEntry(screen_id=screen_id, action_key=action_key, attempts=1)
+            self.ledger.entries[key] = entry
+        verdict = "missed" if entry.attempts <= max_retries else "no_change"
+        entry.verdict = verdict
+        entry.target_screen_id = screen_id if verdict == "no_change" else None
+        entry.last_seen = _now()
+        self.save()
+        return verdict
+
+    def close_not_found(self, screen_id: str, action_key: str) -> None:
+        """확대 재확인에서 버튼을 찾지 못해 누르지 않은 항목을 프론티어에서 뺍니다.
+        조사 모델이 없는 버튼을 지어낸 경우라, 다시 골라도 같은 결과일 가능성이 큽니다."""
+
+        key = _entry_key(screen_id, action_key)
+        entry = self.ledger.entries.get(key)
+        if entry is None:
+            entry = LedgerEntry(screen_id=screen_id, action_key=action_key)
+            self.ledger.entries[key] = entry
+        # 실제로 누르지 않았으므로 attempts는 그대로 둡니다. missed 상태에서 못 찾은
+        # 경우에도 다시 고르지 않도록 판정만 not_found로 바꿉니다.
+        if entry.attempts > 0:
+            entry.verdict = "no_change"
+        else:
+            entry.verdict = "not_found"
         entry.last_seen = _now()
         self.save()
 

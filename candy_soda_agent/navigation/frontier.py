@@ -78,6 +78,18 @@ class FrontierWalker:
     def is_resetting(self) -> bool:
         return self._resetting
 
+    def begin_reset_to_root(self) -> None:
+        """목표 없이 루트로 먼저 돌아갑니다(3단계: 시작 화면 정렬).
+
+        이어서 하는 run이 루트가 아닌 화면(예: 상점)에서 시작하면, 그 화면부터 탐색해
+        루트와 이어지지 않는 섬이 생겼습니다. 루트에 도착하면(report_reset_step)
+        목표가 없으므로 그 자리에서 평소처럼 프론티어 탐색을 이어갑니다. 홈/뒤로를
+        max_back_taps번 넘게 눌러도 못 가면 포기하고 지금 화면에서 그냥 시작합니다."""
+        self._replay_queue = []
+        self._replay_target = None
+        self._resetting = True
+        self._back_taps_used = 0
+
     # -- 다음 행동 계획 -------------------------------------------------------
 
     def decide(

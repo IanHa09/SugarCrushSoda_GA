@@ -31,8 +31,11 @@ def request_structured_vision(
     max_output_tokens: int,
     timing_label: str,
     missing_response_message: str,
+    full_image_detail: str | None = None,
 ):
-    """전체 화면과 선택적 보드 확대본을 보내 구조화된 응답을 받습니다(플레이 분석/구조 조사 공용)."""
+    """전체 화면과 선택적 보드 확대본을 보내 구조화된 응답을 받습니다(플레이 분석/구조 조사 공용).
+
+    full_image_detail: 첫 이미지의 detail을 이번 요청만 바꿉니다(탭 확대 재확인은 항상 high)."""
 
     total_started = time.perf_counter()
     encode_started = time.perf_counter()
@@ -41,7 +44,7 @@ def request_structured_vision(
         {
             "type": "input_image",
             "image_url": image_to_data_url(full_image),
-            "detail": FULL_IMAGE_DETAIL,
+            "detail": full_image_detail or FULL_IMAGE_DETAIL,
         },
     ]
     if board_image is not None:

@@ -8,3 +8,4 @@ __pycache__/
 output/
 memory.jsonl
 candy_soda_agent/output/
+Claude outputs/

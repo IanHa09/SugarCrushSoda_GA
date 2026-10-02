@@ -409,5 +409,41 @@ class FrontierSectionTests(unittest.TestCase):
         self.assertIn("원장 정보 없음", report)
 
 
+
+class MermaidLabelQuotingTests(unittest.TestCase):
+    """간선 라벨에 괄호·!·?·|·큰따옴표가 있어도 mermaid 문법이 깨지지 않아야 합니다.
+
+    실측(run_2026-10-02_08-33-21): 뒤로 키 간선 라벨 "뒤로(키)"가 따옴표 없이
+    `-.->|뒤로(키)|`로 들어가 다이어그램 전체가 렌더링되지 않았습니다."""
+
+    def test_every_edge_label_is_quoted_and_sanitized(self) -> None:
+        graph = NavigationGraph(
+            nodes={
+                "a": ScreenNode(id="a", screen_type="map_or_level_select"),
+                "b": ScreenNode(id="b", screen_type="shop_or_currency"),
+                "c": ScreenNode(id="c", screen_type="social_friends"),
+            },
+            edges=[
+                NavigationEdge(source="a", target="b", action="!", action_key="bang"),
+                NavigationEdge(source="b", target="c", action="?", action_key="q"),
+                NavigationEdge(source="c", target="a", action="뒤로(키)", action_key="back"),
+                NavigationEdge(source="b", target="a", action='Say "hi" | `x`', action_key="odd"),
+            ],
+        )
+
+        report = generate_survey_markdown([], graph)
+        block = report.split("```mermaid", 1)[1].split("```", 1)[0]
+        edge_lines = [line.strip() for line in block.splitlines() if "->" in line]
+
+        self.assertIn('screen_a -->|"!"| screen_b', edge_lines)
+        self.assertIn('screen_b -->|"?"| screen_c', edge_lines)
+        self.assertIn('screen_c -.->|"뒤로(키)"| screen_a', edge_lines)
+        self.assertIn("""screen_b -.->|"Say 'hi' / 'x'"| screen_a""", edge_lines)
+        for line in edge_lines:
+            label = line.split("|", 2)[1]
+            self.assertTrue(label.startswith('"') and label.endswith('"'), line)
+            self.assertEqual(label.count('"'), 2, line)
+
+
 if __name__ == "__main__":
     unittest.main()

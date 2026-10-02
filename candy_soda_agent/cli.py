@@ -66,6 +66,34 @@ def parse_args() -> argparse.Namespace:
         default=40,
         help="자동 탐색의 최대 단계 수입니다.",
     )
+    parser.add_argument(
+        "--autodrive-repeat",
+        type=int,
+        default=1,
+        help=(
+            "자동 탐색 세션을 이 횟수만큼 이어서 실행합니다(같은 run의 그래프·원장에 "
+            "누적). 세션마다 metrics.md를 갱신하고, 프론티어가 소진되면 일찍 끝냅니다."
+        ),
+    )
+    parser.add_argument(
+        "--autodrive-pause",
+        type=float,
+        default=3.0,
+        help="반복 실행에서 세션 사이에 쉬는 시간(초)입니다.",
+    )
+    parser.add_argument(
+        "--new-run",
+        action="store_true",
+        help=(
+            "새 run 폴더로 시작합니다(current_run.txt도 새 run으로 바뀌어 다음 실행부터 "
+            "이어집니다). 예전 run의 그래프와 섞지 않을 때 씁니다."
+        ),
+    )
+    parser.add_argument(
+        "--survey-metrics",
+        action="store_true",
+        help="현재 run의 세션별 탐색 지표(metrics.md/csv)를 계산한 뒤 종료합니다.",
+    )
     return parser.parse_args()
 
 
@@ -91,8 +119,16 @@ def build_run_plan(args: argparse.Namespace) -> RunPlan:
         args.auto,
         args.survey_once,
         args.survey_report,
+        getattr(args, "survey_metrics", False),
     )):
         raise ValueError("자동 구조 조사는 다른 실행 모드와 함께 사용할 수 없습니다.")
+    repeat = getattr(args, "autodrive_repeat", 1)
+    if repeat < 1:
+        raise ValueError("--autodrive-repeat는 1 이상이어야 합니다.")
+    if repeat > 1 and not autodrive_mode:
+        raise ValueError("--autodrive-repeat는 --autodrive와 함께 써야 합니다.")
+    if getattr(args, "autodrive_pause", 0.0) < 0:
+        raise ValueError("--autodrive-pause는 0 이상이어야 합니다.")
     # --hotkeys는 예외: ESC로 자동 탐색을 취소하려면 함께 켤 수 있어야 합니다.
 
     return RunPlan(

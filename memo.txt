@@ -19,6 +19,15 @@
 # 보고서 재생성
 .venv/bin/python candy_soda_agent/main.py --survey-report
 
+# 40스텝 세션 반복 (같은 run에 누적, 세션마다 metrics.md 갱신)
+.venv/bin/python candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps 40 --autodrive-repeat 5
+# 새 run 폴더로 시작해서 반복
+.venv/bin/python candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps 40 --autodrive-repeat 5 --new-run
+
+# 지표 / 클릭 위치 진단
+.venv/bin/python candy_soda_agent/survey_metrics.py
+.venv/bin/python candy_soda_agent/debug_survey_points.py
+
 # 단축키 모드
 .venv/bin/python candy_soda_agent/main.py --hotkeys
 

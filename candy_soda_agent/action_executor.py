@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
 
 from config import (
     ACTION_PAUSE,
+    ADB_PATH,
+    ADB_SERIAL,
+    BACK_KEY,
     COLS,
     DRAG_DURATION,
     DRY_RUN,
@@ -277,6 +282,151 @@ def execute_decision(
     return True
 
 
+def _ensure_game_window_active(expected_window_title: str) -> None:
+    """게임 창이 전면이 아니면 전면으로 올리고, 그래도 아니면 예외를 냅니다."""
+
+    if not expected_window_title:
+        raise RuntimeError("실제 클릭에는 GAME_WINDOW_TITLE 설정이 필요합니다.")
+    active_title = active_application_name()
+    if not _application_matches(expected_window_title, active_title):
+        print(f"[FOCUS] {expected_window_title} 앱을 전면으로 전환합니다.")
+        activate_application(expected_window_title)
+        active_title = active_application_name()
+    if not _application_matches(expected_window_title, active_title):
+        raise RuntimeError(
+            "활성 창이 게임 창과 일치하지 않습니다: "
+            f"expected={expected_window_title!r}, actual={active_title!r}"
+        )
+
+
+ANDROID_KEYCODE_BACK = "4"
+ADB_TIMEOUT_SECONDS = 20
+
+
+def _adb_executable(adb_path: str) -> str | None:
+    """ADB_PATH가 파일이면 그대로, 아니면 PATH에서 찾습니다(예: "adb")."""
+    if not adb_path:
+        return None
+    if Path(adb_path).is_file():
+        return adb_path
+    return shutil.which(adb_path)
+
+
+def _adb_command(adb_path: str, serial: str, *args: str) -> list[str]:
+    executable = _adb_executable(adb_path) or adb_path
+    command = [executable]
+    if serial:
+        command += ["-s", serial]
+    return command + list(args)
+
+
+def _run_adb(command: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        command,
+        check=False,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=ADB_TIMEOUT_SECONDS,
+    )
+
+
+def back_method(adb_path: str = ADB_PATH, key: str = BACK_KEY) -> str:
+    """뒤로를 보낼 방법: "adb" | "keyboard" | "off"."""
+    if adb_path:
+        return "adb"
+    if key:
+        return "keyboard"
+    return "off"
+
+
+def check_adb(adb_path: str = ADB_PATH, serial: str = ADB_SERIAL) -> tuple[bool, str]:
+    """adb로 에뮬레이터에 연결되는지 탐색 시작 전에 확인합니다(adb get-state).
+
+    반환: (성공 여부, 사람이 읽을 설명). 설정이 틀렸으면 탐색 중간이 아니라 시작
+    전에 멈춰서 API 호출을 아낍니다."""
+
+    if _adb_executable(adb_path) is None:
+        return False, (
+            f"ADB_PATH에서 adb를 찾지 못했습니다: {adb_path!r} "
+            "(LDPlayer 설치 폴더의 adb.exe 전체 경로를 따옴표 없이 적으세요)"
+        )
+    try:
+        result = _run_adb(_adb_command(adb_path, serial, "get-state"))
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return False, f"adb 실행 실패: {error}"
+    state = (result.stdout or "").strip()
+    if result.returncode != 0 or state != "device":
+        detail = (result.stderr or result.stdout or "").strip() or f"state={state!r}"
+        hint = ""
+        if "more than one" in detail:
+            hint = " (에뮬레이터가 여러 개입니다. `adb devices`로 이름을 보고 ADB_SERIAL에 적으세요)"
+        elif "no devices" in detail or "not found" in detail:
+            hint = " (LDPlayer 설정 > 기타 설정에서 ADB 디버깅을 켰는지 확인하세요)"
+        return False, f"adb 연결 실패: {detail}{hint}"
+    target = serial or "기본 기기"
+    return True, f"{target} 연결됨"
+
+
+def execute_back_key(
+    *,
+    key: str = BACK_KEY,
+    adb_path: str = ADB_PATH,
+    adb_serial: str = ADB_SERIAL,
+    dry_run: bool = DRY_RUN,
+    allow_taps: bool = SURVEY_ALLOW_TAPS,
+    expected_window_title: str = GAME_WINDOW_TITLE,
+    cancel_check: Callable[[], str | None] | None = None,
+) -> bool:
+    """Android 뒤로를 보냅니다(3단계: 막힘 탈출/리셋). 좌표를 쓰지 않습니다.
+
+    - adb_path가 있으면 `adb shell input keyevent 4`를 보냅니다. 게임 창이 전면일
+      필요가 없고 키보드 매핑과 상관없이 동작합니다.
+    - 없으면 키보드 key를 누릅니다(--hotkeys의 ESC 종료와 겹치지 않도록 누르는 동안
+      SYNTHETIC_KEY_ACTIVE를 켭니다).
+    반환: 실제로 보냈으면 True."""
+
+    method = back_method(adb_path, key)
+    if method == "off":
+        return False
+    if cancel_check:
+        reason = cancel_check()
+        if reason:
+            raise RuntimeError(reason)
+    if dry_run or not allow_taps:
+        print(f"[DRY RUN] back ({method})")
+        return False
+
+    if method == "adb":
+        command = _adb_command(
+            adb_path, adb_serial, "shell", "input", "keyevent", ANDROID_KEYCODE_BACK
+        )
+        try:
+            result = _run_adb(command)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise RuntimeError(f"adb 뒤로 키 실행 실패: {error}") from error
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            raise RuntimeError(f"adb 뒤로 키 실패(code={result.returncode}): {detail}")
+        return True
+
+    _ensure_game_window_active(expected_window_title)
+
+    import pyautogui
+
+    from hotkeys import SYNTHETIC_KEY_ACTIVE
+
+    SYNTHETIC_KEY_ACTIVE.set()
+    try:
+        pyautogui.press(key)
+        # keyboard 훅 스레드가 이 키 이벤트를 처리할 시간을 줍니다.
+        time.sleep(0.3)
+    finally:
+        SYNTHETIC_KEY_ACTIVE.clear()
+    return True
+
+
 def execute_button_tap(
     button,
     full_region: dict[str, int] | None,
@@ -308,21 +458,9 @@ def execute_button_tap(
         print(f"[DRY RUN] survey tap {label!r}/{role} at {x},{y}")
         return False
 
-    if not expected_window_title:
-        raise RuntimeError("실제 클릭에는 GAME_WINDOW_TITLE 설정이 필요합니다.")
+    _ensure_game_window_active(expected_window_title)
 
     import pyautogui
-
-    active_title = active_application_name()
-    if not _application_matches(expected_window_title, active_title):
-        print(f"[FOCUS] {expected_window_title} 앱을 전면으로 전환합니다.")
-        activate_application(expected_window_title)
-        active_title = active_application_name()
-    if not _application_matches(expected_window_title, active_title):
-        raise RuntimeError(
-            "활성 창이 게임 창과 일치하지 않습니다: "
-            f"expected={expected_window_title!r}, actual={active_title!r}"
-        )
 
     full_right = full_region["left"] + full_region["width"]
     full_bottom = full_region["top"] + full_region["height"]

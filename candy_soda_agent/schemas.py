@@ -110,6 +110,18 @@ class NormalizedPoint(BaseModel):
     y: float = Field(ge=0.0, le=1.0)
 
 
+class PixelBox(BaseModel):
+    """첫 번째 이미지(전체 캡처) 기준 픽셀 좌표의 버튼 영역입니다(왼쪽 위 x1,y1 / 오른쪽 아래 x2,y2).
+
+    0~1 상대 좌표로 받으면 모델이 0.1 단위로 뭉개서(실측 78%가 소수 한 자리) 픽셀로
+    받습니다. 값 검사(x2>x1, 이미지 안쪽)는 survey.apply_bbox_centers가 합니다."""
+
+    x1: int = Field(ge=0)
+    y1: int = Field(ge=0)
+    x2: int = Field(ge=0)
+    y2: int = Field(ge=0)
+
+
 class SurveyButtonCandidate(BaseModel):
     """조사 모드에서 발견한 UI 버튼 또는 탭 후보입니다."""
 
@@ -123,6 +135,9 @@ class SurveyButtonCandidate(BaseModel):
         "risky_account",
         "unknown",
     ] = "unknown"
+    # 모델은 bbox(픽셀)를 적고, center는 survey.apply_bbox_centers가 bbox 중심으로
+    # 다시 계산합니다. 실행부(action_executor)는 계속 center(0~1)만 씁니다.
+    bbox: Optional[PixelBox] = None
     center: Optional[NormalizedPoint] = None
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
     reason: str = ""
@@ -184,6 +199,9 @@ class SurveyDecision(BaseModel):
         "booster_panel",
         "shop_or_currency",
         "settings_menu",
+        "profile",
+        "social_friends",
+        "help_support",
         "event_or_mission",
         "ad_or_offer",
         "tutorial",
@@ -236,6 +254,11 @@ class ScreenNode(BaseModel):
     visits: int = 0
     # 처음 관찰했을 때의 정규화 버튼 목록. 버튼 1개 차이 허용 매칭의 기준(고정)입니다.
     buttons: list[str] = Field(default_factory=list)
+    # 처음 관찰했을 때의 화면 이미지 지문(dHash). 같은 화면인지 판단하는 1차 기준입니다.
+    # LLM이 보고하는 버튼 목록은 같은 화면을 봐도 매번 달라져 화면이 쪼개지는데,
+    # 이미지는 같은 화면이면 같게 나옵니다. 옛 기록에는 없으므로 기본값은 빈 문자열이고,
+    # 그때는 지문 비교를 건너뜁니다.
+    fingerprint: str = ""
 
 
 class NavigationEdge(BaseModel):
@@ -258,8 +281,10 @@ class NavigationGraph(BaseModel):
 # "눌렀더니 무슨 일이 있었는지"로 따로 기록하기 위한 원장입니다. verdict 값:
 # new_screen(새 화면으로 이동) / known_screen(기존 다른 화면으로 이동) /
 # no_change(눌러도 화면 그대로) / blocked(도달 불가로 포기) / failed(탭 자체가 실행 안 됨) /
-# not_visible(그 화면을 다시 봐도 후보에 연속으로 안 나와 정리됨).
-# blocked와 not_visible은 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
+# not_visible(그 화면을 다시 봐도 후보에 연속으로 안 나와 정리됨) /
+# missed(눌렀는데 픽셀이 그대로라 빗나감 의심, 재시도 대기 중 = 아직 프론티어) /
+# not_found(확대 재확인에서 그 버튼을 화면에서 찾지 못해 누르지 않고 정리됨).
+# blocked, not_visible, not_found는 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
 class LedgerEntry(BaseModel):
     """(screen_id, action_key) 조합 하나의 시도 이력입니다.
     attempts == 0이고 탭 없이 정리되지도 않았으면 프론티어(미시도)입니다."""
@@ -272,7 +297,14 @@ class LedgerEntry(BaseModel):
     # Python 3.9에서 동작하려면 `X | None`이 아니라 Optional[...]을 써야 합니다.
     verdict: Optional[
         Literal[
-            "new_screen", "known_screen", "no_change", "blocked", "failed", "not_visible"
+            "new_screen",
+            "known_screen",
+            "no_change",
+            "blocked",
+            "failed",
+            "not_visible",
+            "missed",
+            "not_found",
         ]
     ] = None
     target_screen_id: Optional[str] = None
@@ -285,3 +317,28 @@ class ActionLedger(BaseModel):
     """모든 (화면, 행동) 시도 기록. 키는 f"{screen_id}:{action_key}" 입니다."""
 
     entries: dict[str, LedgerEntry] = Field(default_factory=dict)
+
+
+class TapLocation(BaseModel):
+    """누르기 직전 확대 재확인(tap_refine)에서 모델이 돌려주는 버튼 위치입니다.
+
+    격자 칸(cell, 예: "C5")과 픽셀 좌표(x, y)를 둘 다 받습니다. 칸 이름은 가장자리
+    글자를 읽으면 되어 좌표보다 덜 틀리고, 픽셀 좌표는 더 정밀합니다. 둘이 맞으면
+    픽셀을, 어긋나면 칸 중심을 씁니다(tap_refine.resolve_location)."""
+
+    found: bool = False
+    cell: str = ""
+    x: int = Field(default=-1, ge=-1)
+    y: int = Field(default=-1, ge=-1)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    seen_label: str = ""
+
+    @field_validator("cell", mode="after")
+    @classmethod
+    def _limit_cell(cls, value: str) -> str:
+        return _truncate_text(value.strip(), 8)
+
+    @field_validator("seen_label", mode="after")
+    @classmethod
+    def _limit_seen_label(cls, value: str) -> str:
+        return _truncate_text(value, 60)

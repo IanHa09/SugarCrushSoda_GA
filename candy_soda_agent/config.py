@@ -186,8 +186,19 @@ FRONTIER_MAX_REPLAN_ATTEMPTS = int(os.getenv("FRONTIER_MAX_REPLAN_ATTEMPTS", "2"
 if FRONTIER_MAX_REPLAN_ATTEMPTS < 1:
     raise ValueError("FRONTIER_MAX_REPLAN_ATTEMPTS는 1 이상이어야 합니다.")
 
-# 같은 화면 타입에서 정규화 버튼 목록이 이 개수 이하로만 다르면(공통 버튼이 1개 이상일 때)
-# 기존 화면으로 봅니다. LLM이 버튼 하나를 빠뜨려 화면이 쪼개지는 것을 막습니다. 0이면 끕니다.
+# 같은 화면 타입에서 이미지 지문(dHash)의 거리가 이 값 이하면 같은 화면으로 봅니다.
+# 화면 식별의 1차 기준입니다. LLM이 보고하는 버튼 목록은 같은 화면을 봐도 매번 달라서
+# (실측: 같은 플레이 화면인데 버튼 목록이 8~10개 차이) 화면이 쪼개지는 주원인이었고,
+# 이미지는 같은 화면이면 거의 같게 나옵니다. 실측 표본에서 0.03~0.10 구간이 결과가
+# 같아(노드 12개) 가운데 값을 기본으로 둡니다. 0이면 지문 매칭을 끕니다.
+SCREEN_FINGERPRINT_MAX_DISTANCE = float(
+    os.getenv("SCREEN_FINGERPRINT_MAX_DISTANCE", "0.05")
+)
+if not 0.0 <= SCREEN_FINGERPRINT_MAX_DISTANCE <= 1.0:
+    raise ValueError("SCREEN_FINGERPRINT_MAX_DISTANCE는 0.0~1.0이어야 합니다.")
+
+# 지문으로도 못 찾았을 때 쓰는 보조 기준입니다. 같은 화면 타입에서 정규화 버튼 목록이
+# 이 개수 이하로만 다르면(공통 버튼이 1개 이상일 때) 기존 화면으로 봅니다. 0이면 끕니다.
 SCREEN_MATCH_MAX_BUTTON_DIFF = int(os.getenv("SCREEN_MATCH_MAX_BUTTON_DIFF", "1"))
 if SCREEN_MATCH_MAX_BUTTON_DIFF < 0:
     raise ValueError("SCREEN_MATCH_MAX_BUTTON_DIFF는 0 이상이어야 합니다.")
@@ -206,6 +217,72 @@ SCREEN_FRAGMENTATION_WARN_COUNT = int(
 )
 if SCREEN_FRAGMENTATION_WARN_COUNT < 0:
     raise ValueError("SCREEN_FRAGMENTATION_WARN_COUNT는 0 이상이어야 합니다.")
+
+# ------------------------------------------------------------
+# 탭 정확도 · 탭 결과 확인 · 막힘 탈출 설정
+# ------------------------------------------------------------
+
+
+def _env_float(name: str, default: str, low: float, high: float) -> float:
+    """환경변수를 실수로 읽고 범위를 검사합니다."""
+
+    value = float(os.getenv(name, default))
+    if not low <= value <= high:
+        raise ValueError(f"{name}는 {low}~{high} 범위여야 합니다: {value}")
+    return value
+
+
+def _env_int(name: str, default: str, low: int) -> int:
+    """환경변수를 정수로 읽고 하한을 검사합니다."""
+
+    value = int(os.getenv(name, default))
+    if value < low:
+        raise ValueError(f"{name}는 {low} 이상이어야 합니다: {value}")
+    return value
+
+
+# [1단계] 누르기 직전 확대 재확인. 조사 모델(gpt-4o-mini)이 준 좌표 주변을 잘라
+# 행/열 격자를 그린 뒤, 위치 인식이 나은 모델(OPENAI_TAP_MODEL)에게 버튼 위치를
+# 다시 묻습니다. 실측에서 조사 모델 좌표는 58%가 x=0.5였고 탭 24번 중 13번이
+# 화면을 바꾸지 못했습니다. false면 예전처럼 조사 모델 좌표를 그대로 누릅니다.
+TAP_REFINE = _env_bool("TAP_REFINE", True)
+TAP_MODEL = os.getenv("OPENAI_TAP_MODEL", "gpt-4.1-mini")
+# 잘라낼 정사각형 한 변 = 화면 긴 변 x 이 비율(757x1348 창이면 약 540px).
+TAP_REFINE_CROP_FRACTION = _env_float("TAP_REFINE_CROP_FRACTION", "0.40", 0.1, 1.0)
+# 확대본에서 못 찾았거나 확신이 이 값보다 낮으면 전체 화면으로 한 번 더 찾습니다.
+TAP_REFINE_MIN_CONFIDENCE = _env_float("TAP_REFINE_MIN_CONFIDENCE", "0.5", 0.0, 1.0)
+TAP_REFINE_FULL_FALLBACK = _env_bool("TAP_REFINE_FULL_FALLBACK", True)
+TAP_REFINE_MAX_OUTPUT_TOKENS = _env_int("TAP_REFINE_MAX_OUTPUT_TOKENS", "300", 1)
+
+# [2단계] 탭 뒤 화면이 멈출 때까지 기다린 다음 다음 관찰로 넘어갑니다(예전: 고정 1.5초).
+POST_TAP_MIN_WAIT = _env_float("POST_TAP_MIN_WAIT", "0.6", 0.0, 10.0)
+POST_TAP_INTERVAL = _env_float("POST_TAP_INTERVAL", "0.25", 0.05, 5.0)
+POST_TAP_TIMEOUT = _env_float("POST_TAP_TIMEOUT", "5.0", 0.5, 60.0)
+POST_TAP_STABLE_FRAMES = _env_int("POST_TAP_STABLE_FRAMES", "2", 1)
+# 연속 프레임 차이가 이 값보다 작으면 "멈췄다"고 봅니다.
+POST_TAP_STABLE_THRESHOLD = _env_float("POST_TAP_STABLE_THRESHOLD", "0.01", 0.0, 1.0)
+# 두 캡처의 픽셀 차이(capture.frame_difference)가 이 값보다 작으면 같은 화면입니다.
+# 실측(run_2026-09-21_10-51-14): 같은 화면끼리 0.0000~0.0038(맵 애니메이션 포함),
+# 실제 전환은 0.054 이상이었습니다. 탭 효과 판정과 "같은 픽셀 = 같은 노드" 판정에 씁니다.
+SAME_SCREEN_PIXEL_THRESHOLD = _env_float("SAME_SCREEN_PIXEL_THRESHOLD", "0.01", 0.0, 1.0)
+# 눌렀는데 화면이 그대로면(빗나감 의심) 이 횟수만큼 다시 시도한 뒤 no_change로 닫습니다.
+TAP_MISS_RETRIES = _env_int("TAP_MISS_RETRIES", "1", 0)
+
+# [3단계] 막혔을 때(프론티어가 남았는데 가는 길을 모름) Android 뒤로를 보냅니다.
+# 리셋 중 홈/뒤로 버튼이 안 보일 때도 씁니다. 보내는 방법은 둘입니다.
+#   1) ADB_PATH가 있으면 adb로 `input keyevent 4`(Android 뒤로)를 보냅니다(권장).
+#      키보드 매핑과 상관없이 동작합니다. LDPlayer는 설치 폴더에 adb.exe가 있습니다.
+#      예) ADB_PATH=C:\LDPlayer\LDPlayer14\adb.exe  (.env에서는 따옴표 없이 적으세요)
+#      에뮬레이터가 여러 개 떠 있으면 ADB_SERIAL에 `adb devices`의 이름을 적습니다.
+#   2) ADB_PATH가 비어 있으면 키보드 키 BACK_KEY를 누릅니다. 실측(run_2026-10-02_08-33-21)
+#      에서 LDPlayer는 ESC로 화면이 바뀐 적이 73번 중 1번뿐이라 기본값을 껐습니다.
+# 둘 다 비어 있으면 뒤로 기능을 끕니다.
+ADB_PATH = os.getenv("ADB_PATH", "").strip().strip('"').strip("'")
+ADB_SERIAL = os.getenv("ADB_SERIAL", "").strip()
+BACK_KEY = os.getenv("BACK_KEY", "").strip().lower()
+STUCK_BACK_KEY_MAX = _env_int("STUCK_BACK_KEY_MAX", "3", 0)
+# 탭 뒤에는 위 POST_TAP_* 대기가 있으므로 스텝 사이 고정 대기는 짧게 둡니다.
+AUTODRIVE_STEP_PAUSE = _env_float("AUTODRIVE_STEP_PAUSE", "0.5", 0.0, 30.0)
 
 # Mermaid는 노드가 많아지면 레이아웃이 무너지므로, 이 개수를 넘으면 보고서에서
 # 다이어그램 생성을 건너뜁니다(0단계 파편화 진단에서 크게 나오면 낮추세요).
@@ -259,7 +336,10 @@ def _resolve_run_id(game_root: Path) -> str:
         return env_run_id
 
     pointer_path = game_root / "current_run.txt"
-    if pointer_path.exists():
+    # main.py --new-run이 켜는 값입니다. 새 run_id를 만들어 current_run.txt에도
+    # 적어 두므로, 다음 실행부터는 옵션 없이 이 새 run을 이어갑니다.
+    start_new = os.getenv("NEW_RUN", "").strip().lower() in {"1", "true"}
+    if pointer_path.exists() and not start_new:
         existing = pointer_path.read_text(encoding="utf-8").strip()
         if existing:
             return existing
@@ -289,6 +369,8 @@ RUN_DIR = GAME_ROOT_DIR / "runs" / RUN_ID
 
 SURVEY_LOG_PATH = RUN_DIR / "game_survey.jsonl"
 SURVEY_REPORT_PATH = RUN_DIR / "game_survey_report.md"
+SURVEY_METRICS_MD_PATH = RUN_DIR / "metrics.md"
+SURVEY_METRICS_CSV_PATH = RUN_DIR / "metrics.csv"
 
 NAVIGATION_DIR = RUN_DIR / "navigation"
 NAVIGATION_GRAPH_PATH = NAVIGATION_DIR / "graph.json"

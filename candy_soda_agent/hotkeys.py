@@ -9,6 +9,17 @@ import threading
 AUTO_RUNNING = threading.Event()
 ANALYZE_ONCE = threading.Event()
 EXIT_REQUESTED = threading.Event()
+# 프로그램이 직접 ESC(에뮬레이터 뒤로 키)를 누르는 동안 켭니다. 이때 들어온 ESC는
+# keyboard 훅이 사람이 누른 종료 요청으로 오해하지 않도록 무시합니다.
+SYNTHETIC_KEY_ACTIVE = threading.Event()
+
+
+def request_exit() -> None:
+    """ESC 단축키 콜백. 프로그램이 보낸 ESC면 무시합니다."""
+
+    if SYNTHETIC_KEY_ACTIVE.is_set():
+        return
+    EXIT_REQUESTED.set()
 
 
 def toggle_auto_mode() -> None:
@@ -32,7 +43,7 @@ def setup_hotkeys(enabled: bool):
 
     keyboard.add_hotkey("f8", ANALYZE_ONCE.set)
     keyboard.add_hotkey("f9", toggle_auto_mode)
-    keyboard.add_hotkey("esc", EXIT_REQUESTED.set)
+    keyboard.add_hotkey("esc", request_exit)
     return keyboard
 
 

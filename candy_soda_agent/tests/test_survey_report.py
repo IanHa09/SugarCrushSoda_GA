@@ -137,7 +137,7 @@ class SurveyReportTests(unittest.TestCase):
         report = generate_survey_markdown(records, graph)
 
         self.assertIn("Autodrive가 관찰한 실제 화면 전환", report)
-        self.assertIn("screen_map -->|Settings| screen_settings", report)
+        self.assertIn('screen_map -->|"Settings"| screen_settings', report)
         self.assertNotIn("Start level", report)
 
 

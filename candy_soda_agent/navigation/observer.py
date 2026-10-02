@@ -7,21 +7,6 @@ from navigation.policy import canonical_action_label
 from survey_utils import SAFE_BUTTON_ROLES
 
 
-# 병렬 섹션용 단일 노드 화면
-SINGLETON_SCREEN_TYPES = {
-    "map_or_level_select",
-    "settings_menu",
-    "shop_or_currency",
-    "booster_panel",
-}
-
-
-# 화면 타입 하나로 고정 ID를 만듭니다.
-def canonical_screen_id(screen_type: str) -> str:
-    digest = hashlib.sha1(screen_type.encode()).hexdigest()[:12]
-    return f"screen_{digest}"
-
-
 def screen_buttons(decision) -> list[str]:
     """화면 식별에 쓰는 버튼 목록(정렬된 정규화 라벨).
 
@@ -45,12 +30,15 @@ def screen_id(decision) -> str:
     """화면 타입 + 정규화 버튼 목록으로 정확 일치용 ID를 만듭니다.
 
     visible_text는 LLM이 고르는 문구와 순서가 매번 달라 화면이 쪼개지는 주원인이라
-    뺐습니다. 버튼이 하나 빠진 관찰까지 같은 화면으로 묶는 허용 매칭은
-    GraphStore.observe()가 이 ID로 못 찾았을 때 추가로 합니다.
-    """
+    뺐습니다. 버튼 목록도 같은 이유로 믿을 수 없어서(같은 플레이 화면인데 관찰마다
+    3~6개씩 다른 부분집합을 보고합니다) 이 ID는 "정확히 같은 관찰"을 빠르게 찾는
+    용도일 뿐입니다. 같은 화면인지는 GraphStore.observe()가 화면 이미지 지문으로
+    판단하고, 지문이 없을 때만 버튼 허용 매칭으로 넘어갑니다.
 
-    if decision.screen_type in SINGLETON_SCREEN_TYPES:
-        return canonical_screen_id(decision.screen_type)
+    전에는 상점·설정처럼 하나뿐이라고 본 화면 타입을 타입 이름만으로 한 노드에
+    묶었는데(SINGLETON_SCREEN_TYPES), 실측해 보니 상점은 실제로 서로 다른 화면이
+    여러 개여서 과병합이었습니다. 지문 판정이 그 역할을 대신합니다.
+    """
 
     payload = "|".join([decision.screen_type, *screen_buttons(decision)])
     digest = hashlib.sha1(payload.encode()).hexdigest()[:12]

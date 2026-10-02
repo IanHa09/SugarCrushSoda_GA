@@ -25,7 +25,7 @@ from config import (
 from grid_detector import detect_grid_shape
 from image_utils import board_fingerprint
 from llm_request import request_structured_vision
-from schemas import SurveyDecision
+from schemas import NormalizedPoint, SurveyDecision
 from storage import (
     load_all_survey_records,
     load_recent_survey_records,
@@ -62,6 +62,40 @@ def _format_survey_context(records: list[dict]) -> str:
     return json.dumps(summaries, ensure_ascii=False)
 
 
+def apply_bbox_centers(
+    decision: SurveyDecision,
+    width: int,
+    height: int,
+) -> SurveyDecision:
+    """버튼 후보의 픽셀 bbox로 center(0~1)를 다시 계산합니다.
+
+    - bbox가 이미지 밖으로 나가면 이미지 안으로 자릅니다.
+    - 잘라도 넓이가 0이거나 뒤집힌 bbox는 버리고, 모델이 준 center가 있으면 그대로 둡니다.
+    - bbox가 없으면 모델이 준 center를 그대로 둡니다(옛 응답과 호환).
+    실행부(action_executor)는 계속 center만 보므로 여기서 한 번만 맞춰 두면 됩니다."""
+
+    if width <= 0 or height <= 0:
+        return decision
+
+    for button in decision.button_candidates:
+        box = button.bbox
+        if box is None:
+            continue
+        x1 = min(max(box.x1, 0), width - 1)
+        x2 = min(max(box.x2, 0), width - 1)
+        y1 = min(max(box.y1, 0), height - 1)
+        y2 = min(max(box.y2, 0), height - 1)
+        if x2 <= x1 or y2 <= y1:
+            button.bbox = None
+            continue
+        box.x1, box.y1, box.x2, box.y2 = x1, y1, x2, y2
+        button.center = NormalizedPoint(
+            x=round((x1 + x2) / 2 / width, 4),
+            y=round((y1 + y2) / 2 / height, 4),
+        )
+    return decision
+
+
 def analyze_survey_screen(
     client: OpenAI,
     full_image: np.ndarray,
@@ -71,6 +105,7 @@ def analyze_survey_screen(
     """화면 요소, 버튼 후보, 문서화 증거 추출."""
 
     context_text = _format_survey_context(survey_context or [])
+    image_height, image_width = full_image.shape[:2]
 
     prompt = f"""
 첫 번째 이미지는 게임 UI 전체 또는 게임 창이다. 두 번째 이미지가 있으면 같은 화면의 보드 확대본이다.
@@ -88,7 +123,10 @@ def analyze_survey_screen(
 - map_or_level_select: 스테이지 지도 또는 레벨 선택
 - booster_panel: 부스터 선택, 잠금 부스터
 - shop_or_currency: 코인, 상점, 재화
-- settings_menu: 설정, 도움말, 개인정보, 계정 메뉴
+- settings_menu: 소리·음악·언어·알림 같은 게임 옵션을 켜고 끄는 설정 화면
+- profile: 플레이어 프로필, 아바타, 레벨·국가·플레이 시작일 같은 계정/개인 정보
+- social_friends: 친구 목록, 친구 초대·추가, 리더보드, 메시지함
+- help_support: 고객센터, FAQ, 도움말, 문의, 검색, 문제 신고
 - event_or_mission: 이벤트, 미션, 출석, 시즌 보상
 - ad_or_offer: 광고 시청, 특가, 시간 제한 오퍼
 - tutorial, loading, unknown_but_recordable
@@ -101,7 +139,11 @@ def analyze_survey_screen(
 - risky_ad: 광고 시청, watch ad, rewarded ad
 - risky_account: 로그인, 계정 연결, 개인정보, 권한 요청
 - 결제/구매/광고/로그인/권한 관련 후보는 기록만 하고 안전 후보로 분류하지 않는다.
-- center는 전체 첫 번째 이미지 기준의 상대 좌표 x,y를 0~1로 적는다. 모르면 center를 null로 둔다.
+- 첫 번째 이미지 크기는 가로 {image_width}px, 세로 {image_height}px이다.
+- 각 버튼 후보는 bbox에 첫 번째 이미지 기준 픽셀 좌표로 버튼이 차지하는 사각형을 적는다
+  (x1,y1 = 왼쪽 위, x2,y2 = 오른쪽 아래, 0 <= x < {image_width}, 0 <= y < {image_height}).
+- bbox는 글자만이 아니라 실제로 누르는 버튼/아이콘 전체를 감싼다. 0.5 같은 어림값 대신 보이는 위치를 그대로 적는다.
+- bbox를 적었으면 center는 null로 둔다. 위치를 모르면 bbox와 center를 모두 null로 둔다.
 
 중복 방지:
 - 최근 기록과 같은 화면/요소로 보이면 summary와 uncertainties에 그 사실을 적는다.
@@ -117,7 +159,7 @@ def analyze_survey_screen(
 {context_text}
 """
 
-    return request_structured_vision(
+    decision = request_structured_vision(
         client,
         model=SURVEY_MODEL,
         system_prompt=SYSTEM_PROMPT,
@@ -130,6 +172,7 @@ def analyze_survey_screen(
         timing_label="SURVEY TIMING",
         missing_response_message="구조화된 조사 응답을 받지 못했습니다.",
     )
+    return apply_bbox_centers(decision, image_width, image_height)
 
 
 def record_survey_screen(

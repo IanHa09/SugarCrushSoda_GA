@@ -53,6 +53,9 @@ SCREEN_TYPE_LABELS = {
     "booster_panel": "Booster Panel",
     "shop_or_currency": "Shop / Currency",
     "settings_menu": "Settings",
+    "profile": "Profile",
+    "social_friends": "Friends / Social",
+    "help_support": "Help / Support",
     "event_or_mission": "Event / Mission",
     "ad_or_offer": "Ad / Offer",
     "tutorial": "Tutorial",
@@ -102,7 +105,12 @@ def _mermaid_node_id(raw_id: str) -> str:
 
 
 def _mermaid_text(value: str) -> str:
-    return value.replace('"', "'").replace("|", "/")
+    """따옴표로 감싼 mermaid 라벨 안에 넣을 수 있게 문자를 바꿉니다.
+
+    큰따옴표는 라벨을 끝내고, |는 간선 라벨 구분자이고, 백틱으로 시작하면 markdown
+    문자열로 해석되므로 각각 바꿉니다. 괄호·!·? 같은 나머지 문자는 따옴표 안이면
+    그대로 써도 됩니다."""
+    return value.replace('"', "'").replace("|", "/").replace("`", "'")
 
 
 def _screen_key_for_record(record: dict[str, Any]) -> str:
@@ -212,9 +220,11 @@ def _append_game_structure_diagram(
         if edge.source == edge.target:
             self_loop_count += 1
             return
+        # 간선 라벨은 항상 따옴표로 감쌉니다. "뒤로(키)"처럼 괄호가 들어간 라벨을
+        # 따옴표 없이 쓰면 mermaid가 노드 모양 기호로 읽어 다이어그램 전체가 깨집니다.
         line = (
             f"    {_mermaid_node_id(edge.source)} "
-            f"{arrow}|{_mermaid_text(edge.action)}| "
+            f'{arrow}|"{_mermaid_text(edge.action)}"| '
             f"{_mermaid_node_id(edge.target)}"
         )
         if line in drawn:
@@ -369,20 +379,25 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
     untried_by_screen: dict[str, list[str]] = defaultdict(list)
     blocked_by_screen: dict[str, list[str]] = defaultdict(list)
     hidden_by_screen: dict[str, list[str]] = defaultdict(list)
+    not_found_by_screen: dict[str, list[str]] = defaultdict(list)
     for entry in ledger.ledger.entries.values():
         label = entry.action_label or entry.action_key
         if is_open_entry(entry):
-            untried_by_screen[entry.screen_id].append(label)
+            suffix = " (빗나감, 재시도 대기)" if entry.verdict == "missed" else ""
+            untried_by_screen[entry.screen_id].append(label + suffix)
         elif entry.verdict == "blocked":
             blocked_by_screen[entry.screen_id].append(label)
         elif entry.verdict == "not_visible":
             hidden_by_screen[entry.screen_id].append(label)
+        elif entry.verdict == "not_found":
+            not_found_by_screen[entry.screen_id].append(label)
 
     sections = (
         ("### 아직 안 눌러본 프론티어", untried_by_screen,
          "- 없음 — 발견한 모든 (화면,행동)을 처리했습니다."),
         ("### 도달 실패로 포기함(blocked)", blocked_by_screen, "- 없음"),
         ("### 다시 봐도 후보에 안 나와 정리함(not_visible)", hidden_by_screen, "- 없음"),
+        ("### 누르기 전 확대 확인에서 못 찾아 정리함(not_found)", not_found_by_screen, "- 없음"),
     )
     for heading, by_screen, empty_text in sections:
         lines.extend([heading, ""])
