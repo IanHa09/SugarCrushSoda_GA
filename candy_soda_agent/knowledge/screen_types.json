@@ -1,0 +1,108 @@
+{
+  "_설명": [
+    "화면 타입 분류표입니다. 버튼이나 요소가 아니라 '화면 전체가 무엇을 하는 곳인가'만 나눕니다(버튼·요소는 button_candidates와 game_elements가 따로 기록).",
+    "조사 모델 응답 스키마(screen_type 값), 조사 프롬프트의 타입 목록과 분류 원칙(rules), 보고서 라벨, autodrive 처리 방식이 모두 여기서 나옵니다.",
+    "id: 그래프·기록에 남는 값이라 바꾸면 예전 run과 이어지지 않습니다(autodrive가 시작할 때 알려 주고 멈춥니다). 설명(description)과 rules는 자유롭게 고쳐도 됩니다.",
+    "policy: explore(버튼을 탐색) | leave(기록만 하고 바로 나옴, 플레이 화면) | wait(잠시 기다렸다 다시 캡처, 로딩).",
+    "genres: 이 타입을 프롬프트에 넣을 장르 목록. [\"*\"]는 모든 장르. enabled: false면 스키마·프롬프트에서 뺍니다.",
+    "unknown은 지우면 안 됩니다(응답 기본값). 검수 배경은 screen_types_review.md에 있습니다."
+  ],
+  "rules": [
+    "버튼·아이콘·요소는 보지 말고 화면 전체가 무엇을 하는 곳인지로 고른다.",
+    "팝업이 떠 있으면 뒤 배경이 아니라 앞의 팝업 기준으로 고른다.",
+    "여러 타입에 걸치면 이 순서로 앞의 것을 고른다: play > level > ad > shop > tutorial > loading > popup·menu > home > unknown.",
+    "popup과 menu는 크기로 가른다. 배경이 비치거나 어두워진 작은 창이면 popup, 화면을 꽉 채우면 menu."
+  ],
+  "types": [
+    {
+      "id": "play",
+      "label": "Play",
+      "label_ko": "플레이 화면",
+      "group": "play",
+      "policy": "leave",
+      "genres": ["*"],
+      "description": "실제로 게임을 하는 화면. 매치3면 격자 보드가 화면 대부분을 차지한다. 레벨 번호가 놓인 지도는 여기가 아니라 home"
+    },
+    {
+      "id": "home",
+      "label": "Home",
+      "label_ko": "홈·메인",
+      "group": "hub",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "게임의 중심 화면. 사가 지도, 로비(큰 플레이 버튼과 메뉴) 등"
+    },
+    {
+      "id": "level",
+      "label": "Level Start / Result",
+      "label_ko": "레벨 시작·결과",
+      "group": "progression",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "플레이 직전(목표·준비·부스터 선택)과 직후(클리어·실패 결과, 별·점수) 화면"
+    },
+    {
+      "id": "popup",
+      "label": "Popup",
+      "label_ko": "팝업·알림",
+      "group": "popup",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "다른 화면 위에 뜬 작은 창. 보상, 안내, 이벤트 알림, 확인창 등"
+    },
+    {
+      "id": "menu",
+      "label": "Menu / Sub Page",
+      "label_ko": "메뉴·하위 화면",
+      "group": "menu",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "화면 전체를 차지하는 하위 페이지. 설정, 프로필, 친구, 팀, 이벤트·미션 목록, 도움말 등"
+    },
+    {
+      "id": "shop",
+      "label": "Shop",
+      "label_ko": "상점·결제",
+      "group": "monetization",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "돈이나 재화로 무언가를 사는 화면이나 팝업. 상점, 재화 구매, 특가 패키지"
+    },
+    {
+      "id": "ad",
+      "label": "Ad",
+      "label_ko": "광고",
+      "group": "monetization",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "재생 중인 광고, 광고를 보면 보상을 주겠다는 제안"
+    },
+    {
+      "id": "tutorial",
+      "label": "Tutorial",
+      "label_ko": "튜토리얼",
+      "group": "progression",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "손가락·말풍선으로 조작을 알려 주는 화면"
+    },
+    {
+      "id": "loading",
+      "label": "Loading",
+      "label_ko": "로딩",
+      "group": "system",
+      "policy": "wait",
+      "genres": ["*"],
+      "description": "로딩·연결 중 화면(진행 막대, 스피너)"
+    },
+    {
+      "id": "unknown",
+      "label": "Unknown",
+      "label_ko": "기타",
+      "group": "other",
+      "policy": "explore",
+      "genres": ["*"],
+      "description": "위 어디에도 맞지 않는 화면"
+    }
+  ]
+}

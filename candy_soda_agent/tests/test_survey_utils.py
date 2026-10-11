@@ -67,14 +67,14 @@ class SurveyUtilsTests(unittest.TestCase):
     def test_screen_signature_matches_equivalent_survey(self) -> None:
         """표기만 다른 동일 화면의 서명과 요소 키가 같은지 검증합니다."""
         first = SurveyDecision(
-            screen_type="level_complete",
+            screen_type="level",
             visible_text=["Next", "Level 9"],
             game_elements=[
                 SurveyElement(category="reward", name="Three Stars"),
             ],
         )
         second = SurveyDecision(
-            screen_type="level_complete",
+            screen_type="level",
             visible_text=["level 9", "NEXT"],
             game_elements=[
                 SurveyElement(category="reward", name="three stars"),
@@ -110,7 +110,7 @@ class SurveyUtilsTests(unittest.TestCase):
     def test_progression_is_preferred_over_going_back(self) -> None:
         """진행 버튼이 되돌리기 버튼보다 우선하는지 검증합니다."""
         decision = SurveyDecision(
-            screen_type="level_complete",
+            screen_type="level",
             button_candidates=[
                 SurveyButtonCandidate(
                     label="Close (X)",
@@ -135,7 +135,7 @@ class SurveyUtilsTests(unittest.TestCase):
     def test_current_shop_tab_is_skipped(self) -> None:
         """현재 화면과 같은 상점 탭 버튼은 건너뛰는지 검증합니다."""
         decision = SurveyDecision(
-            screen_type="shop_or_currency",
+            screen_type="shop",
             button_candidates=[
                 SurveyButtonCandidate(
                     label="Shop (bottom dock)",

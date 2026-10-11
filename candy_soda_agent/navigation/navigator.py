@@ -24,6 +24,15 @@
     게임 재시작 순서로 시도합니다(_plan_escape).
   - 여러 화면에 같은 자리로 보이는 버튼(네비게이션 바)은 공통 버튼으로 보고 전체에서
     한 번만 누르며, 눌러서 간 곳은 지름길로 경로 계획에 씁니다(ui_chrome.py).
+
+게임 지식·플레이 정책(2026-10):
+  - 시작할 때 GAME_TITLE로 knowledge/의 장르·UI 지식·화면 타입을 읽습니다(game_knowledge.py).
+  - 화면 처리 방식은 screen_types.json의 policy를 따릅니다: wait(로딩)는 기다렸다 다시 보고,
+    leave(플레이 화면)는 기록만 하고 바로 나옵니다.
+  - PLAY_POLICY=avoid: 플레이 진입 버튼(play_entry_labels)은 원장에 play_entry로 닫아 누르지
+    않습니다. 그래도 플레이 화면에 들어가면 "플레이 흐름"에 들어가, 나가기 버튼
+    (play_exit_labels) → 탈출 사다리(플레이 힌트) 순서로 지도 같은 홈 화면까지 나옵니다.
+    흐름 중에 처음 본 화면(나가기 확인창 등)은 프론티어로 등록하지 않습니다.
 """
 
 from __future__ import annotations
@@ -46,6 +55,7 @@ from action_executor import (
 )
 from capture import capture_bgr
 from capture_modes import capture_bundle
+from game_knowledge import GameProfile, active_profile, screen_policy, screen_type_ids
 from config import (
     ADB_PATH,
     APP_RESTART_MAX,
@@ -68,6 +78,8 @@ from config import (
     GLOBAL_ACTION_MIN_SCREENS,
     HOME_RESET_MAX_BACK_TAPS,
     MONITOR_INDEX,
+    PLAY_EXIT_MAX_STEPS,
+    PLAY_POLICY,
     ROOT_SCREEN_ID,
     SCREEN_FRAGMENTATION_WARN_COUNT,
     STUCK_BACK_KEY_MAX,
@@ -133,7 +145,7 @@ class _StepResult:
     kind: str  # "skip"(이 단계는 건너뜀) | "advance"(정상 진행) | "stop"(중단)
     node_id: str | None = None
     stop_reason: str | None = None
-    # kind == "stop"일 때 종류: "converged" | "unreachable" | "cancelled" | "error"
+    # kind == "stop"일 때 종류: "converged" | "unreachable" | "cancelled" | "error" | "play_stuck"
     stop_kind: str | None = None
 
 
@@ -142,7 +154,7 @@ class AutodriveSummary:
     """run_autodrive 한 번(=세션 하나)의 결과. 반복 실행(--autodrive-repeat)이 씁니다."""
 
     stop_reason: str
-    stop_kind: str  # "converged" | "unreachable" | "cancelled" | "error" | "max_steps" | "blocked"
+    stop_kind: str  # "converged" | "unreachable" | "cancelled" | "error" | "max_steps" | "blocked" | "play_stuck"
     steps: int
     session_id: str
 
@@ -152,6 +164,9 @@ class AutodriveSummary:
 
 
 ESCAPE_STAGES = ("back", "exit_finder", "retry_exit", "restart")
+# 플레이 흐름에서 보드가 아닌 화면(나가기 확인창·일시정지 메뉴 등)의 순서. 여기서 Android
+# 뒤로를 먼저 보내면 확인창이 닫혀 보드로 되돌아가므로, 나가기 요소 찾기를 먼저 씁니다.
+PLAY_FLOW_POPUP_STAGES = ("exit_finder", "back", "retry_exit", "restart")
 # 탈출 기록에 남기는 outcome 이름입니다(갇힘 탈출일 때).
 _ESCAPE_OUTCOMES = {
     "back": "stuck_back_key",
@@ -194,6 +209,13 @@ class _Journey:
     tried_exit_keys: set = field(default_factory=set)
     restarts: int = 0
     restart_available: bool = False
+    # 플레이 흐름: 플레이 화면(policy=leave)에 들어간 뒤 홈 화면으로 나올 때까지의 상태.
+    play_flow: bool = False
+    play_flow_steps: int = 0
+    # 흐름이 시작되기 전부터 알던 화면. 여기로 돌아오면 빠져나온 것으로 봅니다.
+    play_flow_known: set = field(default_factory=set)
+    # 흐름 안에서 직전에 본 화면. 화면이 바뀌면 탈출 사다리를 처음 단계부터 다시 씁니다.
+    play_flow_last_node: str | None = None
 
     def set_pending(
         self,
@@ -229,6 +251,20 @@ class _Journey:
         self.escape_streak = 0
         self.exit_failed_points.clear()
         self.tried_exit_keys.clear()
+
+    def start_play_flow(self, known_nodes) -> None:
+        self.play_flow = True
+        self.play_flow_steps = 0
+        self.play_flow_known = set(known_nodes)
+        self.play_flow_last_node = None
+        self.reset_escape()
+
+    def end_play_flow(self) -> None:
+        self.play_flow = False
+        self.play_flow_steps = 0
+        self.play_flow_known = set()
+        self.play_flow_last_node = None
+        self.reset_escape()
 
 
 def _finalize_previous_attempt(
@@ -424,14 +460,17 @@ def _synthetic_button(label: str, x: int, y: int, width: int, height: int) -> Su
     )
 
 
-def _exit_candidates(decision, tried: set) -> list:
-    """현재 화면 후보 중 닫기·뒤로·확인류 버튼(아직 이번 탈출에서 안 눌러 본 것)."""
+def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -> list:
+    """현재 화면 후보 중 닫기·뒤로·확인류 버튼(아직 이번 탈출에서 안 눌러 본 것).
+    "계속 플레이"처럼 플레이 진입 버튼은 '계속'이 들어 있어도 고르지 않습니다."""
     buttons = []
     for button in decision.button_candidates:
         if button.center is None or button.role not in SAFE_BUTTON_ROLES:
             continue
         key = navigation_action_key(button)
         if key in tried or is_risky_exit_label(button.label):
+            continue
+        if profile is not None and profile.is_play_entry(button.label):
             continue
         lowered = button.label.casefold()
         if canonical_action_label(button.label) in _EXIT_CANONICAL or any(
@@ -441,24 +480,44 @@ def _exit_candidates(decision, tried: set) -> list:
     return sorted(buttons, key=lambda b: -b.confidence)
 
 
-def _plan_escape(client, journey: _Journey, decision, image) -> _EscapePlan | None:
+def _plan_escape(
+    client,
+    journey: _Journey,
+    decision,
+    image,
+    *,
+    stages: tuple[str, ...] = ESCAPE_STAGES,
+    hint: str = "",
+    profile: GameProfile | None = None,
+    force_restart: bool = False,
+) -> _EscapePlan | None:
     """탈출 사다리에서 지금 할 동작을 고릅니다. 쓸 수 없는 단계는 건너뜁니다.
-    반환이 None이면 사다리를 다 썼습니다."""
+    반환이 None이면 사다리를 다 썼습니다.
 
-    restart_stage = ESCAPE_STAGES.index("restart")
+    stages: 단계 순서(플레이 흐름의 팝업 화면은 PLAY_FLOW_POPUP_STAGES).
+    hint: 나가기 요소 찾기에 넘길 상황 설명(플레이 흐름이면 play_exit_hint).
+    force_restart: 바로 게임 재시작 단계로 갑니다(플레이 흐름이 너무 길어졌을 때)."""
+
+    restart_stage = stages.index("restart")
+    long_streak = journey.escape_streak >= ESCAPE_MAX_STREAK
     if (
-        journey.escape_streak >= ESCAPE_MAX_STREAK
+        (long_streak or force_restart)
         and journey.restart_available
         and journey.restarts < APP_RESTART_MAX
         and journey.escape_stage < restart_stage
     ):
-        print(f"[ESCAPE] 탈출 시도가 {journey.escape_streak}번 이어져 게임 재시작으로 넘어갑니다.")
+        reason = (
+            f"플레이에서 나오는 데 {journey.play_flow_steps}스텝이 걸려"
+            if force_restart
+            else f"탈출 시도가 {journey.escape_streak}번 이어져"
+        )
+        print(f"[ESCAPE] {reason} 게임 재시작으로 넘어갑니다.")
         journey.escape_stage = restart_stage
         journey.escape_tries = 0
 
     height, width = image.shape[:2]
-    while journey.escape_stage < len(ESCAPE_STAGES):
-        stage = ESCAPE_STAGES[journey.escape_stage]
+    while journey.escape_stage < len(stages):
+        stage = stages[journey.escape_stage]
         plan: _EscapePlan | None = None
 
         if stage == "back":
@@ -470,10 +529,14 @@ def _plan_escape(client, journey: _Journey, decision, image) -> _EscapePlan | No
                 and client is not None
                 and journey.escape_tries < ESCAPE_EXIT_FINDER_MAX
             ):
-                target = find_exit_target(
-                    client, image, failed_points=journey.exit_failed_points
-                )
-                if target.found:
+                exit_kwargs = {"failed_points": journey.exit_failed_points}
+                if hint:
+                    exit_kwargs["hint"] = hint
+                target = find_exit_target(client, image, **exit_kwargs)
+                if target.found and profile is not None and profile.is_play_entry(target.label):
+                    # 나가려다 '플레이'를 누르면 플레이로 들어갑니다. 이 단계는 넘어갑니다.
+                    print(f"[ESCAPE] 나가기 요소로 {target.label!r}(플레이 진입)이 골라져 쓰지 않습니다.")
+                elif target.found:
                     label = target.label if target.kind == "button" else "팝업 바깥"
                     plan = _EscapePlan(
                         stage,
@@ -490,7 +553,7 @@ def _plan_escape(client, journey: _Journey, decision, image) -> _EscapePlan | No
                     reason = target.error or f"kind={target.kind}"
                     print(f"[ESCAPE] 나가기 요소를 찾지 못했습니다({reason}).")
         elif stage == "retry_exit":
-            candidates = _exit_candidates(decision, journey.tried_exit_keys)
+            candidates = _exit_candidates(decision, journey.tried_exit_keys, profile)
             if candidates:
                 button = candidates[0]
                 key = navigation_action_key(button)
@@ -507,6 +570,61 @@ def _plan_escape(client, journey: _Journey, decision, image) -> _EscapePlan | No
     return None
 
 
+# -- 플레이 정책 ---------------------------------------------------------------------
+
+
+def _split_play_entries(candidates, profile: GameProfile) -> tuple[list, list]:
+    """안전 후보를 (탐색할 것, 플레이 진입이라 누르지 않을 것)으로 나눕니다."""
+    keep, play = [], []
+    for button in candidates:
+        (play if profile.is_play_entry(button.label) else keep).append(button)
+    return keep, play
+
+
+def _play_exit_button(decision, profile: GameProfile, tried: set):
+    """플레이에서 나가는 버튼(play_exit_labels: 레벨 종료·그만하기 등) 중 아직 안 눌러 본 것.
+
+    조사 모델이 이런 버튼을 unknown 역할로 적기도 해서 안전 역할만 보지 않고, 결제·광고·
+    계정 역할과 플레이 진입 버튼만 뺍니다."""
+
+    buttons = [
+        button
+        for button in decision.button_candidates
+        if button.center is not None
+        and not button.role.startswith("risky_")
+        and not is_risky_exit_label(button.label)
+        and not profile.is_play_entry(button.label)
+        and profile.is_play_exit(button.label)
+        and navigation_action_key(button) not in tried
+    ]
+    return max(buttons, key=lambda b: b.confidence, default=None)
+
+
+def _play_flow_finished(node, journey: _Journey, profile: GameProfile, root_id: str | None) -> bool:
+    """플레이 흐름에서 빠져나왔는지: 루트, 홈 타입(지도 등), 또는 흐름 전부터 알던 화면."""
+    if screen_policy(node.screen_type) == "leave":
+        return False
+    if root_id is not None and node.id == root_id:
+        return True
+    if profile.is_home_type(node.screen_type):
+        return True
+    return node.id in journey.play_flow_known and not node.play_flow
+
+
+def _is_play_node(store: GraphStore, node_id: str) -> bool:
+    """플레이 화면(policy=leave)이거나 플레이에서 나오는 도중 처음 본 화면인지."""
+    node = store.graph.nodes.get(node_id)
+    return node is not None and (screen_policy(node.screen_type) == "leave" or node.play_flow)
+
+
+def _try_play_handoff(node, decision) -> bool:
+    """PLAY_POLICY=handoff에서 플레이 전용 코드(play_session 등)로 넘기는 자리입니다.
+
+    아직 연결하지 않아 항상 False를 돌려주고, 호출한 쪽은 avoid처럼 플레이에서 나옵니다.
+    연결할 때는 여기서 플레이 루프를 돌리고, 끝나면 True를 돌려 다음 관찰부터 이어가게 합니다."""
+    return False
+
+
 def _run_autodrive_step(
     client,
     sct,
@@ -521,24 +639,28 @@ def _run_autodrive_step(
     allow_taps: bool,
     cancel_check: Callable[[], str | None] | None,
     chrome: UiChromeStore | None = None,
+    profile: GameProfile | None = None,
 ) -> _StepResult:
     """탐색 한 단계: 취소 확인 -> 캡처/분석 -> 그래프/원장 갱신 -> 프론티어 계획 ->
-    (확대 재확인) -> 탭 -> 화면이 멈출 때까지 대기. 갇히면 탈출 사다리."""
+    (확대 재확인) -> 탭 -> 화면이 멈출 때까지 대기. 갇히면 탈출 사다리.
+    플레이 화면에 들어가 있으면(플레이 흐름) 프론티어 대신 나오는 동작을 합니다."""
 
     if cancel_check:
         reason = cancel_check()
         if reason:
             return _StepResult("stop", stop_reason=reason, stop_kind="cancelled")
 
+    profile = profile or active_profile()
     bundle = capture_bundle(
         sct, CAPTURE_MODE, MONITOR_INDEX, BOARD_OFFSET, WINDOW_OFFSET
     )
     recent_records = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
     decision = analyze_survey_screen(
-        client, bundle.full_image, None, survey_context=recent_records
+        client, bundle.full_image, None, survey_context=recent_records, profile=profile
     )
 
-    if decision.screen_type == "loading":
+    # 로딩처럼 policy=wait인 화면은 기다렸다 다시 봅니다(screen_types.json).
+    if screen_policy(decision.screen_type) == "wait":
         time.sleep(1.0)
         return _StepResult("skip")
 
@@ -549,9 +671,11 @@ def _run_autodrive_step(
         and journey.node_id in store.graph.nodes
         and same_screen(journey.prev_image, bundle.full_image)
     )
+    store.last_hog_match = (None, 1.0)
     if same_pixels:
         node = store.revisit(journey.node_id)
     else:
+        # observe()는 먼저 대표 화면 전체와 HOG로 비교하고(타입 무관), 못 찾으면 지문·버튼으로 찾습니다.
         node = store.observe(decision, bundle.full_image)
         if node.visits == 1:
             _warn_if_fragmented(store, node.screen_type)
@@ -563,11 +687,34 @@ def _run_autodrive_step(
         print("[AUTODRIVE] 직전 탭 뒤 화면이 그대로입니다(빗나감 의심). 다시 시도 후보로 둡니다.")
     journey.prev_image = bundle.full_image
 
-    # 시작 화면 정렬: 이어서 하는 run(또는 게임 재시작 직후)이 루트가 아닌 화면에서
-    # 시작하면 먼저 루트로 갑니다.
+    # 플레이 흐름: 플레이 화면(policy=leave)이나 예전 흐름에서 본 화면에 오면 시작하고,
+    # 루트·홈 타입(지도)·흐름 전부터 알던 화면에 오면 끝냅니다.
     root_id = walker.root_screen_id
+    leave_screen = screen_policy(node.screen_type) == "leave"
+    if (leave_screen or node.play_flow) and not journey.play_flow:
+        journey.start_play_flow(set(store.graph.nodes) - {node.id})
+        print(
+            f"[PLAY] 플레이 화면({node.screen_type})에 들어왔습니다. "
+            f"기록만 하고 나옵니다(PLAY_POLICY={PLAY_POLICY})."
+        )
+        if PLAY_POLICY == "handoff" and not _try_play_handoff(node, decision):
+            print("[PLAY] handoff: 플레이 전용 코드가 아직 연결되지 않아 avoid처럼 나옵니다.")
+    elif journey.play_flow and _play_flow_finished(node, journey, profile, root_id):
+        print(
+            f"[PLAY] 플레이에서 빠져나왔습니다({node.screen_type}, "
+            f"{journey.play_flow_steps}스텝). 탐색을 이어갑니다."
+        )
+        journey.end_play_flow()
+    if journey.play_flow and node.visits == 1 and not leave_screen and not node.play_flow:
+        # 나가는 도중 처음 본 화면(나가기 확인창 등). 프론티어로 등록하지 않고 표시해 둡니다.
+        node.play_flow = True
+        store.save()
+
+    # 시작 화면 정렬: 이어서 하는 run(또는 게임 재시작 직후)이 루트가 아닌 화면에서
+    # 시작하면 먼저 루트로 갑니다(플레이 중이면 먼저 나온 뒤).
     if (
         first_observation
+        and not journey.play_flow
         and root_id is not None
         and root_id in store.graph.nodes
         and node.id != root_id
@@ -577,46 +724,57 @@ def _run_autodrive_step(
             "루트로 먼저 돌아간 뒤 탐색합니다."
         )
         walker.begin_reset_to_root()
-    walker.note_root_if_first(node.id)
+    if not journey.play_flow:
+        # 플레이 화면은 루트가 되지 않습니다.
+        walker.note_root_if_first(node.id)
 
-    # 이번 화면에서 본 안전 후보를 원장에 등록합니다(처음 보는 것만 프론티어로 추가).
-    # 네비게이션 바 같은 공통 버튼은 화면별 대신 공통 항목 하나로 등록합니다.
     height, width = bundle.full_image.shape[:2]
     candidates = safe_button_candidates(
         decision, min_confidence=SURVEY_MIN_BUTTON_CONFIDENCE
     )
-    visible_keys = [navigation_action_key(candidate) for candidate in candidates]
+    visible_keys: list[str] = []
     global_visible: set[str] = set()
-    for candidate, key in zip(candidates, visible_keys):
-        if chrome is not None:
-            became_global = chrome.observe(
-                node.id, key, candidate.label,
-                candidate.center.x * width, candidate.center.y * height,
-                region=getattr(candidate, "region", "unknown"),
-                image_height=height,
-            )
-            if became_global:
-                closed, seeded = ledger.promote_to_global(key, candidate.label)
-                print(
-                    f"[UI] '{candidate.label}'을(를) 공통 버튼(네비게이션)으로 봅니다. "
-                    f"화면별 미시도 항목 {closed}개를 공통 항목으로 합쳤습니다"
-                    + (" (이미 눌러 본 결과를 이어 씁니다)." if seeded else ".")
-                )
-            if chrome.is_global(key):
-                global_visible.add(key)
-                ledger.seen(GLOBAL_SCREEN_ID, key, candidate.label)
-                continue
-        ledger.seen(node.id, key, candidate.label)
-    if chrome is not None:
-        chrome.save()
-    # 원장에는 있는데 이번 후보엔 없는 미시도 버튼을 세고, 연속으로 안 보이면 정리합니다.
-    ledger.note_visit(
-        node.id,
-        [key for key in visible_keys if key not in global_visible],
-        FRONTIER_MAX_MISSES,
-    )
+    goal: StepGoal | None = None
+    if not journey.play_flow:
+        # 플레이 진입 버튼은 기록만 하고 프론티어에서 뺍니다(PLAY_POLICY).
+        candidates, play_buttons = _split_play_entries(candidates, profile)
+        for button in play_buttons:
+            if ledger.close_play_entry(node.id, navigation_action_key(button), button.label):
+                print(f"[PLAY] '{button.label}'은(는) 플레이 진입 버튼이라 누르지 않습니다(기록만).")
 
-    goal = walker.decide(node.id, visible_keys, global_visible)
+        # 이번 화면에서 본 안전 후보를 원장에 등록합니다(처음 보는 것만 프론티어로 추가).
+        # 네비게이션 바 같은 공통 버튼은 화면별 대신 공통 항목 하나로 등록합니다.
+        visible_keys = [navigation_action_key(candidate) for candidate in candidates]
+        for candidate, key in zip(candidates, visible_keys):
+            if chrome is not None:
+                became_global = chrome.observe(
+                    node.id, key, candidate.label,
+                    candidate.center.x * width, candidate.center.y * height,
+                    region=getattr(candidate, "region", "unknown"),
+                    image_height=height,
+                )
+                if became_global:
+                    closed, seeded = ledger.promote_to_global(key, candidate.label)
+                    print(
+                        f"[UI] '{candidate.label}'을(를) 공통 버튼(네비게이션)으로 봅니다. "
+                        f"화면별 미시도 항목 {closed}개를 공통 항목으로 합쳤습니다"
+                        + (" (이미 눌러 본 결과를 이어 씁니다)." if seeded else ".")
+                    )
+                if chrome.is_global(key):
+                    global_visible.add(key)
+                    ledger.seen(GLOBAL_SCREEN_ID, key, candidate.label)
+                    continue
+            ledger.seen(node.id, key, candidate.label)
+        if chrome is not None:
+            chrome.save()
+        # 원장에는 있는데 이번 후보엔 없는 미시도 버튼을 세고, 연속으로 안 보이면 정리합니다.
+        ledger.note_visit(
+            node.id,
+            [key for key in visible_keys if key not in global_visible],
+            FRONTIER_MAX_MISSES,
+        )
+
+        goal = walker.decide(node.id, visible_keys, global_visible)
     journey.node_id = node.id
 
     def record(action: dict, *, selected: str | None, executed: bool, strategy: str) -> None:
@@ -639,6 +797,12 @@ def _run_autodrive_step(
             "selected_button": selected,
             "executed": executed,
             "strategy": strategy,
+            # 가장 가까운 대표 화면과 HOG 거리(임계값 조정용). 픽셀이 직전과 같으면 비교하지 않아 null.
+            "hog_nearest": (
+                {"screen_id": store.last_hog_match[0], "distance": round(store.last_hog_match[1], 4)}
+                if store.last_hog_match[0] is not None
+                else None
+            ),
         })
 
     def record_without_tap(outcome: str, **extra) -> None:
@@ -716,8 +880,9 @@ def _run_autodrive_step(
         )
         journey.escape_tries += 1
         journey.escape_streak += 1
+        # 갇힘 탈출은 stuck_*, 루트 리셋은 reset_*, 플레이에서 나오기는 play_* 입니다.
         outcome = (
-            _ESCAPE_OUTCOMES[plan.stage] if goal_kind == "stuck" else f"reset_{plan.stage}"
+            _ESCAPE_OUTCOMES[plan.stage] if goal_kind == "stuck" else f"{goal_kind}_{plan.stage}"
         )
         if not executed:
             outcome = "escape_disabled"
@@ -764,11 +929,15 @@ def _run_autodrive_step(
             journey.prev_image = None
             journey.clear_pending()
             journey.reset_escape()
+            # 플레이 흐름은 다음 관찰이 정합니다(지도로 시작하면 끝, 보드면 이어서).
+            journey.play_flow_steps = 0
+            journey.play_flow_last_node = None
             walker.abort()
             return _StepResult("advance", node_id=node.id)
 
+        # 리셋만 프론티어 계획(walker)에 결과를 알려야 합니다. 갇힘·플레이 탈출은 간선만 잇습니다.
         journey.set_pending(
-            "escape" if goal_kind == "stuck" else "reset",
+            "reset" if goal_kind == "reset" else "escape",
             plan.label,
             plan.action_key,
             escape_stage=plan.stage,
@@ -776,6 +945,62 @@ def _run_autodrive_step(
             point=plan.point,
         )
         return _StepResult("advance", node_id=node.id)
+
+    def run_play_flow() -> _StepResult:
+        """플레이 흐름 한 스텝: 나가기 버튼(play_exit_labels) → 탈출 사다리(플레이 힌트).
+
+        보드에서는 Android 뒤로부터(보통 나가기 확인창이 뜸), 확인창·메뉴 같은 화면에서는
+        나가기 요소 찾기부터 씁니다(뒤로를 먼저 보내면 확인창이 닫혀 보드로 돌아감).
+        PLAY_EXIT_MAX_STEPS를 넘기면 게임 재시작, 그것도 못 하면 세션을 멈춥니다."""
+
+        if journey.play_flow_last_node != node.id:
+            # 다른 화면으로 왔습니다(직전 동작이 효과 있음). 이 화면 기준으로 처음 단계부터.
+            journey.reset_escape()
+            journey.play_flow_last_node = node.id
+        journey.play_flow_steps += 1
+        force_restart = journey.play_flow_steps > PLAY_EXIT_MAX_STEPS
+        restart_left = journey.restart_available and journey.restarts < APP_RESTART_MAX
+        stuck_reason = None
+        if force_restart and not restart_left:
+            stuck_reason = (
+                f"플레이에서 {PLAY_EXIT_MAX_STEPS}스텝 안에 나오지 못했고 게임 재시작도 쓸 수 없습니다."
+            )
+        else:
+            if not force_restart and not leave_screen:
+                exit_button = _play_exit_button(decision, profile, journey.tried_exit_keys)
+                if exit_button is not None:
+                    key = navigation_action_key(exit_button)
+                    journey.tried_exit_keys.add(key)
+                    return run_escape(
+                        _EscapePlan(
+                            "exit_label", "tap", exit_button.label, key,
+                            button=exit_button, refine=True,
+                        ),
+                        "play",
+                    )
+            plan = _plan_escape(
+                client,
+                journey,
+                decision,
+                bundle.full_image,
+                stages=ESCAPE_STAGES if leave_screen else PLAY_FLOW_POPUP_STAGES,
+                hint=profile.play_exit_hint,
+                profile=profile,
+                force_restart=force_restart,
+            )
+            if plan is not None:
+                return run_escape(plan, "play")
+            stuck_reason = "나가기 버튼과 탈출 사다리를 모두 썼지만 플레이에서 나오지 못했습니다."
+        record_without_tap("play_exit_failed")
+        return _StepResult(
+            "stop",
+            node_id=node.id,
+            stop_reason=f"{stuck_reason} 게임을 지도 화면으로 돌려 놓고 다시 실행하세요.",
+            stop_kind="play_stuck",
+        )
+
+    if journey.play_flow:
+        return run_play_flow()
 
     back_key_enabled = back_method(ADB_PATH, BACK_KEY) != "off"
 
@@ -1018,6 +1243,16 @@ def run_autodrive(
             session_id=session_id,
         )
 
+    # 게임 지식(장르·UI 관례·화면 타입)을 먼저 읽습니다. 파일 형식이 틀렸으면 API를 쓰기 전에 멈춥니다.
+    profile = active_profile()
+    print(f"[GAME] {profile.summary_line()}")
+    if not profile.known:
+        print(
+            "[GAME] GAME_TITLE이 knowledge/games.txt에 없어 장르 공통(_default) 지식만 씁니다. "
+            "games.txt에 '게임제목, 장르' 줄을 추가하세요."
+        )
+    print(f"[PLAY] PLAY_POLICY={PLAY_POLICY}: 플레이 진입 버튼은 누르지 않고, 플레이 화면에 들어가면 나옵니다.")
+
     # 뒤로 보내는 방법을 알리고, adb면 시작 전에 연결을 확인합니다(설정이 틀렸으면
     # 탐색 도중이 아니라 API를 쓰기 전에 멈춥니다).
     restart_available = False
@@ -1049,6 +1284,25 @@ def run_autodrive(
         print("[AUTODRIVE] 뒤로: 꺼짐 (ADB_PATH와 BACK_KEY가 비어 있음)")
 
     store = GraphStore()
+    # 이 run의 그래프가 지금 분류표에 없는 화면 타입(예전 id)으로 만들어졌으면 이어 쓰지 않습니다.
+    # 같은 화면 판정이 같은 타입끼리만 비교하므로 예전 노드와 새 관찰이 이어지지 않습니다.
+    legacy_types = sorted(
+        {node.screen_type for node in store.graph.nodes.values()} - set(screen_type_ids())
+    )
+    if legacy_types:
+        print(
+            "[AUTODRIVE] 이 run의 그래프에 지금 화면 타입 분류표(knowledge/screen_types.json)에 없는 "
+            f"타입이 있습니다: {', '.join(legacy_types)}"
+        )
+        print("[AUTODRIVE] 새 run으로 시작하세요: make autodrive-new (또는 --new-run).")
+        return AutodriveSummary(
+            stop_reason="예전 화면 타입으로 만든 run이라 이어 쓰지 않았습니다(--new-run 필요).",
+            stop_kind="blocked",
+            steps=0,
+            session_id=session_id,
+        )
+    # 경로 계획(BFS)이 플레이 화면이나 플레이 흐름 화면을 지나가지 않게 합니다.
+    store.avoid_node = lambda node_id: _is_play_node(store, node_id)
     ledger = LedgerStore()
     chrome = UiChromeStore(
         min_screens=CHROME_MIN_SCREENS,
@@ -1101,6 +1355,7 @@ def run_autodrive(
                 allow_taps=allow_taps,
                 cancel_check=cancel_check,
                 chrome=chrome,
+                profile=profile,
             )
 
             if result.kind == "skip":

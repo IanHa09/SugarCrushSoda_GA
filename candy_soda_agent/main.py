@@ -59,7 +59,8 @@ def run_autodrive_sessions(client, plan, cancel_check) -> None:
             cancel_check=cancel_check,
         )
         _print_metrics(f"[{index}/{repeats}]")
-        if summary.stop_kind in {"converged", "cancelled", "error", "blocked"}:
+        # play_stuck: 플레이 화면에서 못 나옴. 다음 세션도 같은 화면에서 시작하므로 멈춥니다.
+        if summary.stop_kind in {"converged", "cancelled", "error", "blocked", "play_stuck"}:
             if index < repeats:
                 print(f"[AUTODRIVE] 세션을 더 돌리지 않습니다: {summary.stop_reason}")
             break

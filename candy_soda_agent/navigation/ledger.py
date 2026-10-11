@@ -20,11 +20,11 @@ from config import NAVIGATION_LEDGER_PATH
 from schemas import ActionLedger, LedgerEntry
 
 # 실행 시점에 알 수 있는 시도 결과. finalize()가 한 스텝 뒤 관찰로 채웁니다.
-Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found"
+Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found" | "global" | "play_entry"
 
 # 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음 /
-# 공통 버튼으로 옮겨짐).
-CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global"})
+# 공통 버튼으로 옮겨짐 / 플레이 진입 버튼이라 안 누름).
+CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global", "play_entry"})
 
 # 네비게이션 바처럼 여러 화면에 똑같이 있는 공통 버튼의 원장 항목은 화면 ID 대신 이 값을
 # 씁니다. 공통 버튼은 화면마다가 아니라 전체에서 한 번만 눌러 봅니다(ui_chrome.py).
@@ -166,6 +166,25 @@ class LedgerStore:
             entry.verdict = "not_found"
         entry.last_seen = _now()
         self.save()
+
+    def close_play_entry(self, screen_id: str, action_key: str, action_label: str) -> bool:
+        """플레이 진입 버튼(PLAY_POLICY=avoid)을 기록만 하고 프론티어에서 뺍니다.
+
+        보고서에 "봤지만 누르지 않음"으로 남도록 처음 보는 버튼도 항목을 만들어 닫습니다.
+        정책을 켜기 전에 이미 눌러 본 항목(판정이 있는 것)은 기록을 지우지 않고 그대로 둡니다.
+        반환: 이번에 새로 닫았으면 True."""
+
+        key = _entry_key(screen_id, action_key)
+        entry = self.ledger.entries.get(key)
+        if entry is None:
+            entry = LedgerEntry(screen_id=screen_id, action_key=action_key, action_label=action_label)
+            self.ledger.entries[key] = entry
+        elif entry.verdict == "play_entry" or not is_open_entry(entry):
+            return False
+        entry.verdict = "play_entry"
+        entry.last_seen = _now()
+        self.save()
+        return True
 
     def promote_to_global(self, action_key: str, action_label: str) -> tuple[int, bool]:
         """이 행동이 공통 버튼(네비게이션 바)으로 판정되면 화면별 항목을 공통 항목 하나로 합칩니다.

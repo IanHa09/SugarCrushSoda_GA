@@ -22,6 +22,8 @@ Candy Crush Soda 화면을 캡처해 비전 LLM으로 분석하고, 로컬 안�
 | 클릭 정확도 보정 | 구현 | 픽셀 bbox 좌표, 누르기 직전 확대 재확인, 탭 효과(빗나감) 판정 |
 | 탈출 사다리 | 구현 | 갇히면 Android 뒤로(adb) → 나가기 요소 찾기 → 닫기류 다시 누르기 → 게임 재시작 |
 | 공통 UI(네비게이션 바) | 구현 | 화면들이 공유하는 위/아래 띠를 이미지로 찾고, 공통 버튼은 한 번만 눌러 지름길로 사용 |
+| 게임 지식 파일 | 구현 | `knowledge/`의 게임·장르 목록, 장르별 UI 관례, 화면 타입 분류표를 조사 프롬프트와 탐색 규칙에 사용 |
+| 플레이 회피 | 구현 | 플레이 진입 버튼은 기록만 하고, 플레이 화면에 들어가면 나가기 버튼·탈출 사다리로 홈까지 나옴(`PLAY_POLICY`) |
 | 탐색 지표 | 구현 | 세션별 탭 적중률과 누적 화면·전환 수를 `metrics.md`/`metrics.csv`로 저장 |
 | 영상 분석 | 현재 미포함 | 과거 파이프라인은 제거되었으며 필요하면 별도 모듈로 복원 가능 |
 | 규칙 기반 최적 솔버 | 미구현 | 가능한 수 전체의 점수·목표 달성도를 계산하지 않음 |
@@ -125,11 +127,14 @@ CHROME_DETECTION=true
 | `ADB_PATH`, `ADB_SERIAL` | Android 뒤로와 게임 재시작에 쓰는 adb 경로(LDPlayer 설치 폴더의 `adb.exe`, 따옴표 없이)와 기기 이름. 에뮬레이터가 하나면 `ADB_SERIAL`은 비워 둠 |
 | `BACK_KEY` | `ADB_PATH`가 비어 있을 때만 쓰는 키보드 뒤로 키. 기본은 빈 값(끔). LDPlayer는 ESC가 뒤로로 동작하지 않음 |
 | `GAME_PACKAGE` | 게임 재시작에 쓰는 Android 패키지 이름. 기본 `com.king.candycrushsodasaga` |
+| `GAME_TITLE` | 지금 조사하는 게임 제목. `knowledge/games.txt`에서 장르를 찾습니다. 기본 `Candy Crush Soda Saga` |
+| `PLAY_POLICY` | `avoid`(기본): 플레이 진입 버튼은 안 누르고 플레이 화면에 들어가면 나옴. `handoff`: 나중에 플레이 전용 코드로 넘길 자리(지금은 avoid와 같음) |
 
 Autodrive의 세부 동작은 아래 값으로 조정합니다. 모두 선택 항목이며 기본값으로 충분합니다.
 
 | 설정 | 기본값 | 설명 |
 | --- | ---: | --- |
+| `SCREEN_HOG_MAX_DISTANCE` | `0.15` | 대표 화면 전체 중 HOG 거리(코사인)가 가장 가까운 노드가 이 값 이하면 화면 타입과 상관없이 같은 화면. `0`이면 끔 |
 | `SCREEN_FINGERPRINT_MAX_DISTANCE` | `0.05` | 같은 화면 타입에서 이미지 지문 거리가 이 값 이하면 같은 화면. `0`이면 지문 매칭 끔 |
 | `SCREEN_MATCH_MAX_BUTTON_DIFF` | `1` | 지문으로 못 찾았을 때, 버튼 목록이 이 개수 이하로만 다르면 같은 화면 |
 | `SAME_SCREEN_PIXEL_THRESHOLD` | `0.01` | 두 캡처의 픽셀 차이가 이보다 작으면 "화면 그대로"(탭 빗나감·같은 노드 판정) |
@@ -147,6 +152,7 @@ Autodrive의 세부 동작은 아래 값으로 조정합니다. 모두 선택 �
 | `CHROME_MASK_IDENTITY` | `true` | 같은 화면 판정(이미지 지문)에서 공통 띠를 빼고 비교 |
 | `GLOBAL_ACTION_MIN_SCREENS`, `GLOBAL_ACTION_MAX_SPREAD_PX` | `3`, `30` | 같은 이름·같은 자리 버튼을 공통 버튼으로 볼 최소 화면 수와 위치 허용 오차(px) |
 | `AUTODRIVE_STEP_PAUSE` | `0.5` | 스텝 사이 고정 대기(초) |
+| `PLAY_EXIT_MAX_STEPS` | `8` | 플레이 화면에서 나오는 데 이 스텝 수를 넘기면 게임 재시작(못 하면 세션 중단 `play_stuck`) |
 | `HOME_RESET_MAX_BACK_TAPS` | `6` | 루트로 돌아갈 때 home 버튼이 안 보이면 back을 누르는 최대 횟수 |
 | `FRONTIER_MAX_REPLAN_ATTEMPTS`, `FRONTIER_MAX_MISSES` | `2`, `2` | 경로 재생 실패 시 루트 리셋 후 다시 시도하는 횟수 / 미시도 버튼이 연속으로 안 보이면 정리(`not_visible`)하는 관찰 횟수 |
 | `RUN_ID`, `GAME_SLUG` | 자동, `candy_crush_soda` | 이어서 쓸 run 폴더 강제 지정, 출력 경로의 게임 식별자 |
@@ -271,17 +277,52 @@ make debug-points                      # 클릭 위치·bbox·보정 화살표�
 - `CHROME_MASK_IDENTITY=true`면 같은 화면 판정(이미지 지문)에서 공통 띠를 빼고 비교해, 탭 강조나 배지 숫자 차이로 노드가 갈리지 않게 합니다.
 - 결과는 run 폴더의 `navigation/ui_chrome.json`과 보고서의 `Persistent UI` 섹션에 남습니다.
 
+### 게임 지식 파일(knowledge/)
+
+autodrive는 시작할 때 `GAME_TITLE`로 아래 파일을 읽고(`game_knowledge.py`), 시작 로그에 `[GAME] 제목 / 장르 / 탭바 / 화면 타입 수`를 찍습니다. 분류 기준이나 UI 힌트를 바꿀 때는 코드 대신 이 파일들을 고칩니다.
+
+| 파일 | 내용 | 쓰이는 곳 |
+| --- | --- | --- |
+| `games.txt` | `게임제목, 장르` 한 줄씩 | `GAME_TITLE`로 장르 찾기. 없으면 `_default` 장르 |
+| `ui_knowledge.json` | 장르 수준 UI 형태(특정 게임을 모름): "이런 형태도 있고 저런 형태도 있다" 식의 레이아웃 힌트(홈: 사가 지도형/로비형/보드 반복형, 네비게이션 바: 아래 탭바/아이콘 탭/옆·위 메뉴/없음), 네비게이션 바 설정, 플레이 진입/나가기 버튼 이름, 홈 화면 타입, 나가기 힌트. 게임별 덧붙임(`games`)은 비워 둠 | 조사 프롬프트의 UI 힌트·탭바 규칙, 플레이 회피 |
+| `screen_types.json` | 큰 화면 타입 10개(play, home, level, popup, menu, shop, ad, tutorial, loading, unknown)의 id·라벨·설명·처리 방식(`explore`/`leave`/`wait`)·적용 장르, 그리고 고르는 원칙(`rules`) | 조사 응답 스키마의 `screen_type` 값, 프롬프트의 타입 목록·원칙, 보고서 라벨, autodrive 처리 방식 |
+| `screen_types_review.md` | 큰 화면 타입안 검수표(지난 run 화면 예시, 예전 타입 대응표) | 사람이 보는 문서 |
+
+- 화면 타입은 버튼·요소가 아니라 화면 전체가 무엇을 하는 곳인지만 나눕니다(버튼·요소는 `button_candidates`·`game_elements`가 기록). 팝업이 떠 있으면 팝업 기준, 겹치면 `play > level > ad > shop > tutorial > loading > popup·menu > home > unknown` 순서입니다.
+- 화면 타입 id는 그래프·기록에 남는 값이라 바꾸면 예전 run과 이어지지 않습니다. autodrive는 시작할 때 그래프에 분류표에 없는 타입(예전 16개 타입 등)이 있으면 API를 쓰기 전에 멈추고 새 run(`make autodrive-new`)을 안내합니다. 설명과 원칙은 자유롭게 고쳐도 됩니다.
+- `nav_bar.position`: `bottom`/`top`/`left`/`right`(확실히 아는 위치), `varies`(게임마다 다름), `none`(정보 없음). 탭 이름(`tabs`)을 알면 "그 탭들을 후보에 반드시 넣기" 규칙을, 이름은 모르고 `max_tabs`만 있으면 "아이콘 탭 포함, 보이는 탭을 먼저 넣기" 규칙을 프롬프트에 넣습니다. 버튼 후보 상한은 6개에서 (탭 수 − 1)만큼 늘어납니다(최대 10개, 매치3는 `max_tabs` 5라 10개).
+- 파일 형식이 틀리면 어느 파일 몇째 줄인지 알려 주고 시작 전에 멈춥니다.
+
+### 플레이 회피(PLAY_POLICY)
+
+autodrive는 화면 조사·구조도 생성용이라 기본(`avoid`)으로 플레이에 들어가지 않습니다.
+
+1. 플레이 진입 버튼(`play_entry_labels`: 플레이, 시작, play, 재도전 등. 낱말 단위로 맞춰 '플레이어'는 해당 없음)은 원장에 `play_entry`로 닫고 누르지 않습니다. 레벨 번호 버튼은 눌러서 레벨 시작 팝업(목표·부스터)까지는 기록합니다.
+2. 그래도 `policy=leave` 화면(플레이 화면)에 들어가면 "플레이 흐름"이 시작됩니다. 그 화면 버튼은 프론티어로 등록하지 않고 나오는 동작만 합니다.
+   - 플레이 화면: Android 뒤로 → 나가기 요소 찾기(나가기 힌트 포함) → 닫기류 다시 누르기 → 게임 재시작
+   - 나가는 도중의 확인창·메뉴: 나가기 버튼(`play_exit_labels`: 레벨 종료, 그만하기, 나가기 등) → 나가기 요소 찾기 → 뒤로 → 닫기류 → 재시작
+   - 루트, 홈 타입(`home_screen_types`, 기본 `home`) 또는 흐름 전부터 알던 화면에 오면 흐름이 끝나고 탐색을 이어갑니다.
+   - 흐름 중에 처음 본 화면은 그래프 노드에 `play_flow: true`로 표시되고 프론티어로 등록되지 않으며, 경로 계획도 플레이 화면과 이런 화면을 지나가지 않습니다.
+   - `PLAY_EXIT_MAX_STEPS`를 넘기면 게임 재시작, 재시작도 못 하면 세션을 `play_stuck`으로 멈춥니다(반복 실행도 멈춤).
+3. 플레이 화면은 루트가 되지 않습니다. 사가형 매치3는 레벨을 시작한 뒤 나가면 생명이 1개 줄어드는 경우가 많습니다. 홈 없이 보드가 이어지는 보드 반복형은 플레이를 피하면 탐색할 화면이 거의 없어, 나중에 handoff에서 다룰 대상입니다.
+4. `handoff`는 나중에 플레이 전용 코드로 넘길 자리(`navigator._try_play_handoff`)입니다. 지금은 avoid와 같게 동작합니다.
+
 ### 화면 식별과 시도 원장
 
 LLM이 보고하는 버튼 목록은 같은 화면을 봐도 관찰마다 달라 화면 노드가 쪼개지는 주원인이었습니다. 그래서 새 관찰은 다음 순서로 기존 노드에 붙입니다.
 
-1. 같은 화면 타입 노드 중 이미지 지문(dHash) 거리가 `SCREEN_FINGERPRINT_MAX_DISTANCE` 이하인 노드
-2. 화면 타입 + 정규화 버튼 목록이 정확히 같은 노드(지문이 크게 다르면 거부)
-3. 버튼 1개 차이까지 허용한 매칭(여기도 지문 충돌은 거부)
+1. 대표 화면 **전체**와 HOG 특징 거리를 비교해 가장 가까운 노드가 `SCREEN_HOG_MAX_DISTANCE` 이하면 그 노드. 화면 타입은 보지 않습니다(`navigation/screen_index.py`)
+2. 같은 화면 타입 노드 중 이미지 지문(dHash) 거리가 `SCREEN_FINGERPRINT_MAX_DISTANCE` 이하인 노드
+3. 화면 타입 + 정규화 버튼 목록이 정확히 같은 노드(지문이 크게 다르면 거부)
+4. 버튼 1개 차이까지 허용한 매칭(여기도 지문 충돌은 거부)
 
-어디에도 맞지 않으면 새 노드를 만듭니다. 예전처럼 상점·설정 같은 화면 타입을 이름만으로 한 노드에 묶지 않습니다. 화면 타입에는 `profile`, `social_friends`, `help_support`가 추가되었습니다.
+HOG 비교는 이렇게 동작합니다. 화면(공통 띠 제외)을 흑백 128x256으로 줄이고, 16px 칸마다 밝기 변화 방향을 9칸 히스토그램으로 모은 뒤 이웃 2x2 칸끼리 정규화해 길이 3780 벡터를 만듭니다. 노드 대표 이미지들의 벡터를 행렬 하나(노드 수 x 3780)로 쌓아 두고, 새 화면 벡터를 곱해 모든 대표 화면과의 거리(1 - 코사인 유사도)를 한 번에 구합니다. 밝기 변화에는 거의 반응하지 않아, 화면 전체가 어둡게 덮인 상태는 같은 화면으로 봅니다. 색인은 실행할 때 `representatives/` 이미지로 다시 만들고(한 장 약 5ms), 공통 띠가 바뀌면 다시 만듭니다. 각 스텝의 가장 가까운 노드와 거리는 `journeys.jsonl`의 `hog_nearest`에 남습니다.
 
-`(화면, 행동)` 시도 결과는 `ledger.json`에 기록되며, 판정 값은 `new_screen`, `known_screen`, `no_change`, `blocked`, `failed`, `not_visible`, `missed`(빗나감, 재시도 대기), `not_found`(확대 재확인에서 못 찾아 정리), `global`(공통 버튼으로 합쳐짐)입니다. 보고서의 프론티어 섹션도 이 값을 따라 나뉩니다.
+기본 임계값 0.15는 run_2026-10-02_08-33-21 캡처 31장으로 정했습니다. 같은 노드 캡처끼리는 최대 0.071, 서로 다른 화면끼리는 최소 0.272(지도와 지도 위 하트 팝업)였습니다. 이 캡처들을 순서대로 다시 넣어 보면, HOG 없이(지문만)는 지도 화면이 둘로 갈려 노드 10개, HOG를 켜면 갈림 없이 9개가 됩니다.
+
+어디에도 맞지 않으면 새 노드를 만듭니다. 예전처럼 상점·설정 같은 화면 타입을 이름만으로 한 노드에 묶지 않습니다. 2026-10-11부터 화면 타입은 큰 타입 10개라, 같은 화면을 모델이 세부 타입으로 다르게 불러 노드가 갈리는 일이 줄었습니다(지난 run에서 같은 화면 2개가 social_friends/event_or_mission으로 갈렸던 사례).
+
+`(화면, 행동)` 시도 결과는 `ledger.json`에 기록되며, 판정 값은 `new_screen`, `known_screen`, `no_change`, `blocked`, `failed`, `not_visible`, `missed`(빗나감, 재시도 대기), `not_found`(확대 재확인에서 못 찾아 정리), `global`(공통 버튼으로 합쳐짐), `play_entry`(플레이 진입 버튼이라 누르지 않음)입니다. 보고서의 프론티어 섹션도 이 값을 따라 나뉩니다.
 
 ## 저장 결과
 
@@ -338,6 +379,12 @@ SugarCrushSoda_GA/
     ├── safety_guard.py         취소 검사(연결됨: play_session/autodrive 실행 직전)
     ├── reward.py               행동 결과 분류와 보상 계산
     ├── storage.py              이미지·JSONL·메모리 저장과 조회
+    ├── game_knowledge.py       knowledge/ 파일 읽기: 장르, UI 관례, 화면 타입, 플레이 버튼 판정
+    ├── knowledge/
+    │   ├── games.txt           게임제목, 장르
+    │   ├── ui_knowledge.json   장르 수준 UI 형태(홈·네비게이션 바 형태, 플레이 진입/나가기 버튼)
+    │   ├── screen_types.json   큰 화면 타입 10개(설명, 처리 방식, 고르는 원칙)
+    │   └── screen_types_review.md  화면 타입 검수표(예시 이미지 review/)
     ├── survey.py               조사 분석·기록 공통 계층, bbox → 탭 좌표 변환
     ├── survey_utils.py         조사 중복 키와 버튼 우선순위
     ├── survey_report.py        조사·전환 통합 보고서 생성
@@ -349,7 +396,8 @@ SugarCrushSoda_GA/
     ├── navigation/
     │   ├── navigator.py        Autodrive 메인 루프
     │   ├── frontier.py         프론티어 이동·루트 리셋(FrontierWalker)
-    │   ├── graph.py            전환 그래프와 화면 식별(지문·버튼 매칭)
+    │   ├── graph.py            전환 그래프와 화면 식별(HOG·지문·버튼 매칭)
+    │   ├── screen_index.py     대표 화면 전체와 HOG 거리 비교 색인
     │   ├── ledger.py           (화면, 행동) 시도 원장
     │   ├── observer.py         화면 ID와 버튼 정규화
     │   └── policy.py           화면별 미탐색 안전 버튼 선택
@@ -370,7 +418,7 @@ make test
 python -m unittest discover -s candy_soda_agent/tests -v
 ```
 
-현재 196개 테스트가 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계·취소 연결, 보고서 생성에 더해 이미지 지문 기반 화면 식별, bbox 중심 계산, 확대 재확인 좌표 복원, 탭 효과(빗나감) 판정, adb 뒤로·게임 재시작·탈출 사다리 단계 전환, 공통 띠 감지와 공통 버튼(한 번만 누르기·지름길), Mermaid 라벨 따옴표 처리, 반복 실행 지원을 검사합니다. 실제 OpenAI API 호출과 에뮬레이터 마우스 입력은 사용자 환경에서 별도로 확인해야 합니다.
+현재 233개 테스트가 HOG 특징·색인·타입 무관 화면 매칭, 게임 지식 파일 읽기·병합·형식 오류, 장르 수준 탭바 설정, 예전 화면 타입 run 차단, 플레이 진입 차단과 플레이 화면에서 나오기에 더해 자동 그리드, 좌표 변환, 앱 포커스, 행동 검증·관찰, 실패 수 메모리, Survey 저장, Autodrive 연계·취소 연결, 보고서 생성에 더해 이미지 지문 기반 화면 식별, bbox 중심 계산, 확대 재확인 좌표 복원, 탭 효과(빗나감) 판정, adb 뒤로·게임 재시작·탈출 사다리 단계 전환, 공통 띠 감지와 공통 버튼(한 번만 누르기·지름길), Mermaid 라벨 따옴표 처리, 반복 실행 지원을 검사합니다. 실제 OpenAI API 호출과 에뮬레이터 마우스 입력은 사용자 환경에서 별도로 확인해야 합니다.
 
 ## 현재 한계와 권장 로드맵
 

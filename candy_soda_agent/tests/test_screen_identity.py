@@ -42,7 +42,7 @@ def _button(label: str, confidence: float = 0.9) -> SurveyButtonCandidate:
     )
 
 
-def _event(*labels: str, screen_type: str = "event_or_mission", texts=()) -> SurveyDecision:
+def _event(*labels: str, screen_type: str = "menu", texts=()) -> SurveyDecision:
     return SurveyDecision(
         screen_type=screen_type,
         visible_text=list(texts),
@@ -61,7 +61,7 @@ class ScreenIdTests(unittest.TestCase):
         """확신도가 기준 미만인 버튼은 식별에서 빠집니다."""
         base = _event("Close", "Go")
         noisy = SurveyDecision(
-            screen_type="event_or_mission",
+            screen_type="menu",
             button_candidates=[_button("Close"), _button("Go"), _button("Info", 0.4)],
         )
         self.assertEqual(screen_buttons(noisy), ["close", "go"])
@@ -73,7 +73,11 @@ def _observe(pairs, *, max_diff: int = 1, max_distance: float = 0.0) -> list[str
 
     max_distance 기본값이 0이라 지문 매칭은 꺼져 있습니다. 버튼 폴백만 따로
     시험하려는 테스트가 대부분이고, 시험용 이미지를 다 다르게 만들지 않으면
-    지문이 전부 일치해 버리기 때문입니다."""
+    지문이 전부 일치해 버리기 때문입니다.
+
+    HOG 매칭(타입 무관, 1순위)도 끕니다. 여기는 그 뒤의 지문·버튼 단계를 시험하는 곳이고,
+    무작위 잡음 이미지는 HOG로 보면 서로 비슷해서 실제 화면과 다르게 동작합니다.
+    HOG 매칭은 test_screen_index.py에서 시험합니다."""
 
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory) / "navigation"
@@ -84,6 +88,7 @@ def _observe(pairs, *, max_diff: int = 1, max_distance: float = 0.0) -> list[str
             patch("navigation.graph.IMAGE_DIR", root / "representatives"),
             patch("navigation.graph.SCREEN_MATCH_MAX_BUTTON_DIFF", max_diff),
             patch("navigation.graph.SCREEN_FINGERPRINT_MAX_DISTANCE", max_distance),
+            patch("navigation.graph.SCREEN_HOG_MAX_DISTANCE", 0.0),
         ):
             store = GraphStore()
             return [store.observe(decision, image).id for decision, image in pairs]
@@ -126,12 +131,12 @@ class FingerprintMatchTests(unittest.TestCase):
         self.assertEqual(len(set(ids)), 2)
 
     def test_fingerprint_never_crosses_screen_types(self) -> None:
-        """팝업과 그 배경처럼 이미지가 같아도 화면 타입이 다르면 다른 노드입니다."""
+        """지문(dHash) 단계는 화면 타입이 같은 노드끼리만 비교합니다(타입을 넘는 비교는 HOG 단계 몫)."""
         screen = _image(5)
         ids = _observe(
             [
                 (_event("Close"), screen),
-                (_event("Close", screen_type="reward_popup"), screen),
+                (_event("Close", screen_type="popup"), screen),
             ],
             max_distance=0.05,
         )
@@ -141,24 +146,24 @@ class FingerprintMatchTests(unittest.TestCase):
     def test_nodes_without_a_fingerprint_are_skipped(self) -> None:
         """옛 기록에는 지문이 없습니다. 비교 대상에서 빼야 엉뚱하게 붙지 않습니다."""
         graph = NavigationGraph(nodes={
-            "old": ScreenNode(id="old", screen_type="event_or_mission"),
+            "old": ScreenNode(id="old", screen_type="menu"),
         })
 
         self.assertIsNone(
-            find_fingerprint_match(graph, "event_or_mission", board_fingerprint(_image(6)), 0.05)
+            find_fingerprint_match(graph, "menu", board_fingerprint(_image(6)), 0.05)
         )
 
     def test_zero_distance_disables_fingerprint_matching(self) -> None:
         graph = NavigationGraph(nodes={
             "a": ScreenNode(
-                id="a", screen_type="event_or_mission",
+                id="a", screen_type="menu",
                 fingerprint=board_fingerprint(_image(7)),
             ),
         })
 
         self.assertIsNone(
             find_fingerprint_match(
-                graph, "event_or_mission", board_fingerprint(_image(7)), 0.0
+                graph, "menu", board_fingerprint(_image(7)), 0.0
             )
         )
 
@@ -191,7 +196,7 @@ class TolerantMatchTests(unittest.TestCase):
     def test_tolerance_never_crosses_screen_types(self) -> None:
         ids = self._observe_all([
             _event("Close", "Go"),
-            _event("Close", "Go", screen_type="reward_popup"),
+            _event("Close", "Go", screen_type="popup"),
         ])
         self.assertNotEqual(ids[0], ids[1])
 
@@ -213,22 +218,22 @@ class TolerantMatchTests(unittest.TestCase):
     def test_ties_prefer_smallest_difference_then_most_visits(self) -> None:
         graph = NavigationGraph(nodes={
             "few_visits": ScreenNode(
-                id="few_visits", screen_type="event_or_mission",
+                id="few_visits", screen_type="menu",
                 buttons=["a", "b", "x", "y"], visits=1,
             ),
             "many_visits": ScreenNode(
-                id="many_visits", screen_type="event_or_mission",
+                id="many_visits", screen_type="menu",
                 buttons=["a", "b"], visits=5,
             ),
         })
         # 두 노드 모두 1개 차이 -> 방문이 많은 쪽
         self.assertEqual(
-            find_tolerant_match(graph, "event_or_mission", ["a", "b", "x"], 1),
+            find_tolerant_match(graph, "menu", ["a", "b", "x"], 1),
             "many_visits",
         )
         # few_visits만 1개 차이(many_visits는 2개 차이)
         self.assertEqual(
-            find_tolerant_match(graph, "event_or_mission", ["a", "b", "x", "y", "z"], 1),
+            find_tolerant_match(graph, "menu", ["a", "b", "x", "y", "z"], 1),
             "few_visits",
         )
 

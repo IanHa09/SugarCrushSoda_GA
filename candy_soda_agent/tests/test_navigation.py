@@ -94,13 +94,13 @@ class ScreenIdentityTests(unittest.TestCase):
     def test_parallel_section_id_ignores_llm_wording_changes(self) -> None:
         """문구가 달라도 병렬 섹션 화면은 같은 ID로 묶입니다."""
         first = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             summary="Island map with Level 10",
             visible_text=["Level 10", "Full"],
             button_candidates=[_button("Settings (gear)")],
         )
         second = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             summary="World map and highlighted level",
             visible_text=["Level 11"],
             button_candidates=[_button("Settings (cog)")],
@@ -115,7 +115,7 @@ class ParallelPolicyTests(unittest.TestCase):
         settings = _button("Settings (gear)")
         shop = _button("Shop (bottom-left icon)")
         decision = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[settings, shop],
         )
         node_id = screen_id(decision)
@@ -174,13 +174,13 @@ class GraphNormalizationTests(unittest.TestCase):
                 nodes={
                     "old_a": ScreenNode(
                         id="old_a",
-                        screen_type="map_or_level_select",
+                        screen_type="home",
                         summary="Map screen",
                         visits=1,
                     ),
                     "old_b": ScreenNode(
                         id="old_b",
-                        screen_type="map_or_level_select",
+                        screen_type="home",
                         summary="A more detailed world map screen",
                         visits=2,
                     ),
@@ -232,7 +232,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
     def test_each_screen_is_saved_as_a_survey_record(self) -> None:
         """안전 버튼 후보가 없으면 전역 프론티어도 비어 있어 1스텝만에
         "탐색 완료"로 멈추고, 그 화면은 survey 기록에 남습니다."""
-        decision = SurveyDecision(screen_type="map_or_level_select")  # 버튼 후보 없음
+        decision = SurveyDecision(screen_type="home")  # 버튼 후보 없음
         bundle = _tiny_bundle()
 
         with tempfile.TemporaryDirectory() as directory:
@@ -322,7 +322,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
         """execute_button_tap에도 cancel_check가 실제로 전달돼야 합니다."""
 
         decision = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[_button("Shop")],
         )
         bundle = _tiny_bundle()
@@ -369,7 +369,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
         돌아오는 간선은 만들지 않습니다(예전엔 빗나간 탭마다 self-loop 간선이 생겼습니다)."""
 
         decision = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[_button("Settings", role="structure")],
         )
         bundle = _tiny_bundle()  # 매 스텝 같은 픽셀 = 탭이 화면을 못 바꿈
@@ -425,14 +425,14 @@ class AutodriveIntegrationTests(unittest.TestCase):
 
     def test_same_pixels_reuse_node_even_if_llm_renames_screen_type(self) -> None:
         """직전과 픽셀이 같은 화면을 LLM이 다른 화면 타입으로 불러도 새 노드를 만들지
-        않습니다(실측: 같은 화면이 settings_menu/다른 타입으로 갈려 노드가 쪼개짐)."""
+        않습니다(실측: 같은 화면이 menu/다른 타입으로 갈려 노드가 쪼개짐)."""
 
         first = SurveyDecision(
-            screen_type="settings_menu",
+            screen_type="menu",
             button_candidates=[_button("Help", role="structure")],
         )
         renamed = SurveyDecision(
-            screen_type="help_support",
+            screen_type="popup",
             button_candidates=[_button("Help", role="structure")],
         )
         bundle = _tiny_bundle()
@@ -465,7 +465,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
             reported_graph = report_mock.call_args.kwargs["graph"]
             self.assertEqual(len(reported_graph.nodes), 1)
             node = next(iter(reported_graph.nodes.values()))
-            self.assertEqual(node.screen_type, "settings_menu")
+            self.assertEqual(node.screen_type, "menu")
             self.assertEqual(node.visits, 2)
 
     def test_frontier_button_missing_from_candidates_does_not_halt_exploration(
@@ -475,7 +475,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
         안 나와도 멈추지 않고 재관찰하고, 연속으로 안 보이면 정리한 뒤 탐색을
         정상 종료합니다. 그 사이 아무 버튼도 누르지 않아야 합니다."""
 
-        decision = SurveyDecision(screen_type="map_or_level_select")  # 후보 없음
+        decision = SurveyDecision(screen_type="home")  # 후보 없음
         bundle = _tiny_bundle()
 
         with tempfile.TemporaryDirectory() as directory:
@@ -524,10 +524,10 @@ class AutodriveIntegrationTests(unittest.TestCase):
         등록이 전부 한 루프 안에서 맞물려야 합니다."""
 
         decision_a = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[_button("Shop")],
         )
-        decision_b = SurveyDecision(screen_type="shop_or_currency")  # 버튼 후보 없음
+        decision_b = SurveyDecision(screen_type="shop")  # 버튼 후보 없음
         bundle_a = _tiny_bundle(0)
         bundle_b = _tiny_bundle(200)  # 픽셀이 달라야 실제로 화면이 바뀐 것입니다.
 
@@ -603,7 +603,7 @@ class TapRefineIntegrationTests(unittest.TestCase):
         from contextlib import ExitStack
 
         decision = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[_button("Shop")],
         )
         effect = TapEffect(changed=True, final_change=0.5, peak_change=0.5,
@@ -678,10 +678,10 @@ class BackKeyIntegrationTests(unittest.TestCase):
         from contextlib import ExitStack
 
         decision_a = SurveyDecision(
-            screen_type="map_or_level_select",
+            screen_type="home",
             button_candidates=[_button("Shop")],
         )
-        decision_b = SurveyDecision(screen_type="shop_or_currency")  # 버튼 없음 = 막힘
+        decision_b = SurveyDecision(screen_type="shop")  # 버튼 없음 = 막힘
         bundle_a, bundle_b = _tiny_bundle(0), _tiny_bundle(200)
         effect = TapEffect(changed=True, final_change=0.5, peak_change=0.5,
                            settled=True, waited=0.0, frames=1)
@@ -739,9 +739,9 @@ class BackKeyIntegrationTests(unittest.TestCase):
 
         from image_utils import board_fingerprint
 
-        decision_root = SurveyDecision(screen_type="map_or_level_select")
+        decision_root = SurveyDecision(screen_type="home")
         decision_shop = SurveyDecision(
-            screen_type="shop_or_currency",
+            screen_type="shop",
             button_candidates=[_button("Special Offer")],
         )
         bundle_root, bundle_shop = _tiny_bundle(0), _tiny_bundle(200)
@@ -757,7 +757,7 @@ class BackKeyIntegrationTests(unittest.TestCase):
                 NavigationGraph(nodes={
                     root_id: ScreenNode(
                         id=root_id,
-                        screen_type="map_or_level_select",
+                        screen_type="home",
                         visits=1,
                         fingerprint=board_fingerprint(bundle_root.full_image),
                     ),

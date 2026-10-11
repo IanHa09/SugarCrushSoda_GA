@@ -23,9 +23,9 @@ def _graph_a_b_c_with_cycle() -> NavigationGraph:
     """A -> B -> C, 그리고 C -> A(사이클, 교차 링크가 돼야 함)."""
     return NavigationGraph(
         nodes={
-            "a": ScreenNode(id="a", screen_type="map_or_level_select"),
-            "b": ScreenNode(id="b", screen_type="shop_or_currency"),
-            "c": ScreenNode(id="c", screen_type="settings_menu"),
+            "a": ScreenNode(id="a", screen_type="home"),
+            "b": ScreenNode(id="b", screen_type="shop"),
+            "c": ScreenNode(id="c", screen_type="menu"),
         },
         edges=[
             NavigationEdge(source="a", target="b", action="Shop", action_key="shop"),
@@ -44,7 +44,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
             {
                 "step": 1,
                 "screen_id": "screen_a",
-                "survey": {"screen_type": "level_complete"},
+                "survey": {"screen_type": "level"},
                 "elements": [
                     {"key": "star", "category": "reward", "name": "Star", "evidence": "3 stars"},
                 ],
@@ -52,7 +52,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
             {
                 "step": 2,
                 "screen_id": "screen_b",
-                "survey": {"screen_type": "reward_popup"},
+                "survey": {"screen_type": "popup"},
                 "elements": [
                     {"key": "star", "category": "reward", "name": "Star", "evidence": "bonus stars"},
                 ],
@@ -64,8 +64,8 @@ class ElementCoOccurrenceTests(unittest.TestCase):
         # 두 화면 모두 언급돼야 합니다(동시출현).
         star_section = report.split("### reward", 1)[1]
         self.assertIn("2개 화면", star_section)
-        self.assertIn("level_complete", star_section)
-        self.assertIn("reward_popup", star_section)
+        self.assertIn("level", star_section)
+        self.assertIn("popup", star_section)
 
     def test_one_screen_element_omits_the_screen_suffix(self) -> None:
         """한 화면에서만 본 요소는 등장 화면을 적어도 정보가 늘지 않습니다."""
@@ -74,7 +74,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
             {
                 "step": 1,
                 "screen_id": "screen_a",
-                "survey": {"screen_type": "level_complete"},
+                "survey": {"screen_type": "level"},
                 "elements": [{"category": "reward", "name": "Star"}],
             }
         ]
@@ -92,7 +92,7 @@ class ElementCoOccurrenceTests(unittest.TestCase):
             {
                 "step": index,
                 "screen_id": f"screen_{index}",
-                "survey": {"screen_type": "playing_board"},
+                "survey": {"screen_type": "play"},
                 "elements": [{"category": "booster", "name": name}],
             }
             for index, name in enumerate(
@@ -119,7 +119,7 @@ class CrossCategoryMergeTests(unittest.TestCase):
             {
                 "step": index,
                 "screen_id": f"screen_{index}",
-                "survey": {"screen_type": "playing_board"},
+                "survey": {"screen_type": "play"},
                 "elements": [{"category": category, "name": "레벨 번호"}],
             }
             for index, category in enumerate(categories, start=1)
@@ -156,7 +156,7 @@ class CrossCategoryMergeTests(unittest.TestCase):
             {
                 "step": 1,
                 "screen_id": "screen_a",
-                "survey": {"screen_type": "playing_board"},
+                "survey": {"screen_type": "play"},
                 "elements": [
                     {"category": "ui", "name": "가 버튼"},
                     {"category": "ui", "name": "나"},
@@ -179,7 +179,7 @@ class CrossCategoryMergeTests(unittest.TestCase):
             {
                 "step": 1,
                 "screen_id": "screen_a",
-                "survey": {"screen_type": "level_complete"},
+                "survey": {"screen_type": "level"},
                 "elements": [
                     {"category": "reward", "name": "Star", "evidence": "세 개의 별"}
                 ],
@@ -201,9 +201,9 @@ class ScreenHierarchyTests(unittest.TestCase):
         self.assertIn("## Screen Hierarchy", report)
         hierarchy = report.split("## Screen Hierarchy", 1)[1]
         # 루트(a, 딕셔너리에 가장 먼저 들어간 노드) 아래 b, 그 아래 c가 들여쓰기로 나와야 합니다.
-        self.assertIn("Map / Level Select", hierarchy)
-        self.assertIn("Shop / Currency", hierarchy)
-        self.assertIn("Settings", hierarchy)
+        self.assertIn("Home", hierarchy)
+        self.assertIn("Shop", hierarchy)
+        self.assertIn("Menu / Sub Page", hierarchy)
         self.assertIn("### Cross Links", hierarchy)
         cross_section = hierarchy.split("### Cross Links", 1)[1]
         self.assertIn("Home", cross_section)  # c -> a 간선이 교차 링크로 남음
@@ -224,7 +224,7 @@ class ScreenHierarchyTests(unittest.TestCase):
         hierarchy = report.split("## Screen Hierarchy", 1)[1]
         # 루트가 c이므로 c가 최상위(들여쓰기 없는 첫 항목)여야 합니다.
         first_bullet_line = next(line for line in hierarchy.splitlines() if line.startswith("- "))
-        self.assertIn("Settings", first_bullet_line)
+        self.assertIn("Menu / Sub Page", first_bullet_line)
 
 
 class SelfLoopTests(unittest.TestCase):
@@ -234,8 +234,8 @@ class SelfLoopTests(unittest.TestCase):
     def _graph_with_self_loops() -> NavigationGraph:
         return NavigationGraph(
             nodes={
-                "a": ScreenNode(id="a", screen_type="map_or_level_select"),
-                "b": ScreenNode(id="b", screen_type="shop_or_currency"),
+                "a": ScreenNode(id="a", screen_type="home"),
+                "b": ScreenNode(id="b", screen_type="shop"),
             },
             edges=[
                 NavigationEdge(source="a", target="b", action="Shop", action_key="shop"),
@@ -270,14 +270,14 @@ class OrphanScreenTests(unittest.TestCase):
     def test_nodes_unreachable_from_root_are_listed(self) -> None:
         """트리에서 그냥 빠지면 관찰했는지조차 알 수 없었습니다."""
         graph = _graph_a_b_c_with_cycle()
-        graph.nodes["lost"] = ScreenNode(id="lost", screen_type="booster_panel")
+        graph.nodes["lost"] = ScreenNode(id="lost", screen_type="popup")
 
         report = generate_survey_markdown([], graph)
 
         hierarchy = report.split("## Screen Hierarchy", 1)[1]
         self.assertIn("트리에 없는 화면", hierarchy)
         orphan_section = hierarchy.split("트리에 없는 화면", 1)[1]
-        self.assertIn("Booster Panel", orphan_section)
+        self.assertIn("Popup", orphan_section)
 
     def test_section_is_absent_when_every_node_is_reachable(self) -> None:
         report = generate_survey_markdown([], _graph_a_b_c_with_cycle())
@@ -292,14 +292,14 @@ class EvidenceIndexTests(unittest.TestCase):
             {
                 "step": index,
                 "session_id": "s1",
-                "survey": {"screen_type": "shop_or_currency", "summary": "상점"},
+                "survey": {"screen_type": "shop", "summary": "상점"},
             }
             for index in range(1, 6)
         ] + [
             {
                 "step": 6,
                 "session_id": "s1",
-                "survey": {"screen_type": "playing_board", "summary": "보드"},
+                "survey": {"screen_type": "play", "summary": "보드"},
             }
         ]
 
@@ -343,7 +343,7 @@ class MermaidCutoffTests(unittest.TestCase):
     def test_diagram_is_skipped_when_node_count_exceeds_cap(self) -> None:
         """노드가 너무 많으면(설정된 상한 초과) mermaid 블록을 생략합니다."""
         nodes = {
-            f"n{i}": ScreenNode(id=f"n{i}", screen_type="unknown_but_recordable")
+            f"n{i}": ScreenNode(id=f"n{i}", screen_type="unknown")
             for i in range(5)
         }
         graph = NavigationGraph(
@@ -396,13 +396,13 @@ class FrontierSectionTests(unittest.TestCase):
     def test_overview_shows_node_count_per_screen_type(self) -> None:
         """쪼개짐 진단용: 화면 타입별 노드 수가 Overview에 나옵니다."""
         graph = _graph_a_b_c_with_cycle()
-        graph.nodes["d"] = ScreenNode(id="d", screen_type="settings_menu")
+        graph.nodes["d"] = ScreenNode(id="d", screen_type="menu")
 
         report = generate_survey_markdown([], graph)
 
         overview = report.split("## Overview", 1)[1].split("##", 1)[0]
         self.assertIn("Navigation nodes: 4", overview)
-        self.assertIn("settings_menu 2", overview)
+        self.assertIn("menu 2", overview)
 
     def test_missing_ledger_notes_no_data_instead_of_failing(self) -> None:
         report = generate_survey_markdown([], None, ledger=None)
@@ -419,9 +419,9 @@ class MermaidLabelQuotingTests(unittest.TestCase):
     def test_every_edge_label_is_quoted_and_sanitized(self) -> None:
         graph = NavigationGraph(
             nodes={
-                "a": ScreenNode(id="a", screen_type="map_or_level_select"),
-                "b": ScreenNode(id="b", screen_type="shop_or_currency"),
-                "c": ScreenNode(id="c", screen_type="social_friends"),
+                "a": ScreenNode(id="a", screen_type="home"),
+                "b": ScreenNode(id="b", screen_type="shop"),
+                "c": ScreenNode(id="c", screen_type="popup"),
             },
             edges=[
                 NavigationEdge(source="a", target="b", action="!", action_key="bang"),

@@ -201,7 +201,7 @@ class ChromeMaskedIdentityTests(unittest.TestCase):
         self.assertGreater(
             fingerprint_distance(board_fingerprint(first), board_fingerprint(second)), 0.05
         )
-        decision = SurveyDecision(screen_type="map_or_level_select")
+        decision = SurveyDecision(screen_type="home")
 
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "navigation"
@@ -211,11 +211,12 @@ class ChromeMaskedIdentityTests(unittest.TestCase):
                 patch("navigation.graph.JOURNEY_PATH", root / "journeys.jsonl"),
                 patch("navigation.graph.IMAGE_DIR", root / "representatives"),
                 patch("navigation.graph.SCREEN_MATCH_MAX_BUTTON_DIFF", 0),
+                patch("navigation.graph.SCREEN_HOG_MAX_DISTANCE", 0.0),  # 지문 단계만 시험
             ):
                 plain = GraphStore()
                 a = plain.observe(decision, first)
                 b = plain.observe(
-                    SurveyDecision(screen_type="map_or_level_select", summary="x",
+                    SurveyDecision(screen_type="home", summary="x",
                                    button_candidates=[_button("Shop")]),
                     second,
                 )
@@ -228,12 +229,13 @@ class ChromeMaskedIdentityTests(unittest.TestCase):
                 patch("navigation.graph.JOURNEY_PATH", root2 / "journeys.jsonl"),
                 patch("navigation.graph.IMAGE_DIR", root2 / "representatives"),
                 patch("navigation.graph.SCREEN_MATCH_MAX_BUTTON_DIFF", 0),
+                patch("navigation.graph.SCREEN_HOG_MAX_DISTANCE", 0.0),  # 지문 단계만 시험
             ):
                 masked = GraphStore()
                 masked.set_chrome_bands(ChromeBands(bottom=150, height=400, width=240))
                 a = masked.observe(decision, first)
                 b = masked.observe(
-                    SurveyDecision(screen_type="map_or_level_select", summary="x",
+                    SurveyDecision(screen_type="home", summary="x",
                                    button_candidates=[_button("Shop")]),
                     second,
                 )
@@ -414,8 +416,8 @@ EFFECT = TapEffect(changed=True, final_change=0.5, peak_change=0.5, settled=True
 class EscapeLadderIntegrationTests(unittest.TestCase):
     """A(루트, Shop 버튼) -> B(버튼 없음, 갇힘). 그래프로 갈 수 없는 화면에 프론티어를 둡니다."""
 
-    decision_a = SurveyDecision(screen_type="map_or_level_select", button_candidates=[_button("Shop")])
-    decision_b = SurveyDecision(screen_type="shop_or_currency")
+    decision_a = SurveyDecision(screen_type="home", button_candidates=[_button("Shop")])
+    decision_b = SurveyDecision(screen_type="shop")
 
     def _run(self, *, captures, decisions, max_steps, extra_patches=()):
         directory = tempfile.TemporaryDirectory()
@@ -532,11 +534,11 @@ class NavBarIntegrationTests(unittest.TestCase):
         # 탭 버튼은 우선순위가 낮은 safe_navigation이라 각 화면 고유 버튼을 먼저 누릅니다.
         tab = lambda: _button("상점", x=0.1, y=0.95, role="safe_navigation")  # noqa: E731
         decisions = [
-            SurveyDecision(screen_type="map_or_level_select", button_candidates=[tab(), _button("Go A", 0.5, 0.3)]),
-            SurveyDecision(screen_type="event_or_mission", button_candidates=[tab(), _button("Go B", 0.5, 0.4)]),
-            SurveyDecision(screen_type="social_friends", button_candidates=[tab()]),
-            SurveyDecision(screen_type="shop_or_currency"),
-            SurveyDecision(screen_type="shop_or_currency"),
+            SurveyDecision(screen_type="home", button_candidates=[tab(), _button("Go A", 0.5, 0.3)]),
+            SurveyDecision(screen_type="popup", button_candidates=[tab(), _button("Go B", 0.5, 0.4)]),
+            SurveyDecision(screen_type="menu", button_candidates=[tab()]),
+            SurveyDecision(screen_type="shop"),
+            SurveyDecision(screen_type="shop"),
         ]
         captures = [_bundle(v) for v in (0, 60, 120, 180, 180)]
         directory = tempfile.TemporaryDirectory()
@@ -599,8 +601,8 @@ class NavBarIntegrationTests(unittest.TestCase):
 class ReportAndMetricsTests(unittest.TestCase):
     def test_persistent_ui_section_lists_bar_and_global_buttons(self) -> None:
         graph = NavigationGraph(nodes={
-            "map": ScreenNode(id="map", screen_type="map_or_level_select"),
-            "shop": ScreenNode(id="shop", screen_type="shop_or_currency"),
+            "map": ScreenNode(id="map", screen_type="home"),
+            "shop": ScreenNode(id="shop", screen_type="shop"),
         })
         chrome = {
             "bands": {"top": 0, "bottom": 150, "height": 1348, "support": 3},
@@ -615,7 +617,7 @@ class ReportAndMetricsTests(unittest.TestCase):
             report = generate_survey_markdown([], graph, ledger=ledger, chrome=chrome)
         section = report.split("## Persistent UI", 1)[1].split("## ", 1)[0]
         self.assertIn("아래 150px", section)
-        self.assertIn("**상점**: 2개 화면에서 보임, → Shop / Currency", section)
+        self.assertIn("**상점**: 2개 화면에서 보임, → Shop", section)
         self.assertIn("공통 버튼(네비게이션 바)", report)
 
     def test_metrics_count_escapes_and_exclude_restarts_from_taps(self) -> None:

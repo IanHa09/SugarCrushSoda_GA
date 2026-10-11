@@ -14,11 +14,13 @@ from config import (
     NAVIGATION_IMAGE_DIR,
     NAVIGATION_JOURNEY_PATH,
     SCREEN_FINGERPRINT_MAX_DISTANCE,
+    SCREEN_HOG_MAX_DISTANCE,
     SCREEN_MATCH_MAX_BUTTON_DIFF,
 )
 from image_utils import board_fingerprint, fingerprint_distance
 from navigation.observer import screen_buttons, screen_id
 from navigation.policy import navigation_action_key_from_label
+from navigation.screen_index import ScreenIndex
 from schemas import NavigationEdge, NavigationGraph, ScreenNode
 
 # 1단계: 게임·run별로 분리된 output/<game_slug>/runs/<run_id>/navigation/ 경로를 씁니다.
@@ -45,10 +47,13 @@ def bfs_nearest_matching(
     source: str,
     is_target: Callable[[str], bool],
     extra_edges: Iterable[NavigationEdge] = (),
+    avoid: Callable[[str], bool] | None = None,
 ) -> list[NavigationEdge] | None:
     """source에서 시작해 is_target을 만족하는 가장 가까운 노드까지의 간선 경로를
     간선 수 기준 최단으로 찾습니다. source 자신이 만족하면 빈 리스트를 반환합니다.
     도달 가능한 노드 중에 없으면 None입니다(2단계: 원거리 프론티어 탐색에 씁니다).
+
+    avoid: True를 돌려주는 노드는 지나가지도, 도착하지도 않습니다(플레이 화면 등).
 
     NavigationGraph 데이터만으로 동작하는 자유 함수입니다 — GraphStore(파일 I/O가
     있는 실시간 저장소) 없이도 survey_report.py 같은 곳에서 그대로 재사용합니다."""
@@ -64,6 +69,8 @@ def bfs_nearest_matching(
         for edge in adjacency.get(node_id, []):
             if edge.target in visited:
                 continue
+            if avoid is not None and avoid(edge.target):
+                continue
             visited.add(edge.target)
             new_path = path + [edge]
             if is_target(edge.target):
@@ -77,10 +84,11 @@ def bfs_path(
     source: str,
     target: str,
     extra_edges: Iterable[NavigationEdge] = (),
+    avoid: Callable[[str], bool] | None = None,
 ) -> list[NavigationEdge] | None:
     """source에서 target까지의 최단 간선 경로. (2단계: 루트 리셋 후 재계획에 씁니다.)"""
     return bfs_nearest_matching(
-        graph, source, lambda node_id: node_id == target, extra_edges
+        graph, source, lambda node_id: node_id == target, extra_edges, avoid
     )
 
 
@@ -279,6 +287,11 @@ class GraphStore:
         # 공통 띠(네비게이션 바 등)를 지문 비교에서 뺄 때 씁니다(set_chrome_bands).
         self.chrome_bands = None
         self._content_fingerprints: dict[str, str] = {}
+        # 경로 계획(BFS)에서 지나가지 않을 노드 판정. navigator가 플레이 화면을 넣습니다.
+        self.avoid_node: Callable[[str], bool] | None = None
+        # 대표 화면 전체의 HOG 특징 색인(처음 쓸 때 대표 이미지로 만듭니다)과 마지막 비교 결과.
+        self._hog_index: ScreenIndex | None = None
+        self.last_hog_match: tuple[str | None, float] = (None, 1.0)
 
     # -- 공통 띠를 뺀 지문 ------------------------------------------------------
 
@@ -293,11 +306,33 @@ class GraphStore:
         """공통 띠를 정합니다. None이거나 띠가 없으면 예전처럼 화면 전체 지문을 씁니다."""
         self.chrome_bands = bands if bands is not None and bands.active else None
         self._content_fingerprints.clear()
+        self._hog_index = None  # 비교 영역이 바뀌었으니 색인을 다시 만듭니다.
+
+    def _content(self, image):
+        """같은 화면 비교에 쓰는 영역: 공통 띠(네비게이션 바 등)를 뺀 본문."""
+        if image is None or self.chrome_bands is None:
+            return image
+        return self.chrome_bands.content(image)
 
     def _fingerprint_for_image(self, image) -> str:
-        if self.chrome_bands is not None:
-            return board_fingerprint(self.chrome_bands.content(image))
-        return board_fingerprint(image)
+        return board_fingerprint(self._content(image))
+
+    # -- 대표 화면 전체와 HOG 비교 ------------------------------------------------
+
+    def _screen_index(self) -> ScreenIndex:
+        if self._hog_index is None:
+            self._hog_index = ScreenIndex.build(
+                self.graph.nodes, lambda node_id: self._content(self.load_image(node_id))
+            )
+        return self._hog_index
+
+    def _hog_match(self, image) -> str | None:
+        """화면 타입과 상관없이 대표 화면 전체 중 가장 가까운 노드(거리가 임계값 이하일 때)."""
+        if SCREEN_HOG_MAX_DISTANCE <= 0 or image is None:
+            return None
+        self.last_hog_match = self._screen_index().nearest(self._content(image))
+        node_id, distance = self.last_hog_match
+        return node_id if node_id is not None and distance <= SCREEN_HOG_MAX_DISTANCE else None
 
     def _node_fingerprint(self, node: ScreenNode) -> str:
         """노드의 비교용 지문. 공통 띠가 있으면 대표 이미지에서 띠를 빼고 다시 계산합니다
@@ -367,7 +402,9 @@ class GraphStore:
         is_target: Callable[[str], bool],
         extra_edges: Iterable[NavigationEdge] = (),
     ) -> list[NavigationEdge] | None:
-        return bfs_nearest_matching(self.graph, source, is_target, extra_edges)
+        return bfs_nearest_matching(
+            self.graph, source, is_target, extra_edges, self.avoid_node
+        )
 
     def bfs_path(
         self,
@@ -375,7 +412,7 @@ class GraphStore:
         target: str,
         extra_edges: Iterable[NavigationEdge] = (),
     ) -> list[NavigationEdge] | None:
-        return bfs_path(self.graph, source, target, extra_edges)
+        return bfs_path(self.graph, source, target, extra_edges, self.avoid_node)
 
     def bfs_spanning_tree(
         self, root: str
@@ -389,9 +426,10 @@ class GraphStore:
         """화면을 노드로 기록하고 대표 이미지를 저장합니다.
 
         같은 화면을 알아보는 순서:
-        1. 이미지 지문 — 판단 기준입니다.
-        2. 정확히 같은 ID(화면 타입 + 버튼 목록) — 단, 지문이 충돌하면 쓰지 않습니다.
-        3. 버튼 1개 차이 허용 매칭 — 여기도 지문 충돌은 거부합니다.
+        1. HOG 거리 — 대표 화면 전체와 비교하며, 화면 타입은 보지 않습니다(screen_index.py).
+        2. 이미지 지문(dHash) — 같은 화면 타입 노드끼리만 비교합니다.
+        3. 정확히 같은 ID(화면 타입 + 버튼 목록) — 단, 지문이 충돌하면 쓰지 않습니다.
+        4. 버튼 1개 차이 허용 매칭 — 여기도 지문 충돌은 거부합니다.
         어디에도 못 붙으면 새 노드입니다.
         """
 
@@ -417,13 +455,15 @@ class GraphStore:
                 return None
             return candidate_id
 
-        node_id = find_fingerprint_match(
-            self.graph,
-            decision.screen_type,
-            compare_fingerprint,
-            SCREEN_FINGERPRINT_MAX_DISTANCE,
-            self._node_fingerprint,
-        )
+        node_id = self._hog_match(image)
+        if node_id is None:
+            node_id = find_fingerprint_match(
+                self.graph,
+                decision.screen_type,
+                compare_fingerprint,
+                SCREEN_FINGERPRINT_MAX_DISTANCE,
+                self._node_fingerprint,
+            )
         if node_id is None:
             node_id = _usable(natural_id)
         if node_id is None:
@@ -438,8 +478,12 @@ class GraphStore:
 
         image_path = IMAGE_DIR / f"{node_id}.png"
 
-        if not image_path.exists() and not cv2.imwrite(str(image_path), image):
-            raise OSError(f"대표 이미지 저장 실패: {image_path}")
+        if not image_path.exists():
+            if not cv2.imwrite(str(image_path), image):
+                raise OSError(f"대표 이미지 저장 실패: {image_path}")
+            # 새 대표 화면은 HOG 색인에도 넣습니다(색인이 아직 없으면 처음 쓸 때 파일에서 만듭니다).
+            if self._hog_index is not None:
+                self._hog_index.add(node_id, self._content(image))
 
         node = self.graph.nodes.get(node_id)
         if node is None:

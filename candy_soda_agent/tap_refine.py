@@ -410,8 +410,10 @@ def is_risky_exit_label(label: str) -> bool:
     return any(token in lowered for token in RISKY_EXIT_TOKENS)
 
 
-def _exit_prompt(view: GridView, failed_points: list[tuple[int, int]]) -> str:
+def _exit_prompt(view: GridView, failed_points: list[tuple[int, int]], hint: str = "") -> str:
     last_col = column_name(view.cols - 1)
+    # 상황 설명(예: 플레이 화면에서 나오는 중). 게임 지식 파일의 play_exit_hint가 들어옵니다.
+    situation = f"\n지금 상황: {hint.strip()}\n" if hint and hint.strip() else ""
     avoid = ""
     if failed_points:
         shown = ", ".join(
@@ -424,7 +426,7 @@ def _exit_prompt(view: GridView, failed_points: list[tuple[int, int]]) -> str:
 이 이미지는 모바일 게임 화면 전체다. 크기: 가로 {view.width}px, 세로 {view.height}px.
 청록색 격자: 위쪽 가장자리 글자(A~{last_col})가 열, 왼쪽 가장자리 숫자(1~{view.rows})가 행이다. 칸 하나는 {view.cell}px이다.
 
-자동 탐색기가 이 화면에서 빠져나갈 길을 찾고 있다. 아래 순서로 하나만 고른다.
+자동 탐색기가 이 화면에서 빠져나갈 길을 찾고 있다.{situation}아래 순서로 하나만 고른다.
 1. 이 화면이나 팝업을 닫거나 이전 화면으로 돌아가는 요소: X 아이콘, 닫기, 뒤로 화살표,
    확인/OK(정보 안내 팝업일 때만), 나중에, 홈 탭. -> kind="button"
 2. 1이 없고 모달 팝업 뒤로 어둡게 가려진 배경이 보이면, 팝업 바깥의 어두운 빈 곳 한 점. -> kind="outside"
@@ -444,8 +446,11 @@ def find_exit_target(
     min_confidence: float = TAP_REFINE_MIN_CONFIDENCE,
     failed_points: list[tuple[int, int]] | None = None,
     request: Callable[..., Any] = request_structured_vision,
+    hint: str = "",
 ) -> ExitTarget:
-    """화면 전체에 격자를 그려 나가기 요소(또는 팝업 바깥)를 하나 찾습니다."""
+    """화면 전체에 격자를 그려 나가기 요소(또는 팝업 바깥)를 하나 찾습니다.
+
+    hint: 지금 상황 설명(플레이에서 나오는 중이면 game_knowledge의 play_exit_hint)."""
 
     height, width = image.shape[:2]
     view = build_grid_view(image, (0, 0, width, height))
@@ -454,7 +459,7 @@ def find_exit_target(
             client,
             model=model,
             system_prompt=EXIT_SYSTEM_PROMPT,
-            prompt=_exit_prompt(view, list(failed_points or [])),
+            prompt=_exit_prompt(view, list(failed_points or []), hint),
             full_image=view.image,
             board_image=None,
             board_note="",

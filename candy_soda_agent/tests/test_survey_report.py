@@ -22,7 +22,7 @@ class SurveyReportTests(unittest.TestCase):
             {
                 "step": 1,
                 "survey": {
-                    "screen_type": "map_or_level_select",
+                    "screen_type": "home",
                     "summary": "Choose a level.",
                 },
                 "dedupe": {"screen_signature": "map"},
@@ -30,7 +30,7 @@ class SurveyReportTests(unittest.TestCase):
             {
                 "step": 2,
                 "survey": {
-                    "screen_type": "playing_board",
+                    "screen_type": "play",
                     "summary": "Play the puzzle.",
                 },
                 "dedupe": {"screen_signature": "board"},
@@ -38,7 +38,7 @@ class SurveyReportTests(unittest.TestCase):
             {
                 "step": 3,
                 "survey": {
-                    "screen_type": "level_complete",
+                    "screen_type": "level",
                     "summary": "Finish the level.",
                 },
                 "dedupe": {"screen_signature": "complete"},
@@ -46,7 +46,7 @@ class SurveyReportTests(unittest.TestCase):
             {
                 "step": 4,
                 "survey": {
-                    "screen_type": "settings_menu",
+                    "screen_type": "menu",
                     "summary": "Change settings.",
                 },
                 "dedupe": {"screen_signature": "settings"},
@@ -57,8 +57,8 @@ class SurveyReportTests(unittest.TestCase):
 
         self.assertIn("## Game Structure Diagram", report)
         self.assertIn("```mermaid\nflowchart LR", report)
-        self.assertIn('screen_map_or_level_select["Map / Level Select"]', report)
-        self.assertIn('screen_playing_board["Playing Board"]', report)
+        self.assertIn('screen_home["Home"]', report)
+        self.assertIn('screen_play["Play"]', report)
         self.assertIn("현재 화면 간 전환 기록 없음", report)
         self.assertNotIn("-->", report)
 
@@ -105,12 +105,12 @@ class SurveyReportTests(unittest.TestCase):
         records = [
             {
                 "step": 1,
-                "survey": {"screen_type": "map_or_level_select"},
+                "survey": {"screen_type": "home"},
                 "dedupe": {"screen_signature": "map"},
             },
             {
                 "step": 2,
-                "survey": {"screen_type": "settings_menu"},
+                "survey": {"screen_type": "menu"},
                 "dedupe": {"screen_signature": "settings"},
             },
         ]
@@ -118,11 +118,11 @@ class SurveyReportTests(unittest.TestCase):
             nodes={
                 "map": ScreenNode(
                     id="map",
-                    screen_type="map_or_level_select",
+                    screen_type="home",
                 ),
                 "settings": ScreenNode(
                     id="settings",
-                    screen_type="settings_menu",
+                    screen_type="menu",
                 ),
             },
             edges=[
@@ -147,7 +147,7 @@ class FragmentationWarningTests(unittest.TestCase):
     RECORDS = [
         {
             "step": 1,
-            "survey": {"screen_type": "event_or_mission"},
+            "survey": {"screen_type": "popup"},
             "dedupe": {"screen_signature": "event"},
         }
     ]
@@ -158,7 +158,7 @@ class FragmentationWarningTests(unittest.TestCase):
             nodes={
                 f"event{index}": ScreenNode(
                     id=f"event{index}",
-                    screen_type="event_or_mission",
+                    screen_type="popup",
                 )
                 for index in range(node_count)
             }
@@ -169,7 +169,7 @@ class FragmentationWarningTests(unittest.TestCase):
             report = generate_survey_markdown(self.RECORDS, self._graph_with(3))
 
         self.assertIn("화면 파편화 의심", report)
-        self.assertIn("Event / Mission 3개", report)
+        self.assertIn("Popup 3개", report)
 
     def test_stays_quiet_below_threshold(self) -> None:
         with patch("survey_report.SCREEN_FRAGMENTATION_WARN_COUNT", 3):

@@ -22,6 +22,7 @@ from config import (
     SURVEY_LLM_MAX_OUTPUT_TOKENS,
     SURVEY_MODEL,
 )
+from game_knowledge import GameProfile, active_profile, survey_prompt_block
 from grid_detector import detect_grid_shape
 from image_utils import board_fingerprint
 from llm_request import request_structured_vision
@@ -101,11 +102,18 @@ def analyze_survey_screen(
     full_image: np.ndarray,
     board_image: np.ndarray | None = None,
     survey_context: list[dict] | None = None,
+    profile: GameProfile | None = None,
 ) -> SurveyDecision:
-    """화면 요소, 버튼 후보, 문서화 증거 추출."""
+    """화면 요소, 버튼 후보, 문서화 증거 추출.
 
+    profile: 게임 지식(장르, UI 관례, 화면 타입). 없으면 GAME_TITLE의 프로필을 씁니다.
+    화면 타입 목록과 UI 힌트는 knowledge/ 파일에서 오므로, 분류 기준을 바꿀 때는
+    이 프롬프트가 아니라 knowledge/screen_types.json, ui_knowledge.json을 고칩니다."""
+
+    profile = profile or active_profile()
     context_text = _format_survey_context(survey_context or [])
     image_height, image_width = full_image.shape[:2]
+    knowledge_text = survey_prompt_block(profile)
 
     prompt = f"""
 첫 번째 이미지는 게임 UI 전체 또는 게임 창이다. 두 번째 이미지가 있으면 같은 화면의 보드 확대본이다.
@@ -115,21 +123,7 @@ def analyze_survey_screen(
 - 화면 캡처와 텍스트 설명을 함께 쓸 수 있도록 현재 화면의 증거를 정리한다.
 - 룰북/보상 메모리와 별도로, 등급 검토자가 나중에 볼 수 있는 게임 구조 기록을 만든다.
 
-화면 타입:
-- playing_board: 실제 보드 플레이 화면
-- level_start: 레벨 시작/목표 안내
-- level_complete: 클리어, 별, Next 화면
-- reward_popup: 보상 획득, Claim, 선물, 상자
-- map_or_level_select: 스테이지 지도 또는 레벨 선택
-- booster_panel: 부스터 선택, 잠금 부스터
-- shop_or_currency: 코인, 상점, 재화
-- settings_menu: 소리·음악·언어·알림 같은 게임 옵션을 켜고 끄는 설정 화면
-- profile: 플레이어 프로필, 아바타, 레벨·국가·플레이 시작일 같은 계정/개인 정보
-- social_friends: 친구 목록, 친구 초대·추가, 리더보드, 메시지함
-- help_support: 고객센터, FAQ, 도움말, 문의, 검색, 문제 신고
-- event_or_mission: 이벤트, 미션, 출석, 시즌 보상
-- ad_or_offer: 광고 시청, 특가, 시간 제한 오퍼
-- tutorial, loading, unknown_but_recordable
+{knowledge_text}
 
 버튼 후보 정책:
 - safe_navigation: 닫기, 뒤로, 홈처럼 화면 이동을 되돌리거나 정리하는 버튼
@@ -154,7 +148,7 @@ def analyze_survey_screen(
 응답 간결성:
 - visible_text는 화면에 실제로 보이는 핵심 문구만 최대 8개.
 - game_elements는 문서에 남길 핵심 요소만 최대 10개.
-- button_candidates는 탐색 가치가 있는 후보만 최대 6개.
+- button_candidates는 탐색 가치가 있는 후보만 최대 {profile.button_limit}개(탭바 규칙의 탭 포함).
 - summary, description, reason은 짧게 작성한다.
 
 최근 조사 기록:

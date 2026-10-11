@@ -35,6 +35,7 @@ from config import (
 from config import NAVIGATION_GRAPH_PATH as CURRENT_RUN_GRAPH_PATH
 from config import NAVIGATION_LEDGER_PATH as CURRENT_RUN_LEDGER_PATH
 from config import NAVIGATION_UI_CHROME_PATH as CURRENT_RUN_UI_CHROME_PATH
+from game_knowledge import active_profile, screen_type_labels
 from navigation.graph import (
     bfs_spanning_tree,
     fragmented_screen_types,
@@ -46,24 +47,8 @@ from schemas import NavigationGraph
 from survey_utils import canonical_name_tokens
 
 
-SCREEN_TYPE_LABELS = {
-    "playing_board": "Playing Board",
-    "level_start": "Level Start",
-    "level_complete": "Level Complete",
-    "reward_popup": "Reward Popup",
-    "map_or_level_select": "Map / Level Select",
-    "booster_panel": "Booster Panel",
-    "shop_or_currency": "Shop / Currency",
-    "settings_menu": "Settings",
-    "profile": "Profile",
-    "social_friends": "Friends / Social",
-    "help_support": "Help / Support",
-    "event_or_mission": "Event / Mission",
-    "ad_or_offer": "Ad / Offer",
-    "tutorial": "Tutorial",
-    "loading": "Loading",
-    "unknown_but_recordable": "Unknown Screen",
-}
+# 화면 타입 라벨과 순서는 knowledge/screen_types.json에서 읽습니다(꺼진 후보 타입 포함).
+SCREEN_TYPE_LABELS = screen_type_labels()
 
 
 def _display(value: str | None, fallback: str = "unknown") -> str:
@@ -72,6 +57,17 @@ def _display(value: str | None, fallback: str = "unknown") -> str:
         return fallback
     stripped = str(value).strip()
     return stripped if stripped else fallback
+
+
+def _game_line() -> str:
+    """보고서 Overview의 게임·장르 한 줄(GAME_TITLE과 knowledge/games.txt 기준)."""
+    try:
+        profile = active_profile()
+    except Exception as error:  # noqa: BLE001 - 지식 파일 문제로 보고서를 못 쓰면 안 됩니다.
+        return f"(게임 지식 읽기 실패: {error})"
+    genre = profile.genre_label or profile.genre
+    note = "" if profile.known else " — games.txt에 없는 제목"
+    return f"{profile.title} (장르: {genre}{note})"
 
 
 def _screen_label(screen_type: str) -> str:
@@ -384,6 +380,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
     blocked_by_screen: dict[str, list[str]] = defaultdict(list)
     hidden_by_screen: dict[str, list[str]] = defaultdict(list)
     not_found_by_screen: dict[str, list[str]] = defaultdict(list)
+    play_entry_by_screen: dict[str, list[str]] = defaultdict(list)
     for entry in ledger.ledger.entries.values():
         label = entry.action_label or entry.action_key
         if is_open_entry(entry):
@@ -395,6 +392,8 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
             hidden_by_screen[entry.screen_id].append(label)
         elif entry.verdict == "not_found":
             not_found_by_screen[entry.screen_id].append(label)
+        elif entry.verdict == "play_entry":
+            play_entry_by_screen[entry.screen_id].append(label)
 
     sections = (
         ("### 아직 안 눌러본 프론티어", untried_by_screen,
@@ -402,6 +401,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
         ("### 도달 실패로 포기함(blocked)", blocked_by_screen, "- 없음"),
         ("### 다시 봐도 후보에 안 나와 정리함(not_visible)", hidden_by_screen, "- 없음"),
         ("### 누르기 전 확대 확인에서 못 찾아 정리함(not_found)", not_found_by_screen, "- 없음"),
+        ("### 플레이 진입이라 누르지 않음(play_entry)", play_entry_by_screen, "- 없음"),
     )
     for heading, by_screen, empty_text in sections:
         lines.extend([heading, ""])
@@ -566,6 +566,7 @@ def generate_survey_markdown(
         "",
         "## Overview",
         "",
+        f"- Game: {_game_line()}",
         f"- Survey records: {len(records)}",
     ]
     unique_screen_signatures = {

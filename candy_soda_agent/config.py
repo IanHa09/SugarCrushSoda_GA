@@ -197,6 +197,14 @@ SCREEN_FINGERPRINT_MAX_DISTANCE = float(
 if not 0.0 <= SCREEN_FINGERPRINT_MAX_DISTANCE <= 1.0:
     raise ValueError("SCREEN_FINGERPRINT_MAX_DISTANCE는 0.0~1.0이어야 합니다.")
 
+# 같은 화면 판정의 1순위: 대표 화면 전체와 HOG 특징 거리(코사인 거리, 0~1)를 비교해 가장
+# 가까운 노드가 이 값 이하면 화면 타입과 상관없이 같은 화면입니다(navigation/screen_index.py).
+# 실측(run_2026-10-02_08-33-21, 캡처 31장): 같은 화면끼리 최대 0.071, 다른 화면끼리 최소 0.272
+# (지도 vs 지도 위 하트 팝업). 그 사이 가운데쯤인 0.15를 기본으로 둡니다. 0이면 끕니다.
+SCREEN_HOG_MAX_DISTANCE = float(os.getenv("SCREEN_HOG_MAX_DISTANCE", "0.15"))
+if not 0.0 <= SCREEN_HOG_MAX_DISTANCE <= 1.0:
+    raise ValueError("SCREEN_HOG_MAX_DISTANCE는 0.0~1.0이어야 합니다.")
+
 # 지문으로도 못 찾았을 때 쓰는 보조 기준입니다. 같은 화면 타입에서 정규화 버튼 목록이
 # 이 개수 이하로만 다르면(공통 버튼이 1개 이상일 때) 기존 화면으로 봅니다. 0이면 끕니다.
 SCREEN_MATCH_MAX_BUTTON_DIFF = int(os.getenv("SCREEN_MATCH_MAX_BUTTON_DIFF", "1"))
@@ -316,6 +324,21 @@ GLOBAL_ACTION_MIN_SCREENS = _env_int("GLOBAL_ACTION_MIN_SCREENS", "3", 2)
 GLOBAL_ACTION_MAX_SPREAD_PX = _env_float("GLOBAL_ACTION_MAX_SPREAD_PX", "30", 1.0, 500.0)
 # 탭 뒤에는 위 POST_TAP_* 대기가 있으므로 스텝 사이 고정 대기는 짧게 둡니다.
 AUTODRIVE_STEP_PAUSE = _env_float("AUTODRIVE_STEP_PAUSE", "0.5", 0.0, 30.0)
+
+# [게임 지식] 지금 조사하는 게임. knowledge/games.txt에서 이 제목으로 장르를 찾고,
+# knowledge/ui_knowledge.json의 장르·게임 UI 지식과 knowledge/screen_types.json의 화면
+# 타입을 조사 프롬프트에 씁니다(game_knowledge.py). games.txt에 없으면 장르 _default로 갑니다.
+GAME_TITLE = os.getenv("GAME_TITLE", "Candy Crush Soda Saga").strip() or "Candy Crush Soda Saga"
+
+# [플레이 정책] autodrive는 화면 조사·구조도 생성용이라 기본은 플레이에 들어가지 않습니다.
+#   avoid  : 플레이 진입 버튼(ui_knowledge.json의 play_entry_labels)은 기록만 하고 누르지 않고,
+#            그래도 플레이 화면(screen_types.json에서 policy=leave)에 들어가면 바로 나옵니다.
+#   handoff: 나중에 플레이 전용 코드로 넘길 자리입니다. 아직 연결 전이라 avoid와 같게 동작합니다.
+PLAY_POLICY = os.getenv("PLAY_POLICY", "avoid").strip().lower() or "avoid"
+if PLAY_POLICY not in {"avoid", "handoff"}:
+    raise ValueError(f"PLAY_POLICY는 avoid 또는 handoff만 쓸 수 있습니다: {PLAY_POLICY!r}")
+# 플레이 화면에서 나오는 흐름(탈출 동작 포함)이 이 스텝 수를 넘기면 게임 재시작으로 넘어갑니다.
+PLAY_EXIT_MAX_STEPS = _env_int("PLAY_EXIT_MAX_STEPS", "8", 1)
 
 # Mermaid는 노드가 많아지면 레이아웃이 무너지므로, 이 개수를 넘으면 보고서에서
 # 다이어그램 생성을 건너뜁니다(0단계 파편화 진단에서 크게 나오면 낮추세요).

@@ -29,7 +29,7 @@ class SurveyStorageTests(unittest.TestCase):
 
         image = np.zeros((16, 16, 3), dtype=np.uint8)
         decision = SurveyDecision(
-            screen_type="level_complete",
+            screen_type="level",
             summary="Level clear screen",
             visible_text=["Level 9", "Next"],
             game_elements=[

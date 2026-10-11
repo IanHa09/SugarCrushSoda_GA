@@ -177,9 +177,11 @@ def safe_button_candidates(
             for token in ("music", "sound", "mute")
         ):
             continue
-        if screen_type == "shop_or_currency" and "shop" in normalized_label:
+        # 지금 화면으로 가는 버튼(상점에서 상점, 홈에서 홈)은 눌러도 제자리라 뺍니다.
+        # 화면 타입 id는 knowledge/screen_types.json과 같아야 합니다.
+        if screen_type == "shop" and "shop" in normalized_label:
             continue
-        if screen_type == "map_or_level_select" and normalized_label == "home":
+        if screen_type == "home" and normalized_label == "home":
             continue
         if center is None:
             continue

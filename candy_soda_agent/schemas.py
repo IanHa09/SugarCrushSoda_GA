@@ -6,6 +6,12 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from game_knowledge import FALLBACK_SCREEN_TYPE, MAX_BUTTON_LIMIT, screen_type_ids
+
+# 조사 모델이 고를 수 있는 화면 타입. knowledge/screen_types.json에서 enabled인 id를
+# 파일 순서대로 읽습니다(Literal[("a", "b")]는 Literal["a", "b"]와 같습니다).
+SurveyScreenType = Literal[screen_type_ids()]  # type: ignore[valid-type]
+
 # 모델이 프롬프트의 개수/길이 제한을 넘겨도 스키마로 강제하면 ValidationError로 응답 전체가 버려지므로, 실패 대신 아래 헬퍼로 조용히 잘라냅니다.
 
 
@@ -192,24 +198,8 @@ class SurveyElement(BaseModel):
 class SurveyDecision(BaseModel):
     """게임 구조 조사 모드의 한 번의 화면 분석 결과입니다."""
 
-    screen_type: Literal[
-        "playing_board",
-        "level_start",
-        "level_complete",
-        "reward_popup",
-        "map_or_level_select",
-        "booster_panel",
-        "shop_or_currency",
-        "settings_menu",
-        "profile",
-        "social_friends",
-        "help_support",
-        "event_or_mission",
-        "ad_or_offer",
-        "tutorial",
-        "loading",
-        "unknown_but_recordable",
-    ] = "unknown_but_recordable"
+    # 허용 값은 knowledge/screen_types.json이 정합니다(위 SurveyScreenType).
+    screen_type: SurveyScreenType = FALLBACK_SCREEN_TYPE  # type: ignore[valid-type]
     summary: str = ""
     visible_text: list[str] = Field(default_factory=list)
     game_elements: list[SurveyElement] = Field(default_factory=list)
@@ -217,7 +207,9 @@ class SurveyDecision(BaseModel):
     evidence_notes: list[str] = Field(default_factory=list)
     uncertainties: list[str] = Field(default_factory=list)
 
-    # 상한(8/10/6/5)은 프롬프트의 "응답 간결성" 지시와 같은 값입니다.
+    # 상한(8/10/5)은 프롬프트의 "응답 간결성" 지시와 같은 값입니다. 버튼 후보는 프롬프트가
+    # 기본 6개를 요청하고, 게임 지식에 탭바 탭이 있으면 그만큼 더 허용해 최대 10개입니다
+    # (game_knowledge.GameProfile.button_limit).
     @field_validator("summary", mode="after")
     @classmethod
     def _limit_summary(cls, value: str) -> str:
@@ -238,7 +230,7 @@ class SurveyDecision(BaseModel):
     def _limit_button_candidates(
         cls, value: list[SurveyButtonCandidate]
     ) -> list[SurveyButtonCandidate]:
-        return _truncate_list(value, 6)
+        return _truncate_list(value, MAX_BUTTON_LIMIT)
 
     @field_validator("evidence_notes", "uncertainties", mode="after")
     @classmethod
@@ -261,6 +253,9 @@ class ScreenNode(BaseModel):
     # 이미지는 같은 화면이면 같게 나옵니다. 옛 기록에는 없으므로 기본값은 빈 문자열이고,
     # 그때는 지문 비교를 건너뜁니다.
     fingerprint: str = ""
+    # 플레이 화면에서 나오는 도중에 처음 본 화면(나가기 확인창 등)이면 True. 이런 화면은
+    # 버튼을 프론티어로 등록하지 않고, 다시 만나도 "플레이에서 빠져나왔다"고 보지 않습니다.
+    play_flow: bool = False
 
 
 class NavigationEdge(BaseModel):
@@ -286,8 +281,9 @@ class NavigationGraph(BaseModel):
 # not_visible(그 화면을 다시 봐도 후보에 연속으로 안 나와 정리됨) /
 # missed(눌렀는데 픽셀이 그대로라 빗나감 의심, 재시도 대기 중 = 아직 프론티어) /
 # not_found(확대 재확인에서 그 버튼을 화면에서 찾지 못해 누르지 않고 정리됨) /
-# global(네비게이션 바 같은 공통 버튼으로 판정돼 화면별 항목은 닫고 공통 항목으로 옮김).
-# blocked, not_visible, not_found는 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
+# global(네비게이션 바 같은 공통 버튼으로 판정돼 화면별 항목은 닫고 공통 항목으로 옮김) /
+# play_entry(플레이 진입 버튼이라 기록만 하고 누르지 않음, PLAY_POLICY).
+# blocked, not_visible, not_found, play_entry는 탭 없이 프론티어에서 빠진 항목이라 attempts는 0 그대로입니다.
 class LedgerEntry(BaseModel):
     """(screen_id, action_key) 조합 하나의 시도 이력입니다.
     attempts == 0이고 탭 없이 정리되지도 않았으면 프론티어(미시도)입니다."""
@@ -309,6 +305,7 @@ class LedgerEntry(BaseModel):
             "missed",
             "not_found",
             "global",
+            "play_entry",
         ]
     ] = None
     target_screen_id: Optional[str] = None
