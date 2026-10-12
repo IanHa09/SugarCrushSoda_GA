@@ -84,6 +84,7 @@ from config import (
     GLOBAL_ACTION_MIN_SCREENS,
     HOME_RESET_MAX_BACK_TAPS,
     MONITOR_INDEX,
+    NAV_TAB_FINDER,
     NEW_SCREEN_EXIT_FINDER,
     PLAY_EXIT_MAX_STEPS,
     PLAY_POLICY,
@@ -113,7 +114,7 @@ from survey import analyze_survey_screen, record_survey_screen
 from survey_report import write_survey_report
 from survey_utils import SAFE_BUTTON_ROLES, safe_button_candidates
 from tap_effect import TapEffect, same_screen, wait_for_settle
-from tap_refine import find_exit_target, is_risky_exit_label, refine_tap_target
+from tap_refine import find_exit_target, find_nav_tabs, is_risky_exit_label, refine_tap_target
 from ui_chrome import UiChromeStore
 
 
@@ -532,6 +533,37 @@ def _add_exit_button(client, decision, image, node, profile: GameProfile):
     return decision.model_copy(update={"button_candidates": [button, *decision.button_candidates]})
 
 
+def _add_nav_tabs(client, decision, image, node, profile: GameProfile):
+    """처음 분석한 화면의 탭바 후보(region=bottom_nav)를 탭바 전용 찾기 결과로 바꿉니다.
+    지금 선택된 탭과 플레이 진입 탭은 빼고, 찾은 탭이 없으면 조사 결과를 그대로 둡니다."""
+
+    if (
+        not NAV_TAB_FINDER
+        or client is None
+        or profile.nav_bar_position not in ("bottom", "varies")
+        or screen_policy(node.screen_type) == "leave"
+    ):
+        return decision
+    height, width = image.shape[:2]
+    tabs = [
+        _synthetic_button(tab.label, tab.x, tab.y, width, height, reason="탭바 찾기").model_copy(
+            update={"role": "structure", "region": "bottom_nav"}
+        )
+        for tab in find_nav_tabs(client, image)
+        if not tab.selected and not profile.is_play_entry(tab.label)
+    ]
+    if not tabs:
+        return decision
+    keys = {navigation_action_key(tab) for tab in tabs}
+    others = [
+        button
+        for button in decision.button_candidates
+        if button.region != "bottom_nav" and navigation_action_key(button) not in keys
+    ]
+    print(f"[NAV] {node.id}: 탭바 탭 {len(tabs)}개: {', '.join(tab.label for tab in tabs)}")
+    return decision.model_copy(update={"button_candidates": [*tabs, *others]})
+
+
 def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -> list:
     """현재 화면 후보 중 닫기·뒤로·확인류 버튼(아직 이번 탈출에서 안 눌러 본 것).
     "계속 플레이"처럼 플레이 진입 버튼은 '계속'이 들어 있어도 고르지 않습니다."""
@@ -872,6 +904,7 @@ def _run_autodrive_step(
                 _refresh_chrome_bands(chrome, store)
         if store.load_decision(node.id) is None:
             # 처음 분석한 화면: 나가기 버튼을 따로 찾아 더한 뒤 저장하고, 다음부터 다시 씁니다.
+            decision = _add_nav_tabs(client, decision, bundle.full_image, node, profile)
             decision = _add_exit_button(client, decision, bundle.full_image, node, profile)
             store.save_decision(node.id, decision)
     previous_verdict = _finalize_previous_attempt(

@@ -39,7 +39,7 @@ from config import (
     TAP_REFINE_MIN_CONFIDENCE,
 )
 from llm_request import request_structured_vision
-from schemas import ExitLocation, TapLocation
+from schemas import ExitLocation, NavTabs, TapLocation
 
 
 # 모델에 보낼 이미지의 긴 변(px). OpenAI 비전 high detail이 짧은 변을 768px로
@@ -403,6 +403,75 @@ class ExitTarget:
             "error": self.error,
             "raw": self.raw,
         }
+
+
+# -- 탭바 찾기 ------------------------------------------------------------------
+
+# 화면 아래에서 잘라 볼 높이 비율(탭바는 보통 7~10%).
+NAV_BAND_FRACTION = 0.16
+
+
+@dataclass
+class NavTabTarget:
+    label: str
+    x: int
+    y: int
+    selected: bool = False
+
+
+def find_nav_tabs(
+    client,
+    image: np.ndarray,
+    *,
+    model: str = TAP_MODEL,
+    request: Callable[..., Any] = request_structured_vision,
+) -> list[NavTabTarget]:
+    """화면 아래 띠를 잘라 격자를 그리고 탭바의 탭을 왼쪽부터 모두 찾습니다(원본 픽셀).
+    조사 모델이 글자 없는 아이콘 탭을 빠뜨리고 좌표를 한쪽으로 몰아 적던 것을 보완합니다
+    (실측: 탭 5개 중 팀·활동 누락). 탭바가 없거나 팝업에 가려졌거나 API 오류면 빈 목록."""
+
+    height, width = image.shape[:2]
+    view = build_grid_view(image, (0, int(height * (1 - NAV_BAND_FRACTION)), width, height))
+    prompt = f"""
+이 이미지는 모바일 게임 화면의 맨 아래 띠를 잘라 키운 것이다. 크기: 가로 {view.width}px, 세로 {view.height}px.
+청록색 격자: 위쪽 글자(A~{column_name(view.cols - 1)})가 열, 왼쪽 숫자(1~{view.rows})가 행이다.
+
+화면 맨 아래에 늘 있는 탭바(네비게이션 바)의 탭을 왼쪽부터 빠짐없이 적는다. 글자 없이 아이콘만 있는 탭도 넣는다.
+- label: 탭에 보이는 글자, 없으면 아이콘 뜻을 짧게(예: 상점, 친구, 홈, 팀, 이벤트, 활동).
+- cell: 탭 아이콘 중심이 있는 칸("C2" 형식), x, y: 그 중심의 픽셀 좌표(이 이미지 기준).
+- selected: 지금 선택된(강조된) 탭이면 true.
+탭바가 팝업에 덮여 어둡게 가려져 있으면 covered=true, tabs=[]. 탭바가 없으면 tabs=[].
+"""
+    try:
+        answer: NavTabs = request(
+            client,
+            model=model,
+            system_prompt="You list the tabs of a mobile game's bottom navigation bar. Never invent tabs.",
+            prompt=prompt,
+            full_image=view.image,
+            board_image=None,
+            board_note="",
+            text_format=NavTabs,
+            max_output_tokens=max(TAP_REFINE_MAX_OUTPUT_TOKENS, 500),
+            timing_label="NAV TABS TIMING",
+            missing_response_message="탭바 응답을 받지 못했습니다.",
+            full_image_detail="high",
+        )
+    except Exception as error:  # noqa: BLE001 - 탭바 찾기가 실패해도 조사 결과는 그대로 씁니다.
+        print(f"[NAV] 탭바 찾기 실패({type(error).__name__}: {error})")
+        return []
+    if answer.covered:
+        return []
+    tabs = []
+    for tab in answer.tabs:
+        point = resolve_location(
+            TapLocation(found=True, cell=tab.cell, x=tab.x, y=tab.y, confidence=1.0), view
+        )
+        if point is None or not tab.label.strip():
+            continue
+        x, y = view.to_source(*point)
+        tabs.append(NavTabTarget(tab.label.strip(), min(x, width - 1), min(y, height - 1), tab.selected))
+    return tabs
 
 
 def is_risky_exit_label(label: str) -> bool:

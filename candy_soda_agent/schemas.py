@@ -369,3 +369,20 @@ class ExitLocation(BaseModel):
     @classmethod
     def _limit_label(cls, value: str) -> str:
         return _truncate_text(value, 40)
+
+
+class NavTab(BaseModel):
+    """탭바 찾기(tap_refine.find_nav_tabs)가 돌려주는 탭 하나. 좌표 규칙은 TapLocation과 같습니다."""
+
+    label: str = ""
+    cell: str = ""
+    x: int = Field(default=-1, ge=-1)
+    y: int = Field(default=-1, ge=-1)
+    selected: bool = False
+
+
+class NavTabs(BaseModel):
+    """화면 아래 탭바의 탭(왼쪽부터). 팝업에 가려졌으면 covered=True."""
+
+    covered: bool = False
+    tabs: list[NavTab] = Field(default_factory=list)

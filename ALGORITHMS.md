@@ -100,6 +100,7 @@
 | 나가기 요소 찾기 | `tap_refine.find_exit_target` | 화면 전체에 격자(3장)를 그려 X/닫기/뒤로/홈 탭을, 없으면 팝업 바깥 어두운 곳 한 점을 물음. 효과 없던 좌표는 프롬프트에 넣어 다시 고르지 않게 함 |
 | 위험 낱말 차단 목록 | `tap_refine.is_risky_exit_label` | 구매·광고·로그인·상점 같은 낱말이 들어간 라벨은 나가기 요소로 고르지 않음 |
 | 순환 감지 (슬라이딩 윈도 + 집합 크기) | `_Journey.idle_nodes`, `_is_cycling`, `stuck_cycle` | 마지막 진전(새 노드 또는 프론티어 탭) 이후 관찰한 노드 목록을 쌓고, 최근 `STUCK_CYCLE_STEPS`개의 서로 다른 노드가 2개 이하면 순환. 순환 노드 집합을 `stuck_cycle`로 기억해 그 밖으로 나가거나 진전이 있을 때까지 재생·리셋 대신 사다리 4단계부터 씀. 5단계는 원장에서 순환 노드로 가는 행동(`_keys_leading_to`)을 뺌 |
+| 탭바 전용 찾기 (잘라 보기 + 격자) | `tap_refine.find_nav_tabs`, `navigator._add_nav_tabs` | 새 화면 첫 분석 때 화면 아래 16% 띠만 잘라 격자를 그려 고해상도로 탭을 왼쪽부터 모두 묻고(칸 + 픽셀, `resolve_location`으로 원본 좌표 복원), 조사 모델의 `bottom_nav` 후보를 그 결과로 교체. 선택된 탭·플레이 진입 탭 제외, 팝업에 가려졌으면(`covered`) 그대로 둠 |
 | 막힘 재분석 (병합) | `run_resurvey`, `_stuck_hint`, `_merge_candidates` | 눌러 본·화면에 없는 버튼 목록과 "탭바가 또렷하면 팝업 아님" 지시를 프롬프트에 붙여 다시 분석하고, 새 행동 키만 앞에 붙여(후보 상한 10개에 안 잘리게) `save_decision(overwrite=True)`. 다음 스텝에 원장이 새 키를 프론티어로 등록 |
 | 플레이 흐름 (상태 플래그) | `_Journey.play_flow`, `_play_flow_finished` | 플레이 화면(`policy=leave`)에 들어가면 켜지고, 루트·홈 타입 화면·흐름 전부터 알던 화면(집합)에 오면 꺼짐. 켜진 동안은 프론티어 대신 나가기 버튼 → 탈출 사다리만 실행. 흐름 중 처음 본 화면은 `play_flow` 표시로 프론티어와 경로 계획에서 뺌. `PLAY_EXIT_MAX_STEPS`를 넘기면 재시작, 그것도 못 하면 `play_stuck`으로 멈춤 |
 | 플레이 진입 차단 | `_split_play_entries`, `ledger.close_play_entry` | 안전 후보를 (탐색할 것, 플레이 진입)으로 나눠, 진입 버튼은 원장에 `play_entry`로 닫고 누르지 않음 |

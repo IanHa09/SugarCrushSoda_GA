@@ -328,6 +328,11 @@ STUCK_CYCLE_STEPS = _env_int("STUCK_CYCLE_STEPS", "6", 0)
 # 그 화면 버튼 후보에 더합니다(홈 화면·플레이 화면 제외, 새 화면당 1번). 조사 모델이 작은 X나
 # 탭바를 자주 빠뜨려(실측: 레벨 시작 팝업의 X, 상점의 탭바) 화면에서 못 나가던 것을 막습니다.
 NEW_SCREEN_EXIT_FINDER = _env_bool("NEW_SCREEN_EXIT_FINDER", True)
+# 새 화면을 처음 분석할 때 화면 아래 띠만 잘라 탭바 탭을 따로 찾고(OPENAI_TAP_MODEL, 고해상도),
+# 조사 모델이 적은 탭바 후보(region=bottom_nav)를 그 결과로 바꿉니다. 지금 선택된 탭은 뺍니다.
+# 실측(run_2026-10-12): 조사 모델이 글자 없는 탭(팀·활동)을 빠뜨리고 좌표를 왼쪽으로 몰아 적음.
+# 게임 지식의 탭바 위치가 bottom/varies일 때만 돌고, 새 화면당 호출 1번입니다.
+NAV_TAB_FINDER = _env_bool("NAV_TAB_FINDER", True)
 # 게임 재시작에 쓰는 Android 패키지 이름. autodrive 시작 때 adb로 설치 여부를 확인하고,
 # 없으면 재시작 단계만 끕니다(확인: adb shell pm list packages king).
 GAME_PACKAGE = os.getenv("GAME_PACKAGE", "com.king.candycrushsodasaga").strip()
