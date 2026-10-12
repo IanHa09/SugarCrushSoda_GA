@@ -4,7 +4,8 @@
 눌러도 화면이 안 바뀌는 버튼(no_change)은 실행할 때마다 다시 프론티어로 뽑혔습니다.
 원장은 attempts(시도 횟수) 하나만으로 프론티어 여부를 정하고, verdict는 결과를
 설명하는 별도 필드로 둡니다. 그래서:
-  - 무반응 버튼: attempts > 0 이 되면 프론티어에서 영구히 빠짐
+  - 무반응 버튼: attempts > 0 이 되면 프론티어에서 빠짐(프론티어가 바닥나면
+    reopen_failed가 FRONTIER_RETRY_MAX번까지만 다시 엶)
   - 프론티어: attempts == 0 인 (화면, 행동) 쌍의 전역 집합
   - 커버리지: 전체 대비 attempts == 0 비율
   - 트리 간선 라벨: 어떤 verdict였는지 그대로 재사용
@@ -13,6 +14,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 
@@ -25,6 +27,12 @@ Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "fail
 # 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음 /
 # 공통 버튼으로 옮겨짐 / 플레이 진입 버튼이라 안 누름).
 CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global", "play_entry"})
+
+# 실패로 닫혀 다시 시도할 가치가 있는 판정(reopen_failed): 눌러도 화면 그대로 / 확대 확인에서
+# 못 찾음 / 가는 길이 반복 실패. 새 화면·아는 화면으로 간 것, 공통 버튼으로 합쳐진 것, 플레이
+# 진입 버튼은 다시 열지 않습니다. not_visible은 분석 재사용(decisions/)과 겹쳐 다시 열어도
+# 같은 이름이 다시 나오지 않으므로 넣지 않습니다.
+RETRYABLE_VERDICTS = frozenset({"no_change", "not_found", "blocked"})
 
 # 네비게이션 바처럼 여러 화면에 똑같이 있는 공통 버튼의 원장 항목은 화면 ID 대신 이 값을
 # 씁니다. 공통 버튼은 화면마다가 아니라 전체에서 한 번만 눌러 봅니다(ui_chrome.py).
@@ -270,6 +278,56 @@ class LedgerStore:
         if changed:
             self.save()
         return retired
+
+    def reopen_failed(
+        self,
+        max_retries: int,
+        can_reach: Callable[[LedgerEntry], bool] | None = None,
+    ) -> list[LedgerEntry]:
+        """실패로 닫힌 항목(RETRYABLE_VERDICTS)을 다시 프론티어로 엽니다.
+
+        항목마다 retries를 세어 max_retries번까지만 엽니다(원장에 남으므로 run을 넘어도
+        무한 반복하지 않습니다). can_reach가 False인 항목은 열지 않고 횟수도 쓰지 않습니다.
+        다시 연 항목은 시도 0회·판정 없음으로 돌아가 평소처럼 프론티어로 뽑힙니다.
+        반환: 이번에 다시 연 항목 목록."""
+
+        reopened: list[LedgerEntry] = []
+        if max_retries <= 0:
+            return reopened
+        for entry in self.ledger.entries.values():
+            if entry.verdict not in RETRYABLE_VERDICTS or entry.retries >= max_retries:
+                continue
+            if can_reach is not None and not can_reach(entry):
+                continue
+            entry.retries += 1
+            entry.attempts = 0
+            entry.verdict = None
+            entry.target_screen_id = None
+            entry.misses = 0
+            entry.last_seen = _now()
+            reopened.append(entry)
+        if reopened:
+            self.save()
+        return reopened
+
+    def entry(self, screen_id: str, action_key: str) -> LedgerEntry | None:
+        return self.ledger.entries.get(_entry_key(screen_id, action_key))
+
+    def dead_keys(
+        self, screen_id: str, verdicts: tuple[str, ...] = ("not_found", "no_change")
+    ) -> set[str]:
+        """이 화면에서 눌러도 소용없다고 확인된 행동: 확대 확인에서 못 찾음(화면에 없음) 또는
+        눌러도 화면 그대로. 리셋·탈출에서 같은 버튼을 다시 찾느라 스텝을 쓰지 않게 합니다."""
+        return {
+            entry.action_key
+            for entry in self.ledger.entries.values()
+            if entry.screen_id == screen_id and entry.verdict in verdicts
+        }
+
+    def failed_count(self) -> int:
+        """화면을 못 바꾸거나 못 찾아 닫힌 항목 수(종료 메시지용, not_visible 포함)."""
+        failed = RETRYABLE_VERDICTS | {"not_visible"}
+        return sum(1 for entry in self.ledger.entries.values() if entry.verdict in failed)
 
     def frontier_at(self, screen_id: str) -> list[str]:
         """이 화면에서 아직 시도하지 않은 action_key 목록."""

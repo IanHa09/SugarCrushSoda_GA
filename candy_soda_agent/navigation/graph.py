@@ -16,12 +16,13 @@ from config import (
     SCREEN_FINGERPRINT_MAX_DISTANCE,
     SCREEN_HOG_MAX_DISTANCE,
     SCREEN_MATCH_MAX_BUTTON_DIFF,
+    SCREEN_REUSE_MAX_DISTANCE,
 )
 from image_utils import board_fingerprint, fingerprint_distance
 from navigation.observer import screen_buttons, screen_id
 from navigation.policy import navigation_action_key_from_label
 from navigation.screen_index import ScreenIndex
-from schemas import NavigationEdge, NavigationGraph, ScreenNode
+from schemas import NavigationEdge, NavigationGraph, ScreenNode, SurveyDecision
 
 # 1단계: 게임·run별로 분리된 output/<game_slug>/runs/<run_id>/navigation/ 경로를 씁니다.
 ROOT = NAVIGATION_DIR
@@ -333,6 +334,51 @@ class GraphStore:
         self.last_hog_match = self._screen_index().nearest(self._content(image))
         node_id, distance = self.last_hog_match
         return node_id if node_id is not None and distance <= SCREEN_HOG_MAX_DISTANCE else None
+
+    # -- 아는 화면의 분석 재사용 ------------------------------------------------
+
+    def _decision_path(self, node_id: str):
+        return ROOT / "decisions" / f"{node_id}.json"
+
+    def load_decision(self, node_id: str) -> SurveyDecision | None:
+        """노드를 처음 분석한 결과. 없거나 읽을 수 없으면(형식이 바뀐 옛 파일 등) None."""
+        path = self._decision_path(node_id)
+        if not path.exists():
+            return None
+        try:
+            return SurveyDecision.model_validate_json(path.read_text(encoding="utf-8"))
+        except ValueError:
+            return None
+
+    def save_decision(
+        self, node_id: str, decision: SurveyDecision, *, overwrite: bool = False
+    ) -> None:
+        """분석 결과를 노드 기준으로 저장합니다. 이미 있으면 그대로 둡니다(기준 고정:
+        다시 분석할 때마다 버튼 이름이 조금씩 달라져 같은 버튼이 새 버튼으로 잡히던 것을 막음).
+        overwrite: 막혀서 다시 분석한 결과(기존 후보에 새 후보를 더한 것)로 바꿀 때만 씁니다."""
+        if not overwrite and self.load_decision(node_id) is not None:
+            return
+        path = self._decision_path(node_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(decision.model_dump_json(indent=2), encoding="utf-8")
+
+    def known_decision(
+        self, image, same_node: str | None = None
+    ) -> tuple[str, SurveyDecision] | None:
+        """확실히 아는 화면이면 (노드 ID, 그 화면을 처음 분석한 결과)를 돌려줍니다.
+
+        same_node: 직전 캡처와 픽셀이 같아 이미 같은 화면으로 확인된 노드.
+        없으면 HOG 거리가 SCREEN_REUSE_MAX_DISTANCE 이하인 대표 화면을 찾습니다
+        (같은 노드 판정 SCREEN_HOG_MAX_DISTANCE보다 엄격). 저장된 분석이 없으면 None."""
+        if SCREEN_REUSE_MAX_DISTANCE <= 0:
+            return None
+        node_id = same_node
+        if node_id is None and image is not None:
+            self.last_hog_match = self._screen_index().nearest(self._content(image))
+            nearest, distance = self.last_hog_match
+            node_id = nearest if distance <= SCREEN_REUSE_MAX_DISTANCE else None
+        decision = self.load_decision(node_id) if node_id is not None else None
+        return (node_id, decision) if decision is not None else None
 
     def _node_fingerprint(self, node: ScreenNode) -> str:
         """노드의 비교용 지문. 공통 띠가 있으면 대표 이미지에서 띠를 빼고 다시 계산합니다

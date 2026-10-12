@@ -378,6 +378,7 @@ class AutodriveIntegrationTests(unittest.TestCase):
             with (
                 _patched_storage_paths(directory),
                 patch("navigation.navigator.TAP_MISS_RETRIES", 1),
+                patch("navigation.navigator.FRONTIER_RETRY_MAX", 0),
                 patch("navigation.navigator.CAPTURE_MODE", "window"),
                 patch("navigation.navigator.DRY_RUN", False),
                 patch("navigation.navigator.mss.MSS") as mss_mock,
@@ -422,6 +423,56 @@ class AutodriveIntegrationTests(unittest.TestCase):
                 call.kwargs["action"]["outcome"] for call in record_mock.call_args_list
             ]
             self.assertEqual(outcomes, ["tap_executed", "tap_executed", "frontier_converged"])
+
+    def test_failed_items_are_retried_once_before_converging(self) -> None:
+        """프론티어가 바닥나면 "모두 확인"으로 끝내기 전에 실패로 닫힌 항목(no_change)을
+        한 번 더 엽니다. 재시도에도 그대로면 다시 닫고, 상한(1번)을 다 써서 종료하며
+        종료 메시지에 남은 실패 항목 수를 적습니다."""
+
+        decision = SurveyDecision(
+            screen_type="home",
+            button_candidates=[_button("Settings", role="structure")],
+        )
+        bundle = _tiny_bundle()
+
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                _patched_storage_paths(directory),
+                patch("navigation.navigator.TAP_MISS_RETRIES", 1),
+                patch("navigation.navigator.FRONTIER_RETRY_MAX", 1),
+                patch("navigation.navigator.CAPTURE_MODE", "window"),
+                patch("navigation.navigator.DRY_RUN", False),
+                patch("navigation.navigator.mss.MSS") as mss_mock,
+                patch("navigation.navigator.capture_bundle", return_value=bundle),
+                patch(
+                    "navigation.navigator.analyze_survey_screen",
+                    return_value=decision,
+                ),
+                patch("navigation.navigator.load_recent_survey_records", return_value=[]),
+                patch("navigation.navigator.load_all_survey_records", return_value=[]),
+                patch("navigation.navigator.record_survey_screen") as record_mock,
+                patch("navigation.navigator.write_survey_report"),
+                patch("navigation.navigator.execute_button_tap", return_value=True) as tap_mock,
+                _no_refine_no_wait(changed=False),
+            ):
+                mss_mock.return_value.__enter__.return_value = object()
+                summary = run_autodrive(object(), max_steps=10, allow_taps=True)
+
+                from navigation.ledger import LedgerStore
+
+                key = f"{screen_id(decision)}:{navigation_action_key_from_label('Settings')}"
+                entry = LedgerStore().ledger.entries[key]
+                self.assertEqual(entry.verdict, "no_change")
+                self.assertEqual(entry.retries, 1)
+
+            # 처음 2번(빗나감 재시도 포함) + 다시 열어서 2번.
+            self.assertEqual(tap_mock.call_count, 4)
+            self.assertTrue(summary.converged)
+            self.assertIn("1개", summary.stop_reason)
+            outcomes = [
+                call.kwargs["action"]["outcome"] for call in record_mock.call_args_list
+            ]
+            self.assertEqual(outcomes, ["tap_executed"] * 4 + ["frontier_converged"])
 
     def test_same_pixels_reuse_node_even_if_llm_renames_screen_type(self) -> None:
         """직전과 픽셀이 같은 화면을 LLM이 다른 화면 타입으로 불러도 새 노드를 만들지
@@ -510,7 +561,8 @@ class AutodriveIntegrationTests(unittest.TestCase):
                 self.assertEqual(entry.verdict, "not_visible")
 
             tap_mock.assert_not_called()
-            self.assertEqual(analyze_mock.call_count, 2)  # 재관찰 1번 후 정리·종료
+            # 재관찰 1번 후 정리·종료. 재관찰은 직전과 같은 픽셀이라 분석을 다시 써서 LLM은 1번.
+            self.assertEqual(analyze_mock.call_count, 1)
             outcomes = [
                 call.kwargs["action"]["outcome"] for call in record_mock.call_args_list
             ]

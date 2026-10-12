@@ -33,6 +33,11 @@
     않습니다. 그래도 플레이 화면에 들어가면 "플레이 흐름"에 들어가, 나가기 버튼
     (play_exit_labels) → 탈출 사다리(플레이 힌트) 순서로 지도 같은 홈 화면까지 나옵니다.
     흐름 중에 처음 본 화면(나가기 확인창 등)은 프론티어로 등록하지 않습니다.
+
+아는 화면 분석 재사용(2026-10):
+  - 직전과 픽셀이 같거나 HOG로 확실히 같은 대표 화면(SCREEN_REUSE_MAX_DISTANCE)이면 LLM을
+    부르지 않고 그 화면을 처음 분석한 결과(navigation/decisions/)를 다시 씁니다. 버튼 목록이
+    고정되므로 같은 버튼이 이름만 바뀌어 새 프론티어로 잡히지 않고, 캡처도 새로 저장하지 않습니다.
 """
 
 from __future__ import annotations
@@ -73,16 +78,21 @@ from config import (
     ESCAPE_MAX_STREAK,
     FRONTIER_MAX_MISSES,
     FRONTIER_MAX_REPLAN_ATTEMPTS,
+    FRONTIER_RETRY_MAX,
     GAME_PACKAGE,
     GLOBAL_ACTION_MAX_SPREAD_PX,
     GLOBAL_ACTION_MIN_SCREENS,
     HOME_RESET_MAX_BACK_TAPS,
     MONITOR_INDEX,
+    NEW_SCREEN_EXIT_FINDER,
     PLAY_EXIT_MAX_STEPS,
     PLAY_POLICY,
     ROOT_SCREEN_ID,
     SCREEN_FRAGMENTATION_WARN_COUNT,
     STUCK_BACK_KEY_MAX,
+    STUCK_CYCLE_STEPS,
+    STUCK_OTHER_BUTTONS_MAX,
+    STUCK_RESURVEY,
     SURVEY_DEDUP_SCAN_LIMIT,
     SURVEY_MIN_BUTTON_CONFIDENCE,
     TAP_MISS_RETRIES,
@@ -163,7 +173,8 @@ class AutodriveSummary:
         return self.stop_kind == "converged"
 
 
-ESCAPE_STAGES = ("back", "exit_finder", "retry_exit", "restart")
+# resurvey(막힘 설명을 붙여 다시 분석)·other_buttons(이 화면의 다른 버튼)는 종료 대신 쓰는 단계입니다.
+ESCAPE_STAGES = ("back", "exit_finder", "retry_exit", "resurvey", "other_buttons", "restart")
 # 플레이 흐름에서 보드가 아닌 화면(나가기 확인창·일시정지 메뉴 등)의 순서. 여기서 Android
 # 뒤로를 먼저 보내면 확인창이 닫혀 보드로 되돌아가므로, 나가기 요소 찾기를 먼저 씁니다.
 PLAY_FLOW_POPUP_STAGES = ("exit_finder", "back", "retry_exit", "restart")
@@ -172,8 +183,12 @@ _ESCAPE_OUTCOMES = {
     "back": "stuck_back_key",
     "exit_finder": "stuck_exit_finder",
     "retry_exit": "stuck_retry_exit",
+    "resurvey": "stuck_resurvey",
+    "other_buttons": "stuck_other_button",
     "restart": "stuck_restart",
 }
+# 다른 버튼 눌러보기의 순서: 나가기류(닫기·뒤로·홈) → 이동 → 구조 → 진행.
+_OTHER_ROLE_ORDER = {"safe_navigation": 1, "structure": 2, "progression": 3}
 # "다시 누르기" 단계에서 고르는 나가기류 버튼(canonical 라벨 또는 낱말).
 _EXIT_CANONICAL = frozenset({"close", "back", "home"})
 _EXIT_TOKENS = ("닫기", "확인", "나중에", "취소", "계속", "ok", "close", "later", "cancel")
@@ -201,6 +216,8 @@ class _Journey:
     pending_point: tuple[int, int] | None = None
     # 직전 스텝 캡처. 이번 캡처와 픽셀로 같으면 같은 노드로 봅니다.
     prev_image: np.ndarray | None = None
+    # 아는 화면이라 LLM 분석을 건너뛴 스텝 수(세션 끝에 출력).
+    reused_steps: int = 0
     # 탈출 사다리 상태(정상 탭이 실행되면 처음으로 돌아갑니다).
     escape_stage: int = 0
     escape_tries: int = 0
@@ -209,6 +226,23 @@ class _Journey:
     tried_exit_keys: set = field(default_factory=set)
     restarts: int = 0
     restart_available: bool = False
+    # 막힘 대응(세션 동안 유지): 다시 분석한 화면, 화면별로 "다른 버튼"으로 눌러 본 행동,
+    # 마지막 진전(새 화면 또는 프론티어 탭) 이후 관찰한 화면들(순환 감지).
+    resurveyed: set = field(default_factory=set)
+    other_tried: dict = field(default_factory=dict)
+    idle_nodes: list = field(default_factory=list)
+    # 순환으로 막힌 화면들(비어 있으면 막힘 아님)과, 이번 세션에 화면별로 확대 확인에서 못 찾은 행동.
+    stuck_cycle: set = field(default_factory=set)
+    missing_keys: dict = field(default_factory=dict)
+
+    def dead_keys(self, ledger: LedgerStore, node_id: str) -> set[str]:
+        """원장의 dead_keys에 이번 세션에 리셋·탈출 중 못 찾은 행동을 더한 것."""
+        return ledger.dead_keys(node_id) | self.missing_keys.get(node_id, set())
+
+    def note_progress(self) -> None:
+        """새 화면을 찾았거나 프론티어를 눌렀습니다. 순환 감지와 막힘 상태를 비웁니다."""
+        self.idle_nodes.clear()
+        self.stuck_cycle.clear()
     # 플레이 흐름: 플레이 화면(policy=leave)에 들어간 뒤 홈 화면으로 나올 때까지의 상태.
     play_flow: bool = False
     play_flow_steps: int = 0
@@ -258,6 +292,7 @@ class _Journey:
         self.play_flow_known = set(known_nodes)
         self.play_flow_last_node = None
         self.reset_escape()
+        self.note_progress()
 
     def end_play_flow(self) -> None:
         self.play_flow = False
@@ -265,6 +300,7 @@ class _Journey:
         self.play_flow_known = set()
         self.play_flow_last_node = None
         self.reset_escape()
+        self.note_progress()
 
 
 def _finalize_previous_attempt(
@@ -386,10 +422,13 @@ def _choose_action_for_goal(
     *,
     back_key_enabled: bool = False,
     global_visible: set[str] | frozenset[str] = frozenset(),
+    skip_keys: set[str] | frozenset[str] = frozenset(),
 ):
     """이번 스텝의 목표(goal)에 맞는 실제 버튼 후보를 오늘 관찰된 후보 중에서 찾습니다.
     반환값: (button | BACK_KEY_ACTION | None, action_key, used_home).
-    reset에서 홈/뒤로 버튼이 안 보이면 None을 돌려주고, 호출한 쪽이 탈출 사다리를 씁니다."""
+    reset에서 홈/뒤로 버튼이 안 보이면 None을 돌려주고, 호출한 쪽이 탈출 사다리를 씁니다.
+    reset은 skip_keys(이 화면에서 이미 못 찾았거나 눌러도 그대로였던 버튼)를 건너뜁니다
+    (실측: 없는 X를 5번 연속 다시 찾음)."""
 
     if goal.kind == "frontier":
         frontier_keys = set(ledger.frontier_at(node_id))
@@ -407,13 +446,13 @@ def _choose_action_for_goal(
             return BACK_KEY_ACTION, goal.action_key, False
         return button, goal.action_key, False
 
-    # goal.kind == "reset": home을 먼저 찾고, 없으면 back 버튼.
-    home_button = find_reset_button(candidates, prefer="home")
-    if home_button is not None:
-        return home_button, navigation_action_key(home_button), True
-    back_button = find_reset_button(candidates, prefer="back")
-    if back_button is not None:
-        return back_button, navigation_action_key(back_button), False
+    # goal.kind == "reset": 닫기 → 홈 → 뒤로 순서. 닫기(X)가 보이면 대개 팝업이라 그 뒤의
+    # 홈 탭은 가려져 눌리지 않습니다(실측: 레벨 시작 팝업). 홈일 때만 루트 도착으로 봅니다.
+    usable = [button for button in candidates if navigation_action_key(button) not in skip_keys]
+    for prefer in ("close", "home", "back"):
+        button = find_reset_button(usable, prefer=prefer)
+        if button is not None:
+            return button, navigation_action_key(button), prefer == "home"
     return None, "", False
 
 
@@ -450,14 +489,47 @@ class _EscapePlan:
     record: dict = field(default_factory=dict)
 
 
-def _synthetic_button(label: str, x: int, y: int, width: int, height: int) -> SurveyButtonCandidate:
+def _synthetic_button(
+    label: str, x: int, y: int, width: int, height: int,
+    reason: str = "탈출 사다리: 나가기 요소 찾기",
+) -> SurveyButtonCandidate:
     return SurveyButtonCandidate(
         label=label or "나가기",
         role="safe_navigation",
         center=NormalizedPoint(x=x / width, y=y / height),
         confidence=1.0,
-        reason="탈출 사다리: 나가기 요소 찾기",
+        reason=reason,
     )
+
+
+def _add_exit_button(client, decision, image, node, profile: GameProfile):
+    """처음 분석한 화면의 후보에 나가기 버튼(X·닫기·뒤로·홈 탭)을 더합니다.
+
+    조사 모델은 작은 X나 탭바를 자주 빠뜨리는데(실측: 레벨 시작 팝업의 X, 상점의 탭바),
+    분석을 재사용하면 빠진 버튼을 다시 찾을 기회가 없어 화면에서 못 나갑니다. 그래서 새
+    화면마다 나가기 전용 찾기(find_exit_target)를 한 번 돌립니다. 홈 화면(나갈 곳 없음)과
+    플레이 화면(플레이 흐름이 따로 처리)은 건너뛰고, 같은 버튼이 이미 후보에 있으면 그대로 둡니다."""
+
+    if (
+        not NEW_SCREEN_EXIT_FINDER
+        or client is None
+        or profile.is_home_type(node.screen_type)
+        or screen_policy(node.screen_type) == "leave"
+    ):
+        return decision
+    target = find_exit_target(client, image)
+    if not target.found or target.kind != "button" or profile.is_play_entry(target.label):
+        return decision
+    key = navigation_action_key_from_label(target.label)
+    if any(navigation_action_key(button) == key for button in decision.button_candidates):
+        return decision
+    height, width = image.shape[:2]
+    button = _synthetic_button(
+        target.label, target.x, target.y, width, height, reason="새 화면 나가기 찾기"
+    )
+    print(f"[EXIT] {node.id}: 나가기 버튼 {target.label!r}을(를) 후보에 더합니다.")
+    # 맨 앞에 넣어 후보 개수 상한(MAX_BUTTON_LIMIT)에 잘리지 않게 합니다(누르는 순서는 역할 우선순위).
+    return decision.model_copy(update={"button_candidates": [button, *decision.button_candidates]})
 
 
 def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -> list:
@@ -480,6 +552,87 @@ def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -
     return sorted(buttons, key=lambda b: -b.confidence)
 
 
+def _other_buttons(decision, exclude: set, profile: GameProfile | None = None) -> list:
+    """막혔을 때 눌러 볼 이 화면의 다른 버튼(안전 역할만, exclude의 행동 키는 뺌).
+    나가기류(닫기·뒤로·홈) → 이동 → 구조 → 진행 순, 같은 순위면 확신도 높은 것부터."""
+    buttons = []
+    for button in decision.button_candidates:
+        if button.center is None or button.role not in SAFE_BUTTON_ROLES:
+            continue
+        if navigation_action_key(button) in exclude or is_risky_exit_label(button.label):
+            continue
+        if profile is not None and profile.is_play_entry(button.label):
+            continue
+        buttons.append(button)
+
+    def rank(button) -> tuple[int, float]:
+        exit_like = canonical_action_label(button.label) in _EXIT_CANONICAL
+        return (0 if exit_like else _OTHER_ROLE_ORDER.get(button.role, 9), -button.confidence)
+
+    return sorted(buttons, key=rank)
+
+
+def _keys_leading_to(ledger: LedgerStore, node_id: str, targets: set) -> set[str]:
+    """이 화면(또는 공통 버튼)에서 눌렀을 때 targets 화면으로 갔던 행동 키."""
+    return {
+        entry.action_key
+        for entry in ledger.ledger.entries.values()
+        if entry.screen_id in (node_id, GLOBAL_SCREEN_ID) and entry.target_screen_id in targets
+    }
+
+
+def _stuck_hint(decision, ledger: LedgerStore, node_id: str) -> str:
+    """막혀서 다시 분석할 때 조사 프롬프트에 붙일 상황 설명."""
+    tried, missing = [], []
+    for button in decision.button_candidates:
+        key = navigation_action_key(button)
+        entries = [ledger.entry(node_id, key), ledger.entry(GLOBAL_SCREEN_ID, key)]
+        if any(entry is not None and entry.verdict == "not_found" for entry in entries):
+            missing.append(button.label)
+        elif any(entry is not None and entry.attempts > 0 for entry in entries):
+            tried.append(button.label)
+    lines = [
+        "- 이 화면에서 나가는 길을 찾지 못해 다시 분석한다. 눌러 볼 수 있는 요소를 빠짐없이 넣는다: "
+        "화면 가장자리의 작은 아이콘, 탭바·네비게이션 바의 탭, 뒤로·홈 버튼.",
+        "- 화면 아래(또는 옆) 탭바가 어둡게 가려지지 않고 또렷하게 보이면 이 화면은 팝업이 아니라 "
+        "그 탭의 화면이다. 그 탭바의 탭을 모두 넣는다.",
+    ]
+    if tried:
+        lines.append(f"- 이미 눌러 본 버튼: {', '.join(tried)}. 다른 버튼을 먼저 찾는다.")
+    if missing:
+        lines.append(f"- 화면에 없다고 확인된 버튼: {', '.join(missing)}. 넣지 않는다.")
+    return "\n".join(lines)
+
+
+def _merge_candidates(old, fresh, dead: set):
+    """다시 분석한 후보 중 새 것을 앞에 두고(후보 상한에 잘리지 않게) 예전 후보를 뒤에 붙입니다.
+    화면에 없다고 확인된 행동(dead 중 not_found)은 양쪽에서 뺍니다. 반환: (합친 결과, 새 후보)."""
+    kept = [button for button in old.button_candidates if navigation_action_key(button) not in dead]
+    known = {navigation_action_key(button) for button in kept}
+    added = []
+    for button in fresh.button_candidates:
+        key = navigation_action_key(button)
+        if key in known or key in dead:
+            continue
+        known.add(key)
+        added.append(button)
+    return old.model_copy(update={"button_candidates": [*added, *kept]}), added
+
+
+def _restart_tip(journey: _Journey) -> str:
+    """뒤로·게임 재시작을 못 쓰는 설정이면 종료 메시지에 붙일 안내."""
+    if journey.restart_available:
+        return ""
+    return "ADB_PATH를 설정하면 Android 뒤로와 게임 재시작도 탈출에 씁니다."
+
+
+def _is_cycling(journey: _Journey) -> bool:
+    """마지막 진전 이후 STUCK_CYCLE_STEPS번 넘게 화면 2개 이하만 오갔는지."""
+    if STUCK_CYCLE_STEPS <= 0 or len(journey.idle_nodes) < STUCK_CYCLE_STEPS:
+        return False
+    return len(set(journey.idle_nodes[-STUCK_CYCLE_STEPS:])) <= 2
+
+
 def _plan_escape(
     client,
     journey: _Journey,
@@ -490,9 +643,14 @@ def _plan_escape(
     hint: str = "",
     profile: GameProfile | None = None,
     force_restart: bool = False,
+    node_id: str | None = None,
+    ledger: LedgerStore | None = None,
 ) -> _EscapePlan | None:
     """탈출 사다리에서 지금 할 동작을 고릅니다. 쓸 수 없는 단계는 건너뜁니다.
     반환이 None이면 사다리를 다 썼습니다.
+
+    node_id·ledger: 지금 화면과 원장. 있으면 화면에 없거나 눌러도 그대로였던 버튼을 다시
+    고르지 않고, 다시 분석·다른 버튼 눌러보기 단계를 씁니다.
 
     stages: 단계 순서(플레이 흐름의 팝업 화면은 PLAY_FLOW_POPUP_STAGES).
     hint: 나가기 요소 찾기에 넘길 상황 설명(플레이 흐름이면 play_exit_hint).
@@ -516,6 +674,7 @@ def _plan_escape(
         journey.escape_tries = 0
 
     height, width = image.shape[:2]
+    dead = journey.dead_keys(ledger, node_id) if ledger is not None and node_id is not None else set()
     while journey.escape_stage < len(stages):
         stage = stages[journey.escape_stage]
         plan: _EscapePlan | None = None
@@ -553,12 +712,34 @@ def _plan_escape(
                     reason = target.error or f"kind={target.kind}"
                     print(f"[ESCAPE] 나가기 요소를 찾지 못했습니다({reason}).")
         elif stage == "retry_exit":
-            candidates = _exit_candidates(decision, journey.tried_exit_keys, profile)
+            candidates = _exit_candidates(decision, journey.tried_exit_keys | dead, profile)
             if candidates:
                 button = candidates[0]
                 key = navigation_action_key(button)
                 journey.tried_exit_keys.add(key)
                 plan = _EscapePlan(stage, "tap", button.label, key, button=button, refine=True)
+        elif stage == "resurvey":
+            if (
+                STUCK_RESURVEY
+                and client is not None
+                and node_id is not None
+                and ledger is not None
+                and node_id not in journey.resurveyed
+            ):
+                journey.resurveyed.add(node_id)
+                plan = _EscapePlan(stage, "resurvey", "다시 분석", connect=False)
+        elif stage == "other_buttons":
+            if node_id is not None and ledger is not None:
+                tried = journey.other_tried.setdefault(node_id, set())
+                # 오가던 화면으로 가는 버튼은 순환을 되풀이하므로 뺍니다.
+                cycle = journey.stuck_cycle or set(journey.idle_nodes)
+                loop = _keys_leading_to(ledger, node_id, cycle - {node_id})
+                buttons = _other_buttons(decision, tried | dead | loop, profile)
+                if buttons and len(tried) < STUCK_OTHER_BUTTONS_MAX:
+                    button = buttons[0]
+                    key = navigation_action_key(button)
+                    tried.add(key)
+                    plan = _EscapePlan(stage, "tap", button.label, key, button=button, refine=True)
         elif stage == "restart":
             if journey.restart_available and journey.restarts < APP_RESTART_MAX:
                 plan = _EscapePlan(stage, "restart", "게임 재시작", connect=False)
@@ -655,14 +836,6 @@ def _run_autodrive_step(
         sct, CAPTURE_MODE, MONITOR_INDEX, BOARD_OFFSET, WINDOW_OFFSET
     )
     recent_records = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
-    decision = analyze_survey_screen(
-        client, bundle.full_image, None, survey_context=recent_records, profile=profile
-    )
-
-    # 로딩처럼 policy=wait인 화면은 기다렸다 다시 봅니다(screen_types.json).
-    if screen_policy(decision.screen_type) == "wait":
-        time.sleep(1.0)
-        return _StepResult("skip")
 
     # 직전 캡처와 픽셀이 같으면 LLM이 화면 타입을 다르게 불러도 같은 노드입니다.
     first_observation = journey.node_id is None
@@ -672,14 +845,35 @@ def _run_autodrive_step(
         and same_screen(journey.prev_image, bundle.full_image)
     )
     store.last_hog_match = (None, 1.0)
-    if same_pixels:
-        node = store.revisit(journey.node_id)
+    # 확실히 아는 화면이면 LLM을 부르지 않고 그 화면을 처음 분석한 결과를 다시 씁니다.
+    known = store.known_decision(bundle.full_image, journey.node_id if same_pixels else None)
+    reused = known is not None
+    if reused:
+        node_id, decision = known
+        node = store.revisit(node_id)
+        journey.reused_steps += 1
+        how = "직전과 같은 픽셀" if same_pixels else f"HOG {store.last_hog_match[1]:.3f}"
+        print(f"[REUSE] 아는 화면 {node.id}({how}): 분석을 건너뜁니다.")
     else:
-        # observe()는 먼저 대표 화면 전체와 HOG로 비교하고(타입 무관), 못 찾으면 지문·버튼으로 찾습니다.
-        node = store.observe(decision, bundle.full_image)
-        if node.visits == 1:
-            _warn_if_fragmented(store, node.screen_type)
-            _refresh_chrome_bands(chrome, store)
+        decision = analyze_survey_screen(
+            client, bundle.full_image, None, survey_context=recent_records, profile=profile
+        )
+        # 로딩처럼 policy=wait인 화면은 기다렸다 다시 봅니다(screen_types.json).
+        if screen_policy(decision.screen_type) == "wait":
+            time.sleep(1.0)
+            return _StepResult("skip")
+        if same_pixels:
+            node = store.revisit(journey.node_id)
+        else:
+            # observe()는 먼저 대표 화면 전체와 HOG로 비교하고(타입 무관), 못 찾으면 지문·버튼으로 찾습니다.
+            node = store.observe(decision, bundle.full_image)
+            if node.visits == 1:
+                _warn_if_fragmented(store, node.screen_type)
+                _refresh_chrome_bands(chrome, store)
+        if store.load_decision(node.id) is None:
+            # 처음 분석한 화면: 나가기 버튼을 따로 찾아 더한 뒤 저장하고, 다음부터 다시 씁니다.
+            decision = _add_exit_button(client, decision, bundle.full_image, node, profile)
+            store.save_decision(node.id, decision)
     previous_verdict = _finalize_previous_attempt(
         journey, store, ledger, walker, node, same_pixels=same_pixels
     )
@@ -709,6 +903,18 @@ def _run_autodrive_step(
         # 나가는 도중 처음 본 화면(나가기 확인창 등). 프론티어로 등록하지 않고 표시해 둡니다.
         node.play_flow = True
         store.save()
+
+    # 순환 감지(플레이 흐름 밖에서만): 새 화면은 진전입니다. 아니면 이번 화면을 쌓아 같은
+    # 화면만 오가는지 봅니다. 막힌 화면들 밖으로 나오면 막힘을 풉니다.
+    if not journey.play_flow:
+        if node.visits == 1:
+            journey.note_progress()
+        elif journey.stuck_cycle and node.id not in journey.stuck_cycle:
+            print(f"[STUCK] 오가던 화면에서 빠져나왔습니다({node.screen_type}). 탐색을 이어갑니다.")
+            journey.note_progress()
+            walker.abort()
+        journey.idle_nodes.append(node.id)
+        del journey.idle_nodes[:-50]
 
     # 시작 화면 정렬: 이어서 하는 run(또는 게임 재시작 직후)이 루트가 아닌 화면에서
     # 시작하면 먼저 루트로 갑니다(플레이 중이면 먼저 나온 뒤).
@@ -788,6 +994,8 @@ def _run_autodrive_step(
             action=action,
             recent_records=recent_records,
             screen_id=node.id,
+            # 분석을 건너뛴 아는 화면은 캡처를 새로 저장하지 않고 대표 이미지를 증거로 씁니다.
+            image_path=str(store.image_path(node.id)) if reused else None,
         )
         store.log({
             "step": step,
@@ -797,6 +1005,7 @@ def _run_autodrive_step(
             "selected_button": selected,
             "executed": executed,
             "strategy": strategy,
+            "reused_analysis": reused,
             # 가장 가까운 대표 화면과 HOG 거리(임계값 조정용). 픽셀이 직전과 같으면 비교하지 않아 null.
             "hog_nearest": (
                 {"screen_id": store.last_hog_match[0], "distance": round(store.last_hog_match[1], 4)}
@@ -833,13 +1042,54 @@ def _run_autodrive_step(
         print(f"[TAP REFINE] {button.label!r} 버튼을 화면에서 찾지 못해 누르지 않습니다.")
         return None, record_data, True
 
+    def run_resurvey(goal_kind: str) -> _StepResult:
+        """막힘 단계: 저장된 분석을 두고 막힘 설명을 붙여 이 화면을 다시 분석하고, 새로 찾은
+        버튼을 이 화면의 저장된 분석에 더합니다. 다음 스텝에 원장 프론티어로 들어가 평소처럼 눌립니다."""
+        try:
+            fresh = analyze_survey_screen(
+                client,
+                bundle.full_image,
+                None,
+                survey_context=recent_records,
+                profile=profile,
+                stuck_hint=_stuck_hint(decision, ledger, node.id),
+            )
+        except Exception as error:  # noqa: BLE001 - 다시 분석이 실패해도 다음 단계로 넘어갑니다.
+            print(f"[STUCK] 다시 분석 실패({error}); 다음 단계로 넘어갑니다.")
+            return _StepResult("advance", node_id=node.id)
+        missing = ledger.dead_keys(node.id, ("not_found",)) | journey.missing_keys.get(node.id, set())
+        merged, added = _merge_candidates(decision, fresh, missing)
+        store.save_decision(node.id, merged, overwrite=True)
+        journey.escape_tries += 1
+        journey.escape_streak += 1
+        names = ", ".join(button.label for button in added) or "없음"
+        print(f"[STUCK] {node.id}: 막혀서 다시 분석했습니다. 새 버튼 {len(added)}개: {names}")
+        record(
+            {
+                "type": "escape",
+                "stage": "resurvey",
+                "goal_kind": goal_kind,
+                "outcome": _ESCAPE_OUTCOMES["resurvey"] if goal_kind == "stuck" else f"{goal_kind}_resurvey",
+                "executed": False,
+                "added": [button.model_dump() for button in added],
+                "escape_streak": journey.escape_streak,
+            },
+            selected="다시 분석",
+            executed=False,
+            strategy="escape:resurvey",
+        )
+        return _StepResult("advance", node_id=node.id)
+
     def run_escape(plan: _EscapePlan, goal_kind: str) -> _StepResult:
         """탈출 동작 하나를 실행하고 기록합니다. goal_kind: "stuck" | "reset"."""
+        if plan.kind == "resurvey":
+            return run_resurvey(goal_kind)
         tap_button = plan.button
         refine_record = None
         if plan.kind == "tap" and plan.refine and tap_button is not None:
             tap_button, refine_record, not_found = refine_button(tap_button)
             if not_found:
+                journey.missing_keys.setdefault(node.id, set()).add(plan.action_key)
                 record_without_tap(
                     "escape_target_not_found", stage=plan.stage, refine=refine_record
                 )
@@ -1004,11 +1254,56 @@ def _run_autodrive_step(
 
     back_key_enabled = back_method(ADB_PATH, BACK_KEY) != "off"
 
+    about_to_explore = goal is not None and goal.kind == "frontier"
+    if not journey.stuck_cycle and not about_to_explore and _is_cycling(journey):
+        window = journey.idle_nodes[-STUCK_CYCLE_STEPS:]
+        journey.stuck_cycle = set(window)
+        print(
+            f"[STUCK] {len(journey.idle_nodes)}스텝 동안 새 화면·프론티어 탭 없이 화면 "
+            f"{len(journey.stuck_cycle)}개만 오갔습니다. 종료하지 않고 이 화면의 다른 버튼을 찾아 눌러봅니다."
+        )
+        resurvey_stage = ESCAPE_STAGES.index("resurvey")
+        if journey.escape_stage < resurvey_stage:
+            journey.escape_stage = resurvey_stage
+            journey.escape_tries = 0
+    if journey.stuck_cycle and not about_to_explore:
+        # 막힌 동안에는 경로 재생·리셋 대신 다시 분석 → 다른 버튼 → 재시작 순으로 씁니다.
+        # 다시 분석으로 새 버튼이 생기면 decide()가 frontier를 돌려줘 평소처럼 누릅니다.
+        walker.abort()
+        plan = _plan_escape(
+            client, journey, decision, bundle.full_image,
+            profile=profile, node_id=node.id, ledger=ledger,
+        )
+        if plan is not None:
+            return run_escape(plan, "stuck")
+        record_without_tap("stuck_cycle_exhausted")
+        return _StepResult(
+            "stop",
+            node_id=node.id,
+            stop_reason=(
+                "같은 화면 몇 개를 오가며 빠져나가지 못했습니다(다시 분석·다른 버튼 눌러보기까지 씀). "
+                + _restart_tip(journey)
+            ),
+            stop_kind="unreachable",
+        )
+
+    if goal is None and walker.stop_reason == "converged":
+        # "모두 확인"으로 끝내기 전에 실패로 닫힌 항목(화면 그대로·못 찾음·길 막힘)을
+        # 한 번 더 엽니다. 항목마다 FRONTIER_RETRY_MAX번까지라 무한 반복하지 않습니다.
+        reopened = walker.reopen_failed(node.id, FRONTIER_RETRY_MAX)
+        if reopened:
+            names = ", ".join(entry.action_label or entry.action_key for entry in reopened[:8])
+            print(f"[RETRY] 실패로 닫힌 항목 {len(reopened)}개를 다시 시도합니다: {names}")
+            goal = walker.decide(node.id, visible_keys, global_visible)
+
     if goal is None:
         if walker.stop_reason == "unreachable":
             # 루트에서는 탈출하지 않습니다(뒤로 = 게임 종료 팝업, 재시작해도 루트).
             if node.id != walker.root_screen_id:
-                plan = _plan_escape(client, journey, decision, bundle.full_image)
+                plan = _plan_escape(
+                    client, journey, decision, bundle.full_image,
+                    profile=profile, node_id=node.id, ledger=ledger,
+                )
                 if plan is not None:
                     return run_escape(plan, "stuck")
             record_without_tap("frontier_unreachable")
@@ -1022,15 +1317,24 @@ def _run_autodrive_step(
                         if node.id != walker.root_screen_id
                         else ". "
                     )
-                    + "다시 실행하면 이어서 시도합니다."
-                ),
+                    + "다시 실행하면 이어서 시도합니다. "
+                    + _restart_tip(journey)
+                ).strip(),
                 stop_kind="unreachable",
             )
         record_without_tap("frontier_converged")
+        failed = ledger.failed_count()
         return _StepResult(
             "stop",
             node_id=node.id,
-            stop_reason="전역 프론티어(아직 안 눌러본 화면·행동)를 모두 확인했습니다.",
+            stop_reason=(
+                "전역 프론티어(아직 안 눌러본 화면·행동)를 모두 확인했습니다."
+                + (
+                    f" 재시도해도 화면이 안 바뀌었거나 못 찾은 항목 {failed}개는 보고서에 남겼습니다."
+                    if failed
+                    else ""
+                )
+            ),
             stop_kind="converged",
         )
 
@@ -1046,11 +1350,15 @@ def _run_autodrive_step(
         ledger,
         back_key_enabled=back_key_enabled,
         global_visible=global_visible,
+        skip_keys=journey.dead_keys(ledger, node.id),
     )
 
     if button is None and goal.kind == "reset":
         # 루트로 돌아가야 하는데 홈/뒤로 버튼이 안 보입니다. 탈출 사다리를 씁니다.
-        plan = _plan_escape(client, journey, decision, bundle.full_image)
+        plan = _plan_escape(
+            client, journey, decision, bundle.full_image,
+            profile=profile, node_id=node.id, ledger=ledger,
+        )
         if plan is not None:
             return run_escape(plan, "reset")
 
@@ -1083,6 +1391,8 @@ def _run_autodrive_step(
             elif goal.kind == "replay":
                 walker.report_replay_step(executed=False, arrived_screen_id=None)
             elif goal.kind == "reset":
+                # 이번 세션에서 이 화면의 이 버튼은 다시 찾지 않습니다(다음 리셋은 홈·뒤로로).
+                journey.missing_keys.setdefault(node.id, set()).add(action_key)
                 walker.report_reset_step(
                     executed=False, arrived_screen_id=None, used_home=False
                 )
@@ -1182,6 +1492,8 @@ def _run_autodrive_step(
 
     if goal.kind in ("frontier", "replay"):
         journey.reset_escape()
+    if goal.kind == "frontier":
+        journey.note_progress()
     journey.set_pending(
         goal.kind,
         label,
@@ -1370,6 +1682,8 @@ def run_autodrive(
             time.sleep(AUTODRIVE_STEP_PAUSE)
 
     print(f"[AUTODRIVE] 탐색 종료: {stop_reason}")
+    if journey.reused_steps:
+        print(f"[REUSE] 분석을 건너뛴 스텝: {journey.reused_steps}/{steps_run}")
     report_path = write_survey_report(
         load_all_survey_records(),
         graph=store.graph,

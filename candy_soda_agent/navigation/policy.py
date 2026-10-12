@@ -41,6 +41,33 @@ _ACTION_ALIASES = (
     ("close", ("close", "닫기")),
 )
 
+# 별칭과 함께 있어도 같은 버튼으로 보는 낱말(모양·위치·UI 명사). 이 밖의 낱말이 하나라도
+# 있으면 다른 버튼입니다: "친구 더 추가"·"친구 초대"는 탭바의 "친구"와 합치지 않습니다
+# (실측: "친구 더 추가"가 이미 눌러 본 "친구" 탭으로 잡혀 한 번도 안 눌림).
+_ALIAS_DECORATIONS = _UI_SUFFIX_TOKENS | frozenset({
+    "x", "arrow", "screen", "popup", "nav", "navigation", "bottom", "top",
+    "가기", "화살표", "화면", "팝업", "창", "하단", "상단",
+})
+# 붙여 쓴 낱말("뒤로가기", "설정창", "홈으로")에서 별칭 뒤에 와도 되는 꼬리.
+_ALIAS_TAILS = ("가기", "하기", "창", "화면", "으로", "로")
+
+
+def _alias_canonical(stable: str) -> str | None:
+    tokens = stable.split()
+    for canonical, aliases in _ACTION_ALIASES:
+
+        def is_alias(token: str) -> bool:
+            return token in aliases or any(
+                token.startswith(alias) and token[len(alias):] in _ALIAS_TAILS
+                for alias in aliases
+            )
+
+        if any(is_alias(token) for token in tokens) and all(
+            is_alias(token) or token in _ALIAS_DECORATIONS for token in tokens
+        ):
+            return canonical
+    return None
+
 
 def canonical_action_label(label: str) -> str:
     """버튼 문구와 숫자 차이 정규화."""
@@ -48,10 +75,10 @@ def canonical_action_label(label: str) -> str:
     stable = re.sub(r"\([^)]*\)", " ", label)
     stable = re.sub(r"\d+", "#", normalize_text(stable))
     stable = _strip_ui_suffix_tokens(stable)
-    for canonical, aliases in _ACTION_ALIASES:
-        if any(alias in stable for alias in aliases):
-            return canonical
-    return stable
+    if stable == "x":
+        # X 아이콘("X", "X 버튼")은 닫기입니다. "box"처럼 x가 든 낱말은 건드리지 않습니다.
+        return "close"
+    return _alias_canonical(stable) or stable
 
 
 def navigation_action_key_from_label(label: str) -> str:

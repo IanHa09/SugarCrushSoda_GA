@@ -248,15 +248,19 @@ def save_survey_record(
     recent_records: list[dict[str, Any]] | None = None,
     model: str = MODEL,
     screen_id: str | None = None,
+    image_path: str | None = None,
 ) -> dict[str, Any]:
     """조사 모드 분석 결과를 이미지 증거와 함께 저장합니다.
 
     screen_id: autodrive(3단계)에서 넘겨주는 navigation 그래프 노드 ID입니다. 이걸
     받으면 보고서가 "이 요소가 정확히 어느 그래프 화면에서 나왔는지"를 dedupe용
     screen_signature 대신 이 ID로 연결할 수 있습니다(수동 조사 모드처럼 그래프가
-    없을 때는 그냥 None으로 둡니다)."""
+    없을 때는 그냥 None으로 둡니다).
 
-    raw_path = save_image(raw_image, "survey_raw")
+    image_path: 이미 저장된 같은 화면 이미지(autodrive가 분석을 재사용한 아는 화면의 대표
+    이미지)입니다. 주면 캡처를 새로 저장하지 않고 이 경로를 기록합니다."""
+
+    raw_path = image_path or save_image(raw_image, "survey_raw")
     if raw_path is None:
         raise OSError("조사 원본 이미지를 저장하지 못했습니다.")
     grid_path = save_image(grid_image, "survey_grid") if grid_image is not None else None

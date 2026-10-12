@@ -23,7 +23,7 @@ from typing import Literal
 from navigation.graph import GraphStore
 from navigation.ledger import GLOBAL_SCREEN_ID, LedgerStore
 from navigation.policy import canonical_action_label
-from schemas import NavigationEdge
+from schemas import LedgerEntry, NavigationEdge
 
 StepKind = Literal["frontier", "replay", "reset", "reobserve"]
 # decide()가 None을 반환한 이유: 프론티어 소진 / 남았지만 가는 길을 모름.
@@ -254,6 +254,25 @@ class FrontierWalker:
             if target_id is not None:
                 self._give_up_on(target_id)
 
+    def reopen_failed(self, current_screen_id: str, max_retries: int) -> list[LedgerEntry]:
+        """프론티어가 바닥났을 때 실패로 닫힌 항목을 한 번 더 엽니다(원장 retries 상한까지).
+
+        지금 화면에서 가는 길을 아는 항목만 엽니다. 길을 모르는 항목을 열면 "모두 확인" 종료가
+        "가는 길을 모름" 종료로 바뀌기만 하므로 그대로 둡니다(이번 run에서 포기한 화면도 제외)."""
+
+        def can_reach(entry: LedgerEntry) -> bool:
+            if entry.screen_id == GLOBAL_SCREEN_ID:
+                screens = self.global_screens(entry.action_key) if self.global_screens else []
+            else:
+                screens = [entry.screen_id]
+            return any(
+                screen not in self._abandoned
+                and self.graph.bfs_path(current_screen_id, screen, self._extra()) is not None
+                for screen in screens
+            )
+
+        return self.ledger.reopen_failed(max_retries, can_reach)
+
     # -- 내부 ---------------------------------------------------------------
 
     def _give_up_on(self, target_screen_id: str) -> None:
@@ -266,8 +285,8 @@ class FrontierWalker:
         self._resetting = False
 
 
-def find_reset_button(candidates, *, prefer: Literal["home", "back"]):
-    """안전 버튼 후보 중 canonical 라벨이 prefer("home" 또는 "back")와 일치하는
+def find_reset_button(candidates, *, prefer: Literal["close", "home", "back"]):
+    """안전 버튼 후보 중 canonical 라벨이 prefer("close", "home", "back")와 일치하는
     첫 후보를 찾습니다. candidates는 이미 안전 필터를 통과한 목록이어야 합니다."""
 
     for button in candidates:

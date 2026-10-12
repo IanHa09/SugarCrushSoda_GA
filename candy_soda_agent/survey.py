@@ -103,10 +103,12 @@ def analyze_survey_screen(
     board_image: np.ndarray | None = None,
     survey_context: list[dict] | None = None,
     profile: GameProfile | None = None,
+    stuck_hint: str = "",
 ) -> SurveyDecision:
     """화면 요소, 버튼 후보, 문서화 증거 추출.
 
     profile: 게임 지식(장르, UI 관례, 화면 타입). 없으면 GAME_TITLE의 프로필을 씁니다.
+    stuck_hint: 화면에서 나가지 못해 다시 분석할 때의 상황 설명(navigator의 막힘 재분석).
     화면 타입 목록과 UI 힌트는 knowledge/ 파일에서 오므로, 분류 기준을 바꿀 때는
     이 프롬프트가 아니라 knowledge/screen_types.json, ui_knowledge.json을 고칩니다."""
 
@@ -114,6 +116,7 @@ def analyze_survey_screen(
     context_text = _format_survey_context(survey_context or [])
     image_height, image_width = full_image.shape[:2]
     knowledge_text = survey_prompt_block(profile)
+    stuck_text = f"\n다시 분석하는 이유(아래가 위 규칙보다 우선):\n{stuck_hint.strip()}\n" if stuck_hint.strip() else ""
 
     prompt = f"""
 첫 번째 이미지는 게임 UI 전체 또는 게임 창이다. 두 번째 이미지가 있으면 같은 화면의 보드 확대본이다.
@@ -133,6 +136,10 @@ def analyze_survey_screen(
 - risky_ad: 광고 시청, watch ad, rewarded ad
 - risky_account: 로그인, 계정 연결, 개인정보, 권한 요청
 - 결제/구매/광고/로그인/권한 관련 후보는 기록만 하고 안전 후보로 분류하지 않는다.
+- 가격(₩, $, 원)이 붙었거나 상품·패키지·재화 묶음을 파는 칸은 칸 안의 상품 이름·기간·혜택 글자도
+  모두 risky_monetization이다(가격 버튼만이 아니라 그 칸 전체).
+- 닫기(X 아이콘)·뒤로 버튼이 보이면 작은 아이콘이라도 다른 버튼보다 먼저 넣는다(role=safe_navigation).
+- 팝업·대화상자가 화면을 덮어 뒤 화면이 어둡게 가려져 있으면, 가려진 뒤 화면의 버튼(탭바 포함)은 넣지 않는다.
 - 첫 번째 이미지 크기는 가로 {image_width}px, 세로 {image_height}px이다.
 - 각 버튼 후보는 bbox에 첫 번째 이미지 기준 픽셀 좌표로 버튼이 차지하는 사각형을 적는다
   (x1,y1 = 왼쪽 위, x2,y2 = 오른쪽 아래, 0 <= x < {image_width}, 0 <= y < {image_height}).
@@ -150,7 +157,7 @@ def analyze_survey_screen(
 - game_elements는 문서에 남길 핵심 요소만 최대 10개.
 - button_candidates는 탐색 가치가 있는 후보만 최대 {profile.button_limit}개(탭바 규칙의 탭 포함).
 - summary, description, reason은 짧게 작성한다.
-
+{stuck_text}
 최근 조사 기록:
 {context_text}
 """
@@ -181,11 +188,13 @@ def record_survey_screen(
     action: dict | None = None,
     recent_records: list[dict] | None = None,
     screen_id: str | None = None,
+    image_path: str | None = None,
 ) -> dict:
     """화면 조사 결과를 기록 한 건으로 남깁니다 (보고서는 별도 요청 시 생성).
 
     screen_id: autodrive에서 이미 만든 navigation 그래프 노드 ID가 있으면 넘겨서
-    저장 기록에 같이 남깁니다(storage.save_survey_record 참고)."""
+    저장 기록에 같이 남깁니다(storage.save_survey_record 참고).
+    image_path: 주면 캡처를 새로 저장하지 않고 이 이미지를 증거로 씁니다(아는 화면)."""
 
     recent = recent_records
     if recent is None:
@@ -221,6 +230,7 @@ def record_survey_screen(
         action=action,
         recent_records=recent,
         screen_id=screen_id,
+        image_path=image_path,
     )
     return record
 

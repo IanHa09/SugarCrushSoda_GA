@@ -312,6 +312,8 @@ class LedgerEntry(BaseModel):
     last_seen: str = ""
     # 미시도 상태에서 이 화면을 관찰했는데 후보에 안 보인 연속 횟수.
     misses: int = 0
+    # 실패로 닫혔다가 다시 프론티어로 열린 횟수(LedgerStore.reopen_failed, FRONTIER_RETRY_MAX까지).
+    retries: int = 0
 
 
 class ActionLedger(BaseModel):

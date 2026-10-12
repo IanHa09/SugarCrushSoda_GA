@@ -138,7 +138,9 @@ class RefineTapTargetTests(unittest.TestCase):
             TapLocation(found=False),
             TapLocation(found=True, cell="", x=100, y=900, confidence=0.8),
         ])
-        result = refine_tap_target(object(), self.image, _button(), request=request)
+        result = refine_tap_target(
+            object(), self.image, _button(), full_fallback=True, request=request
+        )
         self.assertTrue(result.found)
         self.assertEqual(result.used_pass, "full")
         self.assertEqual(result.api_calls, 2)
@@ -150,7 +152,8 @@ class RefineTapTargetTests(unittest.TestCase):
             TapLocation(found=False),
         ])
         result = refine_tap_target(
-            object(), self.image, _button(), min_confidence=0.5, request=request
+            object(), self.image, _button(), min_confidence=0.5, full_fallback=True,
+            request=request,
         )
         self.assertFalse(result.found)
         self.assertIsNone(result.error)

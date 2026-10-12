@@ -406,6 +406,7 @@ def survey_prompt_block(profile: GameProfile) -> str:
             "탭바 규칙:",
             "- 네비게이션 바(글자 없는 아이콘 탭 포함)가 보이면 선택되지 않은 탭을 다른 버튼보다 먼저 "
             "button_candidates에 넣고 role=safe_navigation으로 적는다. 이름과 region은 위 UI 형태 설명을 따른다.",
+            "- 팝업이 떠서 탭바가 어둡게 가려져 있으면 탭은 넣지 않는다.",
             "- 네비게이션 바가 없으면 이 규칙은 무시한다.",
         ])
     if profile.nav_tabs:

@@ -435,13 +435,17 @@ class EscapeLadderIntegrationTests(unittest.TestCase):
                 ("navigation.navigator.CAPTURE_MODE", "window"),
                 ("navigation.navigator.DRY_RUN", False),
                 ("navigation.navigator.TAP_REFINE", False),
+                # 갇힘 탈출 자체를 시험합니다. 새 화면 나가기 찾기는 B에 X를 더해 갇히지 않게 하므로 끕니다.
+                ("navigation.navigator.NEW_SCREEN_EXIT_FINDER", False),
             ):
                 stack.enter_context(patch(target, value))
             for target, value in extra_patches:
                 stack.enter_context(patch(target, value))
             stack.enter_context(patch("navigation.navigator.time.sleep"))
             stack.enter_context(patch("navigation.navigator.capture_bundle", side_effect=captures))
-            stack.enter_context(patch("navigation.navigator.analyze_survey_screen", side_effect=decisions))
+            mocks["analyze"] = stack.enter_context(
+                patch("navigation.navigator.analyze_survey_screen", side_effect=decisions)
+            )
             stack.enter_context(patch("navigation.navigator.load_recent_survey_records", return_value=[]))
             stack.enter_context(patch("navigation.navigator.load_all_survey_records", return_value=[]))
             stack.enter_context(patch("navigation.navigator.wait_for_settle", return_value=EFFECT))
@@ -467,7 +471,8 @@ class EscapeLadderIntegrationTests(unittest.TestCase):
         a, b = _bundle(0), _bundle(200)
         mocks = self._run(
             captures=[a, b, b, b, a],
-            decisions=[self.decision_a, self.decision_b, self.decision_b, self.decision_b, self.decision_a],
+            # 같은 픽셀로 반복된 b는 분석을 다시 쓰므로 LLM 응답은 a, b, a 세 번만 씁니다.
+            decisions=[self.decision_a, self.decision_b, self.decision_a],
             max_steps=5,
             extra_patches=(
                 ("navigation.navigator.BACK_KEY", "esc"),
@@ -507,7 +512,7 @@ class EscapeLadderIntegrationTests(unittest.TestCase):
             adb.write_text("", encoding="utf-8")
             mocks = self._run(
                 captures=[a, b, b, a],
-                decisions=[self.decision_a, self.decision_b, self.decision_b, self.decision_a],
+                decisions=[self.decision_a, self.decision_b, self.decision_a],  # 두 번째 b는 재사용
                 max_steps=4,
                 extra_patches=(
                     ("navigation.navigator.ADB_PATH", str(adb)),
@@ -527,6 +532,72 @@ class EscapeLadderIntegrationTests(unittest.TestCase):
         pairs = {(e.source, e.target) for e in graph.edges}
         self.assertNotIn((screen_id(self.decision_b), screen_id(self.decision_a)), pairs)
         self.assertEqual(mocks["summary"].stop_kind, "unreachable")
+
+    # -- 막힘 대응: 종료 대신 다시 분석 / 순환 감지 ---------------------------------------
+
+    decision_b_home = SurveyDecision(
+        screen_type="shop", button_candidates=[_button("Home", role="safe_navigation")]
+    )
+    no_back_no_finder = (
+        ("navigation.navigator.BACK_KEY", ""),
+        ("navigation.navigator.ADB_PATH", ""),
+        ("navigation.navigator.ESCAPE_EXIT_FINDER", False),
+    )
+
+    def test_exhausted_ladder_resurveys_and_taps_the_new_button(self) -> None:
+        a, b = _bundle(0), _bundle(200)
+        mocks = self._run(
+            captures=[a, b, b, a],
+            # a, b, (막힘 다시 분석: Home을 찾음), 돌아온 a
+            decisions=[self.decision_a, self.decision_b, self.decision_b_home, self.decision_a],
+            max_steps=4,
+            extra_patches=self.no_back_no_finder,
+        )
+        self.assertEqual(
+            mocks["outcomes"],
+            ["tap_executed", "stuck_resurvey", "tap_executed", "frontier_unreachable"],
+        )
+        hint = mocks["analyze"].call_args_list[2].kwargs["stuck_hint"]
+        self.assertIn("탭바", hint)
+        # 다시 분석으로 찾은 Home은 평소 프론티어로 눌리고 B -> A 간선이 생깁니다.
+        self.assertEqual(mocks["tap"].call_args_list[-1].args[0].label, "Home")
+        graph = mocks["report"].call_args.kwargs["graph"]
+        labels = {(e.source, e.target): e.action for e in graph.edges}
+        self.assertEqual(labels[(screen_id(self.decision_b), screen_id(self.decision_a))], "Home")
+
+    def test_nothing_left_to_try_stops_with_a_tip(self) -> None:
+        a, b = _bundle(0), _bundle(200)
+        mocks = self._run(
+            captures=[a, b, b],
+            decisions=[self.decision_a, self.decision_b, self.decision_b],  # 다시 분석해도 버튼 없음
+            max_steps=5,
+            extra_patches=self.no_back_no_finder,
+        )
+        self.assertEqual(mocks["outcomes"], ["tap_executed", "stuck_resurvey", "frontier_unreachable"])
+        self.assertEqual(mocks["summary"].stop_kind, "unreachable")
+        self.assertIn("ADB_PATH", mocks["summary"].stop_reason)
+
+    def test_cycle_on_one_screen_jumps_to_resurvey(self) -> None:
+        """뒤로가 화면을 못 바꾸는데 한도가 커서 같은 화면에 머무르면, 순환 감지가 다시 분석으로 넘깁니다."""
+        a, b = _bundle(0), _bundle(200)
+        mocks = self._run(
+            captures=[a, b, b, b, b, a],
+            decisions=[self.decision_a, self.decision_b, self.decision_b_home, self.decision_a],
+            max_steps=6,
+            extra_patches=(
+                ("navigation.navigator.BACK_KEY", "esc"),
+                ("navigation.navigator.STUCK_BACK_KEY_MAX", 10),
+                ("navigation.navigator.STUCK_CYCLE_STEPS", 3),
+            ),
+        )
+        self.assertEqual(
+            mocks["outcomes"],
+            [
+                "tap_executed", "stuck_back_key", "stuck_back_key",
+                "stuck_resurvey", "tap_executed", "frontier_unreachable",
+            ],
+        )
+        self.assertEqual(mocks["tap"].call_args_list[-1].args[0].label, "Home")
 
 
 class NavBarIntegrationTests(unittest.TestCase):

@@ -205,6 +205,13 @@ SCREEN_HOG_MAX_DISTANCE = float(os.getenv("SCREEN_HOG_MAX_DISTANCE", "0.15"))
 if not 0.0 <= SCREEN_HOG_MAX_DISTANCE <= 1.0:
     raise ValueError("SCREEN_HOG_MAX_DISTANCE는 0.0~1.0이어야 합니다.")
 
+# 아는 화면이면 LLM 분석을 건너뛰고 그 화면을 처음 분석한 결과(navigation/decisions/)를 다시
+# 씁니다. HOG 거리가 이 값 이하일 때만 건너뛰므로 같은 화면 판정(위 0.15)보다 엄격하게 둡니다
+# (같은 화면끼리 최대 0.071). 직전 캡처와 픽셀이 같을 때도 건너뜁니다. 0이면 끕니다(매번 분석).
+SCREEN_REUSE_MAX_DISTANCE = float(os.getenv("SCREEN_REUSE_MAX_DISTANCE", "0.10"))
+if not 0.0 <= SCREEN_REUSE_MAX_DISTANCE <= 1.0:
+    raise ValueError("SCREEN_REUSE_MAX_DISTANCE는 0.0~1.0이어야 합니다.")
+
 # 지문으로도 못 찾았을 때 쓰는 보조 기준입니다. 같은 화면 타입에서 정규화 버튼 목록이
 # 이 개수 이하로만 다르면(공통 버튼이 1개 이상일 때) 기존 화면으로 봅니다. 0이면 끕니다.
 SCREEN_MATCH_MAX_BUTTON_DIFF = int(os.getenv("SCREEN_MATCH_MAX_BUTTON_DIFF", "1"))
@@ -259,7 +266,10 @@ TAP_MODEL = os.getenv("OPENAI_TAP_MODEL", "gpt-4.1-mini")
 TAP_REFINE_CROP_FRACTION = _env_float("TAP_REFINE_CROP_FRACTION", "0.40", 0.1, 1.0)
 # 확대본에서 못 찾았거나 확신이 이 값보다 낮으면 전체 화면으로 한 번 더 찾습니다.
 TAP_REFINE_MIN_CONFIDENCE = _env_float("TAP_REFINE_MIN_CONFIDENCE", "0.5", 0.0, 1.0)
-TAP_REFINE_FULL_FALLBACK = _env_bool("TAP_REFINE_FULL_FALLBACK", True)
+# 위 전체 화면 재탐색은 기본으로 끕니다. 실측(run_2026-10-12_08-39-35)에서 4번 모두 화면을
+# 못 바꿨고 좌표를 334~648px 옮겼습니다(확대본 재확인은 6번 중 2번 성공). 끄면 확대본에서 못
+# 찾은 버튼은 누르지 않고 not_found로 닫으며, 나중에 재시도(FRONTIER_RETRY_MAX)로 다시 봅니다.
+TAP_REFINE_FULL_FALLBACK = _env_bool("TAP_REFINE_FULL_FALLBACK", False)
 TAP_REFINE_MAX_OUTPUT_TOKENS = _env_int("TAP_REFINE_MAX_OUTPUT_TOKENS", "300", 1)
 
 # [2단계] 탭 뒤 화면이 멈출 때까지 기다린 다음 다음 관찰로 넘어갑니다(예전: 고정 1.5초).
@@ -275,6 +285,9 @@ POST_TAP_STABLE_THRESHOLD = _env_float("POST_TAP_STABLE_THRESHOLD", "0.01", 0.0,
 SAME_SCREEN_PIXEL_THRESHOLD = _env_float("SAME_SCREEN_PIXEL_THRESHOLD", "0.01", 0.0, 1.0)
 # 눌렀는데 화면이 그대로면(빗나감 의심) 이 횟수만큼 다시 시도한 뒤 no_change로 닫습니다.
 TAP_MISS_RETRIES = _env_int("TAP_MISS_RETRIES", "1", 0)
+# 남은 프론티어가 없어 "다 확인했다"로 끝나기 직전에, 실패로 닫힌 항목(no_change·not_found·
+# blocked)을 다시 엽니다. 항목마다 이 횟수까지(run 전체 기준)만 다시 열고, 0이면 끕니다.
+FRONTIER_RETRY_MAX = _env_int("FRONTIER_RETRY_MAX", "1", 0)
 
 # [3단계] 막혔을 때(프론티어가 남았는데 가는 길을 모름) Android 뒤로를 보냅니다.
 # 리셋 중 홈/뒤로 버튼이 안 보일 때도 씁니다. 보내는 방법은 둘입니다.
@@ -295,12 +308,26 @@ BACK_KEY = os.getenv("BACK_KEY", "").strip().lower()
 #   2) 나가기 요소 찾기(OPENAI_TAP_MODEL)  : X/닫기/확인/홈 탭, 없으면 팝업 바깥 어두운 곳
 #                                           ESCAPE_EXIT_FINDER_MAX번까지
 #   3) 예전에 닫힌 닫기·뒤로·확인 버튼 다시 누르기 : 버튼마다 1번
-#   4) 게임 재시작(adb force-stop 후 실행)  : 세션당 APP_RESTART_MAX번까지
-# 탈출 시도가 연속 ESCAPE_MAX_STREAK번 쌓이면(정상 탭 없이) 바로 4)로 갑니다.
+#   4) 다시 분석(STUCK_RESURVEY)            : 저장된 분석을 두고 "막힘" 설명을 붙여 이 화면을
+#                                           한 번 더 분석, 새로 찾은 버튼은 프론티어로 누름(화면당 세션 1번)
+#   5) 다른 버튼 눌러보기                   : 이 화면의 안전 버튼 중 화면에 없음·화면 그대로·
+#                                           오가던 화면으로 가는 것을 빼고 차례로(화면당 STUCK_OTHER_BUTTONS_MAX개)
+#   6) 게임 재시작(adb force-stop 후 실행)  : 세션당 APP_RESTART_MAX번까지
+# 탈출 시도가 연속 ESCAPE_MAX_STREAK번 쌓이면(정상 탭 없이) 바로 6)으로 갑니다.
 STUCK_BACK_KEY_MAX = _env_int("STUCK_BACK_KEY_MAX", "2", 0)
 ESCAPE_EXIT_FINDER = _env_bool("ESCAPE_EXIT_FINDER", True)
 ESCAPE_EXIT_FINDER_MAX = _env_int("ESCAPE_EXIT_FINDER_MAX", "2", 0)
 ESCAPE_MAX_STREAK = _env_int("ESCAPE_MAX_STREAK", "8", 1)
+STUCK_RESURVEY = _env_bool("STUCK_RESURVEY", True)
+STUCK_OTHER_BUTTONS_MAX = _env_int("STUCK_OTHER_BUTTONS_MAX", "4", 0)
+# [순환 감지] 새 화면도, 프론티어 탭도 없이 STUCK_CYCLE_STEPS번 연속 관찰했는데 그동안 본 화면이
+# 2개 이하면(실측 run_2026-10-12: 친구 화면 <-> 안내 팝업 14스텝 왕복) 막힌 것으로 보고 위 4)부터
+# 씁니다. 0이면 끕니다.
+STUCK_CYCLE_STEPS = _env_int("STUCK_CYCLE_STEPS", "6", 0)
+# 새 화면을 처음 분석할 때 위 2)의 나가기 요소 찾기를 한 번 더 돌려, 찾은 X·닫기·뒤로·홈 탭을
+# 그 화면 버튼 후보에 더합니다(홈 화면·플레이 화면 제외, 새 화면당 1번). 조사 모델이 작은 X나
+# 탭바를 자주 빠뜨려(실측: 레벨 시작 팝업의 X, 상점의 탭바) 화면에서 못 나가던 것을 막습니다.
+NEW_SCREEN_EXIT_FINDER = _env_bool("NEW_SCREEN_EXIT_FINDER", True)
 # 게임 재시작에 쓰는 Android 패키지 이름. autodrive 시작 때 adb로 설치 여부를 확인하고,
 # 없으면 재시작 단계만 끕니다(확인: adb shell pm list packages king).
 GAME_PACKAGE = os.getenv("GAME_PACKAGE", "com.king.candycrushsodasaga").strip()
