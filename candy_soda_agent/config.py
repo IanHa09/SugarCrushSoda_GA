@@ -79,9 +79,9 @@ CAPTURE_MODE = os.getenv("CAPTURE_MODE", "board")  # board | window | monitor
 # window 모드에서 쓸 영역. 모니터 상대 좌표로 수정 필요 ! 
 
 WINDOW_OFFSET = {
-    "left": 1761,
-    "top": 44,
-    "width": 757,
+    "left": 1763,
+    "top": 46,
+    "width": 759,
     "height": 1348,
 }
 # 안전모드 스위치: true면 API/마우스 조작 없이 로컬 실행, false면 실제로 API 호출 및 클릭까지 수행합니다.

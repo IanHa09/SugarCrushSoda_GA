@@ -117,6 +117,30 @@ class PlayEntryTests(AutodriveHarness):
         self.assertEqual((entry.verdict, entry.attempts), ("play_entry", 0))
         self.assertEqual(mocks["summary"].stop_kind, "converged")
 
+    def test_share_and_invite_buttons_are_recorded_as_external(self) -> None:
+        # 실측(run_2026-10-27): 친구 더 추가하기 → 초대하기 → 공유 시트 → Chrome으로 게임 밖에 나감.
+        friends = SurveyDecision(
+            screen_type="menu",
+            button_candidates=[
+                _button("친구 더 추가하기", role="progression"),
+                _button("초대하기", role="progression"),
+                _button("Share"),
+                _button("Shop"),
+            ],
+        )
+        mocks = self._run(
+            captures=[_bundle(0), _bundle(200)],
+            decisions=[friends, SurveyDecision(screen_type="shop")],
+            max_steps=2,
+        )
+        self.assertEqual(mocks["tapped"], ["Shop"])
+        verdicts = {e.action_label: e.verdict for e in mocks["ledger"].ledger.entries.values()}
+        for label in ("친구 더 추가하기", "초대하기", "Share"):
+            self.assertEqual(verdicts[label], "external", label)
+        profile = active_profile()
+        self.assertFalse(profile.is_external("친구"))  # 탭바 "친구"는 그대로 탐색
+        self.assertTrue(profile.never_tap("초대하기") and profile.never_tap("플레이!"))
+
 
 class PlayExitFlowTests(AutodriveHarness):
     def test_board_is_left_through_back_then_exit_label(self) -> None:

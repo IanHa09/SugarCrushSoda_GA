@@ -1,0 +1,26 @@
+{
+  "_설명": [
+    "버튼 이름(라벨)을 다루는 낱말 목록입니다. 코드(navigation/policy.py, tap_refine.py)는 이 파일만 읽고, 낱말은 여기서 고칩니다.",
+    "ui_nouns: 라벨 끝에 붙어도 뜻이 같은 UI 명사입니다. 'Settings tab'과 'Settings'를 같은 버튼으로 봅니다(끝에서만 뗌, 라벨 전체가 UI 명사면 그대로 둠).",
+    "action_aliases: 같은 뜻의 다른 표기를 대표 이름 하나로 모읍니다. 위에서부터 먼저 맞는 것을 씁니다. 라벨의 모든 낱말이 별칭이거나 alias_decorations일 때만 합칩니다('친구 더 추가'는 friends가 아님).",
+    "alias_decorations: 별칭과 함께 있어도 같은 버튼으로 보는 꾸밈 낱말(ui_nouns도 포함됩니다). alias_tails: 붙여 쓴 낱말에서 별칭 뒤에 와도 되는 꼬리('뒤로가기', '설정창', '홈으로').",
+    "risky_exit_tokens: 나가기 찾기·막혔을 때 다른 버튼에서 고르지 않는 낱말(결제·광고·계정·설치 흐름). 부분 일치입니다.",
+    "모든 낱말은 소문자로 적습니다. 특정 게임에만 있는 이름은 넣지 않습니다."
+  ],
+  "ui_nouns": ["tab", "tabs", "button", "buttons", "btn", "icon", "icons", "menu", "bar", "panel", "탭", "버튼", "아이콘", "메뉴"],
+  "action_aliases": {
+    "settings": ["settings", "setting", "gear", "cog", "설정"],
+    "home": ["home", "홈"],
+    "shop": ["shop", "store", "상점"],
+    "event": ["event", "events", "이벤트"],
+    "mission": ["mission", "missions", "미션"],
+    "map": ["map", "지도"],
+    "profile": ["profile", "프로필"],
+    "friends": ["friend", "friends", "친구"],
+    "back": ["back", "뒤로"],
+    "close": ["close", "닫기"]
+  },
+  "alias_decorations": ["x", "arrow", "screen", "popup", "nav", "navigation", "bottom", "top", "가기", "화살표", "화면", "팝업", "창", "하단", "상단"],
+  "alias_tails": ["가기", "하기", "창", "화면", "으로", "로"],
+  "risky_exit_tokens": ["구매", "결제", "광고", "시청", "로그인", "계정", "설치", "상점", "buy", "purchase", "pay", "watch", "video", "login", "sign in", "account", "install", "shop", "store"]
+}

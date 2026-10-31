@@ -16,7 +16,9 @@ sys.path.insert(0, str(PACKAGE_DIR))
 from game_knowledge import active_profile
 from navigation.navigator import _add_nav_tabs
 from schemas import NavTab, NavTabs, NormalizedPoint, SurveyButtonCandidate, SurveyDecision
-from tap_refine import NavTabTarget, find_nav_tabs
+from navigation.policy import canonical_action_label, navigation_action_key_from_label as key_of
+from tap_refine import NavTabTarget, find_nav_tabs, nav_tab_label
+from test_play_policy import AutodriveHarness, _bundle
 
 IMAGE = np.zeros((1348, 757, 3), np.uint8)
 
@@ -34,21 +36,35 @@ class FindNavTabsTests(unittest.TestCase):
     def test_tabs_are_mapped_back_to_screen_pixels(self) -> None:
         # 띠는 y=1132부터(1348 * 0.84), 긴 변 757 -> 1024로 키움(배율 약 1.353).
         answer = NavTabs(tabs=[
-            NavTab(label="상점", x=77, y=230),
-            NavTab(label="홈", x=487, y=230, selected=True),
-            NavTab(label="", x=700, y=230),  # 이름 없는 탭은 버림
-            NavTab(label="활동", x=906, y=230),
+            NavTab(text="상점", x=77, y=230),
+            NavTab(icon="별 아이콘", is_home=True, x=487, y=230, selected=True),
+            NavTab(icon="사람 두 명 아이콘", x=724, y=230),
+            NavTab(icon="달력 아이콘", x=906, y=230),
         ])
         request = _answer(answer)
         tabs = find_nav_tabs(object(), IMAGE, request=request)
-        self.assertEqual([t.label for t in tabs], ["상점", "홈", "활동"])
+        # 글자 > 홈 > 순서 이름(아이콘에 기능 이름을 지어 붙이지 않음)
+        self.assertEqual(
+            [t.label for t in tabs],
+            ["상점", "홈", "셋째 탭 (사람 두 명 아이콘)", "넷째 탭 (달력 아이콘)"],
+        )
         self.assertEqual((tabs[0].x, tabs[0].y), (57, 1302))
-        self.assertEqual(tabs[2].x, 670)
+        self.assertEqual(tabs[3].x, 670)
         self.assertTrue(tabs[1].selected)
         self.assertEqual(request.kwargs["full_image_detail"], "high")
+        self.assertIn("기능 이름을 지어내지 않는다", request.kwargs["prompt"])
+        self.assertNotIn("활동", request.kwargs["prompt"])  # 게임 전용 예시 이름 없음
+
+    def test_ordinal_label_key_ignores_the_icon_description(self) -> None:
+        # 화면마다 아이콘 묘사가 달라도 같은 순서의 탭은 같은 버튼 키입니다.
+        first = nav_tab_label(3, "", "사람 두 명 아이콘", False)
+        second = nav_tab_label(3, "", "두 사람 마름모", False)
+        self.assertEqual(key_of(first), key_of(second))
+        self.assertNotEqual(key_of(first), key_of(nav_tab_label(4, "", "사람 두 명 아이콘", False)))
+        self.assertEqual(canonical_action_label(nav_tab_label(2, "", "별", True)), "home")
 
     def test_covered_bar_and_errors_give_nothing(self) -> None:
-        covered = NavTabs(covered=True, tabs=[NavTab(label="홈", x=10, y=10)])
+        covered = NavTabs(covered=True, tabs=[NavTab(text="홈", x=10, y=10)])
         self.assertEqual(find_nav_tabs(object(), IMAGE, request=_answer(covered)), [])
         self.assertEqual(find_nav_tabs(object(), IMAGE, request=_answer(RuntimeError("down"))), [])
 
@@ -93,6 +109,24 @@ class AddNavTabsTests(unittest.TestCase):
         with patch("navigation.navigator.find_nav_tabs", return_value=self.found) as finder:
             self.assertIs(_add_nav_tabs(object(), self.decision, IMAGE, self.node, no_bar), self.decision)
         finder.assert_not_called()
+
+
+class LocatedButtonsSkipRefineTests(AutodriveHarness):
+    def test_tab_finder_buttons_are_tapped_without_refine(self) -> None:
+        tab = SurveyButtonCandidate(
+            label="넷째 탭 (사람 두 명 아이콘)", role="structure", region="bottom_nav",
+            center=NormalizedPoint(x=0.7, y=0.95), confidence=1.0, reason="탭바 찾기",
+        )
+        home = SurveyDecision(screen_type="home", button_candidates=[tab])
+        with patch("navigation.navigator.refine_tap_target") as refine:
+            mocks = self._run(
+                captures=[_bundle(0), _bundle(200)],
+                decisions=[home, SurveyDecision(screen_type="menu")],
+                max_steps=2,
+                extra_patches=(("navigation.navigator.TAP_REFINE", True),),
+            )
+        refine.assert_not_called()
+        self.assertEqual(mocks["tapped"], ["넷째 탭 (사람 두 명 아이콘)"])
 
 
 if __name__ == "__main__":

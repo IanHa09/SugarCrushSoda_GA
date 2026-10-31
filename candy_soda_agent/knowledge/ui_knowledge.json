@@ -6,6 +6,7 @@
     "nav_bar.position: bottom/top/left/right(확실히 아는 위치) | varies(게임마다 다름, 있을 수도 없을 수도) | none(정보 없음). max_tabs: 탭 이름은 모르지만 탭바가 있으면 탭이 몇 개쯤인지(버튼 후보 개수를 그만큼 늘리고 탭을 먼저 넣으라고 프롬프트에 적음). tabs: 게임별로 탭 이름을 확실히 알 때만 적습니다.",
     "games는 비워 둡니다. 특정 게임에만 맞는 사실을 꼭 넣어야 하면 \"games\": {\"게임제목\": {\"layout_hints\": [...]}} 형태로 덧붙입니다.",
     "play_entry_labels: 이 이름의 버튼은 기록만 하고 누르지 않습니다(낱말 단위 일치: '플레이'는 '플레이!'와 맞고 '플레이어'와는 안 맞음).",
+    "external_labels: 게임 밖(공유 시트·메신저·브라우저)으로 나가는 공유·초대 버튼입니다. 기록만 하고 누르지 않습니다(원장 판정 external). 붙여 쓴 형태('초대하기')는 따로 적습니다.",
     "play_exit_labels: 플레이 화면에서 나올 때 먼저 누르는 버튼 이름입니다. home_screen_types: 플레이에서 나오다 이 타입 화면에 오면 빠져나왔다고 봅니다."
   ],
   "genres": {
@@ -17,6 +18,7 @@
       ],
       "nav_bar": {"position": "none", "tabs": []},
       "play_entry_labels": ["플레이", "플레이하기", "시작", "시작하기", "play", "start"],
+      "external_labels": ["공유", "공유하기", "초대", "초대하기", "친구 초대", "친구 추가", "친구 더 추가", "친구 더 추가하기", "share", "invite", "invite friends"],
       "play_exit_labels": ["레벨 종료", "그만하기", "포기", "포기하기", "나가기", "quit", "exit", "end level", "give up"],
       "home_screen_types": ["home"],
       "play_exit_hint": "지금은 실제 게임 플레이 중이다. 플레이를 끝내고 메인 화면으로 돌아가는 요소(일시정지·톱니 메뉴, 나가기, 그만하기)를 고른다. 플레이 조작 요소는 고르지 않는다."

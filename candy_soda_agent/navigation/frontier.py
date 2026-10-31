@@ -38,7 +38,8 @@ class StepGoal:
       됩니다(navigator가 기존 choose_button으로 고릅니다). action_key는 비어 있습니다.
     kind == "replay": action_key와 일치하는 버튼을 찾아 눌러야 하고, 눌렀을 때
       도착 화면이 expected_target_screen_id와 같은지 검증해야 합니다.
-    kind == "reset": "home" 라벨의 버튼을 먼저 찾고, 없으면 "back"을 찾아 누릅니다.
+    kind == "reset": 루트로 가는 길을 그래프에서 알면 action_key(그 길의 첫 간선)를 누르고,
+      모르면(action_key 없음) 닫기 → 홈 → 뒤로 버튼을 찾아 누릅니다.
     kind == "reobserve": 이 화면의 미시도 버튼이 이번 후보에 안 보였습니다. 아무것도
       누르지 않고 다시 관찰합니다(연속으로 안 보이면 원장이 not_visible로 정리).
     """
@@ -72,6 +73,8 @@ class FrontierWalker:
     _replan_attempts: dict[str, int] = field(default_factory=dict)
     # 도달을 포기한 화면. 공통 버튼 목표 때문에 같은 화면을 다시 고르지 않게 합니다.
     _abandoned: set[str] = field(default_factory=set)
+    # 리셋 중 루트로 가는 길의 첫 간선(아는 길로 돌아가는 중일 때). 결과를 그래프에 남깁니다.
+    _homing_edge: NavigationEdge | None = None
 
     # -- 진행 상태 조회 -----------------------------------------------------
 
@@ -83,6 +86,11 @@ class FrontierWalker:
     @property
     def is_resetting(self) -> bool:
         return self._resetting
+
+    @property
+    def replay_target(self) -> str | None:
+        """지금 경로를 따라가거나 리셋 뒤 가려는 목표 화면."""
+        return self._replay_target
 
     def _extra(self) -> list[NavigationEdge]:
         return self.extra_edges() if self.extra_edges else []
@@ -122,7 +130,22 @@ class FrontierWalker:
 
         self.stop_reason = None
 
+        if self._resetting and current_screen_id == self.root_screen_id:
+            # 이미 루트입니다(다른 동작으로 돌아왔거나 시작 화면이 루트). 리셋을 끝냅니다.
+            self._arrive_at_root(current_screen_id)
         if self._resetting:
+            # 루트로 가는 길을 그래프에서 알면 그 길로 갑니다. 홈 탭 이름을 몰라도, 뒤로가 안 먹는
+            # 탭 화면에서도 돌아갈 수 있습니다(고장 난 간선은 빼고 찾습니다).
+            self._homing_edge = None
+            if self.root_screen_id is not None:
+                path = self.graph.bfs_path(current_screen_id, self.root_screen_id, self._extra())
+                if path:
+                    self._homing_edge = path[0]
+                    return StepGoal(
+                        kind="reset",
+                        action_key=path[0].action_key,
+                        expected_target_screen_id=path[0].target,
+                    )
             return StepGoal(kind="reset")
 
         if self._replay_queue:
@@ -199,7 +222,9 @@ class FrontierWalker:
             return
 
         edge = self._replay_queue[0]
-        if executed and arrived_screen_id == edge.target:
+        ok = executed and arrived_screen_id == edge.target
+        self.graph.note_edge_result(edge, ok)
+        if ok:
             self._replay_queue.pop(0)
             if not self._replay_queue:
                 self._replay_target = None
@@ -231,21 +256,17 @@ class FrontierWalker:
         (홈 버튼 탭 성공, 또는 도착 화면이 root_screen_id와 일치) 방금 도착한
         화면에서 목표까지 새로 경로를 짜서 재생을 재개합니다."""
 
+        if self._homing_edge is not None:
+            edge, self._homing_edge = self._homing_edge, None
+            self.graph.note_edge_result(edge, executed and arrived_screen_id == edge.target)
+
         target_id = self._replay_target
         reached_root = executed and (
             used_home or arrived_screen_id == self.root_screen_id
         )
 
         if reached_root:
-            self._resetting = False
-            if target_id is None or arrived_screen_id is None:
-                return
-            path = self.graph.bfs_path(arrived_screen_id, target_id, self._extra())
-            if path is None:
-                # 루트에서도 목표까지 가는 길을 아직 모릅니다. 포기합니다.
-                self._give_up_on(target_id)
-                return
-            self._replay_queue = path
+            self._arrive_at_root(arrived_screen_id)
             return
 
         self._back_taps_used += 1
@@ -273,7 +294,30 @@ class FrontierWalker:
 
         return self.ledger.reopen_failed(max_retries, can_reach)
 
+    def give_up(self, screen_ids) -> int:
+        """이 화면들의 남은 프론티어를 모두 포기(blocked)합니다. 같은 화면 묶음을 계속 맴돌 때
+        navigator가 부릅니다. 반환: 포기한 항목 수."""
+        closed = 0
+        for screen_id in screen_ids:
+            closed += len(self.ledger.frontier_at(screen_id))
+            self._give_up_on(screen_id)
+        return closed
+
     # -- 내부 ---------------------------------------------------------------
+
+    def _arrive_at_root(self, arrived_screen_id: str | None) -> None:
+        """루트에 도착했습니다. 리셋을 끝내고, 가려던 목표가 있으면 여기서 다시 길을 짭니다."""
+        self._resetting = False
+        self._homing_edge = None
+        target_id = self._replay_target
+        if target_id is None or arrived_screen_id is None:
+            return
+        path = self.graph.bfs_path(arrived_screen_id, target_id, self._extra())
+        if path is None:
+            # 루트에서도 목표까지 가는 길을 아직 모릅니다. 포기합니다.
+            self._give_up_on(target_id)
+            return
+        self._replay_queue = path
 
     def _give_up_on(self, target_screen_id: str) -> None:
         """도달 자체가 반복 실패한 화면의 남은 프론티어 항목을 모두 blocked 처리합니다."""

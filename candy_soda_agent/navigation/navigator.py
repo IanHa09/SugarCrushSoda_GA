@@ -188,6 +188,12 @@ _ESCAPE_OUTCOMES = {
     "other_buttons": "stuck_other_button",
     "restart": "stuck_restart",
 }
+# 탭바 찾기·나가기 찾기가 고해상도 격자로 위치를 이미 찍은 버튼(reason). 누르기 전 확대 확인을
+# 건너뜁니다: 확인은 이름으로 찾는데 글자 없는 아이콘 탭은 "그런 이름 없음"으로 답해 못 눌렀습니다.
+_LOCATED_REASONS = frozenset({"탭바 찾기", "새 화면 나가기 찾기"})
+# 같은 화면 묶음에서 맴돌기를 이 횟수만큼 다시 감지하면, 그 화면들과 그쪽으로 가던 목표의
+# 남은 프론티어를 포기합니다(막힘을 빠져나와도 같은 길로 다시 들어가 끝나지 않던 것을 막음).
+STUCK_CYCLE_GIVE_UP = 3
 # 다른 버튼 눌러보기의 순서: 나가기류(닫기·뒤로·홈) → 이동 → 구조 → 진행.
 _OTHER_ROLE_ORDER = {"safe_navigation": 1, "structure": 2, "progression": 3}
 # "다시 누르기" 단계에서 고르는 나가기류 버튼(canonical 라벨 또는 낱말).
@@ -235,6 +241,9 @@ class _Journey:
     # 순환으로 막힌 화면들(비어 있으면 막힘 아님)과, 이번 세션에 화면별로 확대 확인에서 못 찾은 행동.
     stuck_cycle: set = field(default_factory=set)
     missing_keys: dict = field(default_factory=dict)
+    # 맴돌기를 감지한 횟수(화면별)와 그때 가려던 목표 화면(세션 동안 유지).
+    cycle_hits: dict = field(default_factory=dict)
+    cycle_targets: set = field(default_factory=set)
 
     def dead_keys(self, ledger: LedgerStore, node_id: str) -> set[str]:
         """원장의 dead_keys에 이번 세션에 리셋·탈출 중 못 찾은 행동을 더한 것."""
@@ -440,12 +449,15 @@ def _choose_action_for_goal(
         )
         return button, (navigation_action_key(button) if button else ""), False
 
-    if goal.kind == "replay":
+    if goal.kind == "replay" or (goal.kind == "reset" and goal.action_key):
+        # reset에 action_key가 있으면 루트로 가는 아는 길의 첫 간선입니다.
         button = _button_for_action_key(candidates, goal.action_key)
         if button is None and back_key_enabled and goal.action_key == BACK_KEY_ACTION_KEY:
             # 뒤로 키(또는 뒤로 버튼)로 생긴 간선인데 뒤로 버튼이 안 보이면 키로 재생합니다.
             return BACK_KEY_ACTION, goal.action_key, False
-        return button, goal.action_key, False
+        if goal.kind == "replay" or button is not None:
+            return button, goal.action_key, False
+        # 그 간선의 버튼이 안 보이면 아래 닫기·홈·뒤로로 돌아갑니다.
 
     # goal.kind == "reset": 닫기 → 홈 → 뒤로 순서. 닫기(X)가 보이면 대개 팝업이라 그 뒤의
     # 홈 탭은 가려져 눌리지 않습니다(실측: 레벨 시작 팝업). 홈일 때만 루트 도착으로 봅니다.
@@ -519,7 +531,7 @@ def _add_exit_button(client, decision, image, node, profile: GameProfile):
     ):
         return decision
     target = find_exit_target(client, image)
-    if not target.found or target.kind != "button" or profile.is_play_entry(target.label):
+    if not target.found or target.kind != "button" or profile.never_tap(target.label):
         return decision
     key = navigation_action_key_from_label(target.label)
     if any(navigation_action_key(button) == key for button in decision.button_candidates):
@@ -550,7 +562,7 @@ def _add_nav_tabs(client, decision, image, node, profile: GameProfile):
             update={"role": "structure", "region": "bottom_nav"}
         )
         for tab in find_nav_tabs(client, image)
-        if not tab.selected and not profile.is_play_entry(tab.label)
+        if not tab.selected and not profile.never_tap(tab.label)
     ]
     if not tabs:
         return decision
@@ -574,7 +586,7 @@ def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -
         key = navigation_action_key(button)
         if key in tried or is_risky_exit_label(button.label):
             continue
-        if profile is not None and profile.is_play_entry(button.label):
+        if profile is not None and profile.never_tap(button.label):
             continue
         lowered = button.label.casefold()
         if canonical_action_label(button.label) in _EXIT_CANONICAL or any(
@@ -593,7 +605,7 @@ def _other_buttons(decision, exclude: set, profile: GameProfile | None = None) -
             continue
         if navigation_action_key(button) in exclude or is_risky_exit_label(button.label):
             continue
-        if profile is not None and profile.is_play_entry(button.label):
+        if profile is not None and profile.never_tap(button.label):
             continue
         buttons.append(button)
 
@@ -649,6 +661,22 @@ def _merge_candidates(old, fresh, dead: set):
         known.add(key)
         added.append(button)
     return old.model_copy(update={"button_candidates": [*added, *kept]}), added
+
+
+def _count_cycle(journey: _Journey, walker: FrontierWalker) -> int | None:
+    """맴돌기를 감지할 때마다 부릅니다. 같은 화면에서 STUCK_CYCLE_GIVE_UP번째면 그 화면들과
+    그쪽으로 가던 목표의 남은 프론티어를 포기하고 포기한 항목 수를, 아니면 None을 돌려줍니다."""
+    for node_id in journey.stuck_cycle:
+        journey.cycle_hits[node_id] = journey.cycle_hits.get(node_id, 0) + 1
+    if walker.replay_target is not None:
+        journey.cycle_targets.add(walker.replay_target)
+    if max((journey.cycle_hits[n] for n in journey.stuck_cycle), default=0) < STUCK_CYCLE_GIVE_UP:
+        return None
+    closed = walker.give_up(journey.stuck_cycle | journey.cycle_targets)
+    journey.cycle_hits.clear()
+    journey.cycle_targets.clear()
+    journey.note_progress()
+    return closed
 
 
 def _restart_tip(journey: _Journey) -> str:
@@ -724,9 +752,9 @@ def _plan_escape(
                 if hint:
                     exit_kwargs["hint"] = hint
                 target = find_exit_target(client, image, **exit_kwargs)
-                if target.found and profile is not None and profile.is_play_entry(target.label):
+                if target.found and profile is not None and profile.never_tap(target.label):
                     # 나가려다 '플레이'를 누르면 플레이로 들어갑니다. 이 단계는 넘어갑니다.
-                    print(f"[ESCAPE] 나가기 요소로 {target.label!r}(플레이 진입)이 골라져 쓰지 않습니다.")
+                    print(f"[ESCAPE] 나가기 요소로 {target.label!r}(플레이 진입·외부 공유)이 골라져 쓰지 않습니다.")
                 elif target.found:
                     label = target.label if target.kind == "button" else "팝업 바깥"
                     plan = _EscapePlan(
@@ -787,11 +815,17 @@ def _plan_escape(
 
 
 def _split_play_entries(candidates, profile: GameProfile) -> tuple[list, list]:
-    """안전 후보를 (탐색할 것, 플레이 진입이라 누르지 않을 것)으로 나눕니다."""
-    keep, play = [], []
+    """안전 후보를 (탐색할 것, 누르지 않고 기록만 할 것[(버튼, 판정)])으로 나눕니다.
+    판정: 플레이 진입이면 play_entry, 게임 밖으로 나가는 공유·초대면 external."""
+    keep, skipped = [], []
     for button in candidates:
-        (play if profile.is_play_entry(button.label) else keep).append(button)
-    return keep, play
+        if profile.is_play_entry(button.label):
+            skipped.append((button, "play_entry"))
+        elif profile.is_external(button.label):
+            skipped.append((button, "external"))
+        else:
+            keep.append(button)
+    return keep, skipped
 
 
 def _play_exit_button(decision, profile: GameProfile, tried: set):
@@ -806,7 +840,7 @@ def _play_exit_button(decision, profile: GameProfile, tried: set):
         if button.center is not None
         and not button.role.startswith("risky_")
         and not is_risky_exit_label(button.label)
-        and not profile.is_play_entry(button.label)
+        and not profile.never_tap(button.label)
         and profile.is_play_exit(button.label)
         and navigation_action_key(button) not in tried
     ]
@@ -975,11 +1009,12 @@ def _run_autodrive_step(
     global_visible: set[str] = set()
     goal: StepGoal | None = None
     if not journey.play_flow:
-        # 플레이 진입 버튼은 기록만 하고 프론티어에서 뺍니다(PLAY_POLICY).
-        candidates, play_buttons = _split_play_entries(candidates, profile)
-        for button in play_buttons:
-            if ledger.close_play_entry(node.id, navigation_action_key(button), button.label):
-                print(f"[PLAY] '{button.label}'은(는) 플레이 진입 버튼이라 누르지 않습니다(기록만).")
+        # 플레이 진입·외부 공유 버튼은 기록만 하고 프론티어에서 뺍니다(PLAY_POLICY, external_labels).
+        candidates, skipped = _split_play_entries(candidates, profile)
+        for button, verdict in skipped:
+            if ledger.close_play_entry(node.id, navigation_action_key(button), button.label, verdict):
+                why = "플레이 진입" if verdict == "play_entry" else "외부 공유·초대"
+                print(f"[SKIP] '{button.label}'은(는) {why} 버튼이라 누르지 않습니다(기록만).")
 
         # 이번 화면에서 본 안전 후보를 원장에 등록합니다(처음 보는 것만 프론티어로 추가).
         # 네비게이션 바 같은 공통 버튼은 화면별 대신 공통 항목 하나로 등록합니다.
@@ -1035,6 +1070,7 @@ def _run_autodrive_step(
             "session_id": session_id,
             "screen_id": node.id,
             "screen_type": node.screen_type,
+            "screen_role": node.role,
             "selected_button": selected,
             "executed": executed,
             "strategy": strategy,
@@ -1059,6 +1095,8 @@ def _run_autodrive_step(
         """확대 재확인. (누를 버튼 또는 None, 기록, 못 찾았는지)."""
         if not TAP_REFINE or dry_run or not allow_taps:
             return button, None, False
+        if button.reason in _LOCATED_REASONS:
+            return button, {"skipped": button.reason}, False
         refine = refine_tap_target(client, bundle.full_image, button)
         record_data = refine.to_record()
         if refine.found:
@@ -1299,6 +1337,14 @@ def _run_autodrive_step(
         if journey.escape_stage < resurvey_stage:
             journey.escape_stage = resurvey_stage
             journey.escape_tries = 0
+        closed = _count_cycle(journey, walker)
+        if closed is not None:
+            print(
+                f"[STUCK] 같은 화면에서 {STUCK_CYCLE_GIVE_UP}번째 맴돌았습니다. 그 화면들과 그쪽으로 가던 "
+                f"목표의 남은 항목 {closed}개를 포기하고 다른 곳을 탐색합니다."
+            )
+            goal = walker.decide(node.id, visible_keys, global_visible)
+            about_to_explore = goal is not None and goal.kind == "frontier"
     if journey.stuck_cycle and not about_to_explore:
         # 막힌 동안에는 경로 재생·리셋 대신 다시 분석 → 다른 버튼 → 재시작 순으로 씁니다.
         # 다시 분석으로 새 버튼이 생기면 decide()가 frontier를 돌려줘 평소처럼 누릅니다.

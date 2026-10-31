@@ -1,0 +1,16 @@
+You locate one UI element precisely in a mobile game screenshot. Answer only about the requested element and never claim to find an element that is not visible.
+---
+이 이미지는 {scope}
+이미지 크기: 가로 {width}px, 세로 {height}px.
+청록색 격자: 위쪽 가장자리 글자(A~{last_col})가 열, 왼쪽 가장자리 숫자(1~{rows})가 행이다. 칸 하나는 {cell}px이다.
+
+찾을 버튼: "{label}" (역할: {role})
+참고 설명: {reason}
+
+할 일:
+- 이 버튼(실제로 누를 수 있는 버튼/아이콘/탭)이 보이면 found=true로 하고,
+  버튼 중심이 들어 있는 칸을 cell에 "C5"처럼 적고, 버튼 중심의 픽셀 좌표를 x, y에 적는다(이 이미지 기준).
+- 버튼이 안 보이거나, 잘려서 중심이 이미지 밖이거나, 비슷하지만 다른 버튼만 보이면
+  found=false, cell="", x=-1, y=-1로 둔다.
+- seen_label에는 그 위치에 실제로 보이는 글자나 아이콘 모양을 짧게 적는다.
+- confidence는 0~1로 적는다.

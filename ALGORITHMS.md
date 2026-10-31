@@ -37,7 +37,7 @@
 | BFS 스패닝 트리 | `graph.bfs_spanning_tree` | 그래프에서 BFS가 처음 지나간 간선만 남긴 트리. 나머지 간선은 교차 링크로 따로 분리. 트리 깊이가 곧 루트에서 몇 번 눌러야 도달하는지이며, 보고서의 화면 계층에 사용 |
 | 도달 불가 노드 | `graph.unreached_from` | 스패닝 트리에 못 들어간 노드 = 루트에서 가는 길을 모르는 화면. 보고서와 지표의 진단에 씀 |
 | 프론티어 기반 탐색 | `frontier.FrontierWalker.decide` | 아직 안 가 본 경계(프론티어)를 하나씩 없애 나가는 탐색. 여기서 프론티어는 **안 눌러본 (화면, 버튼) 쌍**. 현재 화면에 있으면 바로 누르고, 없으면 BFS로 가까운 프론티어 화면까지 이동. 미시도 항목이 원장에만 있고 이번 후보에 안 보이면 이동 대신 `reobserve`(그 자리에서 다시 보기). 공통 버튼(5장)은 `__global__` 항목 하나로 세고, 아직 안 눌렀으면 그 버튼이 보였던 화면들을 목표로 삼음. 전체 프론티어가 비면 `converged`, 남았는데 길을 모르면 `unreachable` |
-| 백트래킹 (루트 리셋 + 재계획) | `frontier.report_replay_step`, `report_reset_step` | 실패하면 되돌아가 다른 방법을 시도하는 기법. 경로를 따라가다 팝업·광고 때문에 예상과 다른 화면에 도착하면 남은 경로를 버리고, home → back 순으로 루트까지 복귀한 뒤 BFS로 다시 계획. 홈/뒤로 버튼이 안 보이면 탈출 사다리(4장)를 씀. 재시도 상한(`FRONTIER_MAX_REPLAN_ATTEMPTS`, `HOME_RESET_MAX_BACK_TAPS`)을 넘으면 그 목표는 `blocked` 처리(가지치기)하고 `_abandoned` 집합에 넣어 다시 고르지 않음 |
+| 백트래킹 (루트 리셋 + 재계획) | `frontier.report_replay_step`, `report_reset_step` | 실패하면 되돌아가 다른 방법을 시도하는 기법. 경로를 따라가다 팝업·광고 때문에 예상과 다른 화면에 도착하면 남은 경로를 버리고, home → back 순으로 루트까지 복귀한 뒤 BFS로 다시 계획. 홈/뒤로 버튼이 안 보이면 탈출 사다리(4장)를 씀. 재시도 상한(`FRONTIER_MAX_REPLAN_ATTEMPTS`, `HOME_RESET_MAX_BACK_TAPS`)을 넘으면 그 목표는 `blocked` 처리(가지치기)하고 `_abandoned` 집합에 넣어 다시 고르지 않음. 리셋은 루트까지 아는 경로가 있으면 그 경로를 먼저 따라감(`StepGoal(kind="reset", action_key=첫 간선)`), 없을 때만 home/back 버튼. 재생에서 연달아 `EDGE_BROKEN_AFTER`(2)번 어긋난 간선은 `failures`로 표시돼 BFS에서 빠짐(`GraphStore.is_broken`, 다시 이어지면 0) |
 | 시작 화면 정렬 | `FrontierWalker.begin_reset_to_root` | 이어서 하는 run(또는 게임 재시작 직후)이 루트가 아닌 화면에서 시작하면 목표 없이 루트로 먼저 돌아감. 루트와 이어지지 않는 섬이 생기는 것을 막음 |
 | 유한 상태 기계 (FSM) | `FrontierWalker`, `StepGoal.kind` | 정해진 몇 가지 상태 사이를 규칙에 따라 오가는 모델. `frontier / replay / reset / reobserve` 네 상태를 스텝마다 전환. 실제 탭은 하지 않는 순수 계획 로직이라 단위 테스트가 쉬움 |
 | 큐로 경로 재생 | `FrontierWalker._replay_queue` | 선입선출 목록. BFS로 구한 간선을 앞에서부터 하나씩 실행하고 도착 화면을 검증 |
@@ -73,7 +73,7 @@
 | 공통 띠 제외 비교 | `GraphStore._content` | 네비게이션 바 같은 공통 띠(5장)를 잘라 낸 본문으로 지문·HOG를 비교해, 탭 강조·배지 숫자 차이로 노드가 갈리지 않게 함 |
 | 정규화 + 콘텐츠 해시 ID | `observer.screen_id`, `screen_buttons` | `screen_type`과 정렬한 버튼 라벨(안전 역할·확신도 기준 이상만)을 SHA-1로 해시해 앞 12자리를 ID로 씀. `visible_text`는 관찰마다 달라 뺐고, 이 ID는 "정확히 같은 관찰"을 빠르게 찾는 용도 |
 | 충돌 회피 ID | `graph.unique_node_id` | 자연 ID를 이미 다른 화면이 쓰고 있으면 지문 앞 6자리(+일련번호)를 붙여 새 ID를 만듦 |
-| 라벨 정규화 (정규식 + 별칭 표) | `policy.canonical_action_label` | 표기가 다른 같은 뜻을 하나로 통일. 괄호 제거, 숫자를 `#`으로 치환, 끝에 붙은 UI 명사(tab, button, icon, 탭, 버튼 등) 제거(`_strip_ui_suffix_tokens`), "gear / cog / 설정"을 모두 `settings`로 바꾸는 별칭 표. 별칭은 라벨의 모든 낱말이 별칭이거나 꾸밈 낱말(`_ALIAS_DECORATIONS`: 아이콘·화살표·x·가기 등)일 때만 적용("친구 더 추가"는 `friends`가 아님). 붙여 쓴 낱말은 별칭 + 꼬리(`가기`, `창`, `으로` 등)만 인정 |
+| 라벨 정규화 (정규식 + 별칭 표) | `policy.canonical_action_label` | 표기가 다른 같은 뜻을 하나로 통일. 괄호 제거, 숫자를 `#`으로 치환, 끝에 붙은 UI 명사(tab, button, icon, 탭, 버튼 등) 제거(`_strip_ui_suffix_tokens`), "gear / cog / 설정"을 모두 `settings`로 바꾸는 별칭 표. 낱말 목록은 `knowledge/label_rules.json`에서 읽음(`game_knowledge.label_rules`). 별칭은 라벨의 모든 낱말이 별칭이거나 꾸밈 낱말(`_ALIAS_DECORATIONS`: 아이콘·화살표·x·가기 등)일 때만 적용("친구 더 추가"는 `friends`가 아님). 붙여 쓴 낱말은 별칭 + 꼬리(`가기`, `창`, `으로` 등)만 인정 |
 | 허용 오차 매칭 (집합 연산) | `graph.find_tolerant_match`, `buttons_within_tolerance` | 두 버튼 집합에 공통 원소가 있고 대칭차집합(한쪽에만 있는 원소) 크기가 `SCREEN_MATCH_MAX_BUTTON_DIFF` 이하면 같은 화면으로 봄. 후보가 여럿이면 튜플 `(차이, -방문 수, 생성 순서)`를 사전식으로 비교해 선택 |
 | 간선 중복 제거 | `GraphStore._normalize_graph` | `(출발, 도착, action_key)` 튜플 집합으로 중복 간선을 제거. 예전의 타입별 노드 합치기(싱글턴 화면 타입)는 상점처럼 실제로 다른 화면을 과병합해서 없앰 |
 | 파편화 진단 | `graph.fragmented_screen_types` | 같은 타입 노드가 `SCREEN_FRAGMENTATION_WARN_COUNT`(3)개 이상이면 실행 로그·보고서에 경고만 함(자동 병합은 안 함) |
@@ -99,8 +99,8 @@
 | 단계 순서 교체 | `PLAY_FLOW_POPUP_STAGES` | 같은 사다리를 순서 튜플만 바꿔 재사용. 플레이 중 확인창에서는 뒤로를 먼저 보내면 창이 닫혀 보드로 돌아가므로 나가기 요소 찾기를 먼저 씀 |
 | 나가기 요소 찾기 | `tap_refine.find_exit_target` | 화면 전체에 격자(3장)를 그려 X/닫기/뒤로/홈 탭을, 없으면 팝업 바깥 어두운 곳 한 점을 물음. 효과 없던 좌표는 프롬프트에 넣어 다시 고르지 않게 함 |
 | 위험 낱말 차단 목록 | `tap_refine.is_risky_exit_label` | 구매·광고·로그인·상점 같은 낱말이 들어간 라벨은 나가기 요소로 고르지 않음 |
-| 순환 감지 (슬라이딩 윈도 + 집합 크기) | `_Journey.idle_nodes`, `_is_cycling`, `stuck_cycle` | 마지막 진전(새 노드 또는 프론티어 탭) 이후 관찰한 노드 목록을 쌓고, 최근 `STUCK_CYCLE_STEPS`개의 서로 다른 노드가 2개 이하면 순환. 순환 노드 집합을 `stuck_cycle`로 기억해 그 밖으로 나가거나 진전이 있을 때까지 재생·리셋 대신 사다리 4단계부터 씀. 5단계는 원장에서 순환 노드로 가는 행동(`_keys_leading_to`)을 뺌 |
-| 탭바 전용 찾기 (잘라 보기 + 격자) | `tap_refine.find_nav_tabs`, `navigator._add_nav_tabs` | 새 화면 첫 분석 때 화면 아래 16% 띠만 잘라 격자를 그려 고해상도로 탭을 왼쪽부터 모두 묻고(칸 + 픽셀, `resolve_location`으로 원본 좌표 복원), 조사 모델의 `bottom_nav` 후보를 그 결과로 교체. 선택된 탭·플레이 진입 탭 제외, 팝업에 가려졌으면(`covered`) 그대로 둠 |
+| 순환 감지 (슬라이딩 윈도 + 집합 크기) | `_Journey.idle_nodes`, `_is_cycling`, `stuck_cycle` | 마지막 진전(새 노드 또는 프론티어 탭) 이후 관찰한 노드 목록을 쌓고, 최근 `STUCK_CYCLE_STEPS`개의 서로 다른 노드가 2개 이하면 순환. 순환 노드 집합을 `stuck_cycle`로 기억해 그 밖으로 나가거나 진전이 있을 때까지 재생·리셋 대신 사다리 4단계부터 씀. 5단계는 원장에서 순환 노드로 가는 행동(`_keys_leading_to`)을 뺌. 같은 화면에서 `STUCK_CYCLE_GIVE_UP`(3)번째 감지하면 그 화면들과 그때 가려던 목표의 남은 프론티어를 포기(`_count_cycle`, `FrontierWalker.give_up`) |
+| 탭바 전용 찾기 (잘라 보기 + 격자) | `tap_refine.find_nav_tabs`, `navigator._add_nav_tabs` | 새 화면 첫 분석 때 화면 아래 16% 띠만 잘라 격자를 그려 고해상도로 탭을 왼쪽부터 모두 묻고(칸 + 픽셀, `resolve_location`으로 원본 좌표 복원), 조사 모델의 `bottom_nav` 후보를 그 결과로 교체. 선택된 탭·플레이 진입 탭 제외, 팝업에 가려졌으면(`covered`) 그대로 둠. 라벨은 보이는 글자 > `홈` > 왼쪽부터의 순서(`넷째 탭 (아이콘 묘사)`, 괄호는 키에서 빠짐)라 화면마다 같은 탭이 같은 키. 찾은 버튼은 누르기 전 확대 확인을 건너뜀(`_LOCATED_REASONS`) |
 | 막힘 재분석 (병합) | `run_resurvey`, `_stuck_hint`, `_merge_candidates` | 눌러 본·화면에 없는 버튼 목록과 "탭바가 또렷하면 팝업 아님" 지시를 프롬프트에 붙여 다시 분석하고, 새 행동 키만 앞에 붙여(후보 상한 10개에 안 잘리게) `save_decision(overwrite=True)`. 다음 스텝에 원장이 새 키를 프론티어로 등록 |
 | 플레이 흐름 (상태 플래그) | `_Journey.play_flow`, `_play_flow_finished` | 플레이 화면(`policy=leave`)에 들어가면 켜지고, 루트·홈 타입 화면·흐름 전부터 알던 화면(집합)에 오면 꺼짐. 켜진 동안은 프론티어 대신 나가기 버튼 → 탈출 사다리만 실행. 흐름 중 처음 본 화면은 `play_flow` 표시로 프론티어와 경로 계획에서 뺌. `PLAY_EXIT_MAX_STEPS`를 넘기면 재시작, 그것도 못 하면 `play_stuck`으로 멈춤 |
 | 플레이 진입 차단 | `_split_play_entries`, `ledger.close_play_entry` | 안전 후보를 (탐색할 것, 플레이 진입)으로 나눠, 진입 버튼은 원장에 `play_entry`로 닫고 누르지 않음 |
@@ -132,6 +132,10 @@
 | 지식 → 프롬프트 블록 | `survey_prompt_block`, `GameProfile.button_limit` | 게임·장르, UI 힌트, 화면 타입과 고르는 원칙(`rules`), 탭바 규칙을 프롬프트 문자열로 만듦. 탭바 탭 수만큼 버튼 후보 상한을 6개에서 최대 10개로 늘림(선택된 탭 1개는 뺌) |
 | 형식 검증 + 위치 알림 | `load_screen_types`, `load_games`, `KnowledgeError` | 정규식 `^[a-z][a-z0-9_]*$`로 id를 검사하고 중복 id·잘못된 policy·`unknown` 누락을 막음. JSON 오류는 몇째 줄 몇째 글자인지 담아 시작 전에 멈춤 |
 | 메모이제이션 + 지연 로딩 | `@lru_cache`, `active_profile` | 파일은 처음 한 번만 읽고 재사용. `config`를 맨 위가 아니라 함수 안에서 불러 순환 import를 피함 |
+| 기대 그래프(장르 화면 지도) | `load_screen_map`, `ScreenMap`, `knowledge/map_knowledge.json` | 실제로 관찰한 그래프(`graph.json`)와 견줄 '흔한 구조' 그래프. 노드는 화면 역할, 간선은 역할 사이 흔한 전환. `_default` → 장르 → 게임 층을 노드는 id 기준 필드 단위로, 간선은 (from, to, trigger) 기준으로 덮어씀. 어휘(화면 타입 id, 버튼 region, 요소 분류, `label_rules` 대표 이름)와 간선 끝을 시작 전에 검사 |
+| 암묵 간선 규칙 | `ScreenMap.expects` | 지도를 짧게 쓰려고 두 종류 간선을 적지 않고 규칙으로 셈: 탭 화면끼리(완전 그래프), `leave_by`로 나가 연 화면(또는 홈)으로 돌아가기. 적은 간선의 `"*"`는 아무 화면에서나 |
+| 위험 없는 도달 집합 (BFS) | `ScreenMap.safe_reachable` | 앱 시작·홈에서 `risk` 없는 간선과 탭바만 타고 갈 수 있는 역할. 플레이·결제·광고·게임 밖을 거쳐야 하는 역할을 '기본 동작으로는 안 감'으로 따로 셈 |
+| 동적 스키마(역할) | `schemas.SurveyScreenRole` | `Literal[map_role_ids()]`: 모든 장르 지도 노드 id + `unknown`. 프롬프트에는 지금 장르 역할만 넣음. 역할은 같은 화면 판정에 쓰지 않아 흔들려도 노드가 갈리지 않음(`ScreenNode.role`은 처음 값 고정, 빈 값·unknown만 채움) |
 
 ## 7. 보드 격자 인식 — `grid_detector.py`
 
@@ -236,6 +240,7 @@
 | 연속 구간 압축 (run-length) | `_append_evidence_index` | 같은 화면 타입이 연달아 나오면 "Step 3–8 (6건)" 한 줄로 묶고, 세션이 바뀌면 끊음 |
 | 그룹핑 + 커버리지 | `_append_frontier_section` | `defaultdict(list)`로 화면별 미시도 / blocked / not_visible / not_found / play_entry 항목을 나누고 탐색 비율을 표시 |
 | 공통 UI 섹션 | `_append_persistent_ui_section` | 공통 띠 높이와 공통 버튼별로 몇 화면에서 보였고 눌러서 어디로 갔는지 표시 |
+| 장르 지도 대조 | `_append_genre_map_section` | 그래프 노드를 역할로 묶어 찾은 역할(지도 후보와 다른 화면 타입 표시) / 못 찾은 역할(흔한 정도 순, 위험 간선 뒤 역할은 따로) / 지도에 없는 전환(`expects`가 False인 역할 쌍: 역할 오분류나 게임 밖 이탈 후보)을 표시. LLM 호출 없음 |
 | 상대 경로 링크 | `_relative_link` | `os.path.relpath`로 보고서 폴더 밖 캡처도 `..` 경로로 연결. 윈도우 역슬래시를 슬래시로 바꿔 다른 OS에서도 열림 |
 
 ## 17. 탐색 지표 — `survey_metrics.py`

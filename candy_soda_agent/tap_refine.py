@@ -38,6 +38,7 @@ from config import (
     TAP_REFINE_MAX_OUTPUT_TOKENS,
     TAP_REFINE_MIN_CONFIDENCE,
 )
+from game_knowledge import label_rules, render_prompt
 from llm_request import request_structured_vision
 from schemas import ExitLocation, NavTabs, TapLocation
 
@@ -55,11 +56,7 @@ GRID_COLOR = (255, 255, 0)  # BGR 청록색
 LABEL_TEXT_COLOR = (0, 255, 255)  # BGR 노란색
 LABEL_OUTLINE_COLOR = (0, 0, 0)
 
-SYSTEM_PROMPT = (
-    "You locate one UI element precisely in a mobile game screenshot. "
-    "Answer only about the requested element and never claim to find an element "
-    "that is not visible."
-)
+# 프롬프트 문장은 knowledge/prompts/*.txt에 있습니다(tap_refine, exit_finder, nav_tabs).
 
 
 @dataclass(frozen=True)
@@ -247,33 +244,25 @@ def resolve_location(location: TapLocation, view: GridView) -> tuple[float, floa
 # -- 모델 질의 ------------------------------------------------------------------
 
 
-def _build_prompt(button, view: GridView, *, zoomed: bool) -> str:
-    label = getattr(button, "label", "") or "(이름 없음)"
-    role = getattr(button, "role", "unknown")
-    reason = getattr(button, "reason", "") or "-"
+def _build_prompt(button, view: GridView, *, zoomed: bool) -> tuple[str, str]:
     scope = (
         f"게임 화면의 일부를 {view.scale:.1f}배 확대한 것이다. 이전 추정 위치는 "
         "이미지 가운데 근처지만 틀렸을 수 있다."
         if zoomed
         else "게임 화면 전체다."
     )
-    last_col = column_name(view.cols - 1)
-    return f"""
-이 이미지는 {scope}
-이미지 크기: 가로 {view.width}px, 세로 {view.height}px.
-청록색 격자: 위쪽 가장자리 글자(A~{last_col})가 열, 왼쪽 가장자리 숫자(1~{view.rows})가 행이다. 칸 하나는 {view.cell}px이다.
-
-찾을 버튼: "{label}" (역할: {role})
-참고 설명: {reason}
-
-할 일:
-- 이 버튼(실제로 누를 수 있는 버튼/아이콘/탭)이 보이면 found=true로 하고,
-  버튼 중심이 들어 있는 칸을 cell에 "C5"처럼 적고, 버튼 중심의 픽셀 좌표를 x, y에 적는다(이 이미지 기준).
-- 버튼이 안 보이거나, 잘려서 중심이 이미지 밖이거나, 비슷하지만 다른 버튼만 보이면
-  found=false, cell="", x=-1, y=-1로 둔다.
-- seen_label에는 그 위치에 실제로 보이는 글자나 아이콘 모양을 짧게 적는다.
-- confidence는 0~1로 적는다.
-"""
+    return render_prompt(
+        "tap_refine",
+        scope=scope,
+        width=view.width,
+        height=view.height,
+        last_col=column_name(view.cols - 1),
+        rows=view.rows,
+        cell=view.cell,
+        label=getattr(button, "label", "") or "(이름 없음)",
+        role=getattr(button, "role", "unknown"),
+        reason=getattr(button, "reason", "") or "-",
+    )
 
 
 def _ask(
@@ -285,11 +274,12 @@ def _ask(
     model: str,
     request: Callable[..., Any],
 ) -> TapLocation:
+    system_prompt, prompt = _build_prompt(button, view, zoomed=zoomed)
     return request(
         client,
         model=model,
-        system_prompt=SYSTEM_PROMPT,
-        prompt=_build_prompt(button, view, zoomed=zoomed),
+        system_prompt=system_prompt,
+        prompt=prompt,
         full_image=view.image,
         board_image=None,
         board_note="",
@@ -367,17 +357,6 @@ def refine_tap_target(
 
 # -- 탈출 사다리: 나가기 요소 찾기 ----------------------------------------------
 
-# 나가기 요소로 고르면 안 되는 낱말(결제·광고·계정 흐름).
-RISKY_EXIT_TOKENS = (
-    "구매", "결제", "광고", "시청", "로그인", "계정", "설치", "상점",
-    "buy", "purchase", "pay", "watch", "video", "login", "sign in", "account",
-    "install", "shop", "store",
-)
-
-EXIT_SYSTEM_PROMPT = (
-    "You help an automated tester leave the current screen of a mobile game. "
-    "Never choose purchase, payment, ad, login, account or install controls."
-)
 
 
 @dataclass
@@ -409,6 +388,20 @@ class ExitTarget:
 
 # 화면 아래에서 잘라 볼 높이 비율(탭바는 보통 7~10%).
 NAV_BAND_FRACTION = 0.16
+# 글자 없는 탭은 왼쪽부터의 순서로 이름을 붙입니다. 모델이 아이콘에 지어 붙인 이름은 화면마다
+# 달라져(실측: 같은 달력 탭이 "활동"/"이벤트") 같은 탭이 다른 버튼으로 갈렸습니다. 숫자는
+# 버튼 키를 만들 때 #으로 바뀌므로 낱말로 씁니다.
+NAV_TAB_ORDINALS = ("첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째", "일곱째", "여덟째")
+
+
+def nav_tab_label(index: int, text: str, icon: str, is_home: bool) -> str:
+    """탭 라벨: 보이는 글자 > 홈 > "넷째 탭 (사람 두 명 아이콘)"(괄호 안은 키에서 빠짐)."""
+    if text.strip():
+        return text.strip()
+    if is_home:
+        return "홈"
+    ordinal = NAV_TAB_ORDINALS[index] if index < len(NAV_TAB_ORDINALS) else f"{index + 1}번째"
+    return f"{ordinal} 탭 ({icon.strip()})" if icon.strip() else f"{ordinal} 탭"
 
 
 @dataclass
@@ -432,21 +425,18 @@ def find_nav_tabs(
 
     height, width = image.shape[:2]
     view = build_grid_view(image, (0, int(height * (1 - NAV_BAND_FRACTION)), width, height))
-    prompt = f"""
-이 이미지는 모바일 게임 화면의 맨 아래 띠를 잘라 키운 것이다. 크기: 가로 {view.width}px, 세로 {view.height}px.
-청록색 격자: 위쪽 글자(A~{column_name(view.cols - 1)})가 열, 왼쪽 숫자(1~{view.rows})가 행이다.
-
-화면 맨 아래에 늘 있는 탭바(네비게이션 바)의 탭을 왼쪽부터 빠짐없이 적는다. 글자 없이 아이콘만 있는 탭도 넣는다.
-- label: 탭에 보이는 글자, 없으면 아이콘 뜻을 짧게(예: 상점, 친구, 홈, 팀, 이벤트, 활동).
-- cell: 탭 아이콘 중심이 있는 칸("C2" 형식), x, y: 그 중심의 픽셀 좌표(이 이미지 기준).
-- selected: 지금 선택된(강조된) 탭이면 true.
-탭바가 팝업에 덮여 어둡게 가려져 있으면 covered=true, tabs=[]. 탭바가 없으면 tabs=[].
-"""
+    system_prompt, prompt = render_prompt(
+        "nav_tabs",
+        width=view.width,
+        height=view.height,
+        last_col=column_name(view.cols - 1),
+        rows=view.rows,
+    )
     try:
         answer: NavTabs = request(
             client,
             model=model,
-            system_prompt="You list the tabs of a mobile game's bottom navigation bar. Never invent tabs.",
+            system_prompt=system_prompt,
             prompt=prompt,
             full_image=view.image,
             board_image=None,
@@ -463,24 +453,27 @@ def find_nav_tabs(
     if answer.covered:
         return []
     tabs = []
-    for tab in answer.tabs:
+    for index, tab in enumerate(answer.tabs):  # 순서는 선택된 탭까지 포함해 셉니다.
         point = resolve_location(
             TapLocation(found=True, cell=tab.cell, x=tab.x, y=tab.y, confidence=1.0), view
         )
-        if point is None or not tab.label.strip():
+        if point is None:
             continue
         x, y = view.to_source(*point)
-        tabs.append(NavTabTarget(tab.label.strip(), min(x, width - 1), min(y, height - 1), tab.selected))
+        label = nav_tab_label(index, tab.text, tab.icon, tab.is_home)
+        tabs.append(NavTabTarget(label, min(x, width - 1), min(y, height - 1), tab.selected))
     return tabs
 
 
 def is_risky_exit_label(label: str) -> bool:
     lowered = (label or "").casefold()
-    return any(token in lowered for token in RISKY_EXIT_TOKENS)
+    # 나가기 요소로 고르면 안 되는 낱말(결제·광고·계정 흐름): knowledge/label_rules.json
+    return any(token in lowered for token in label_rules().risky_exit_tokens)
 
 
-def _exit_prompt(view: GridView, failed_points: list[tuple[int, int]], hint: str = "") -> str:
-    last_col = column_name(view.cols - 1)
+def _exit_prompt(
+    view: GridView, failed_points: list[tuple[int, int]], hint: str = ""
+) -> tuple[str, str]:
     # 상황 설명(예: 플레이 화면에서 나오는 중). 게임 지식 파일의 play_exit_hint가 들어옵니다.
     situation = f"\n지금 상황: {hint.strip()}\n" if hint and hint.strip() else ""
     avoid = ""
@@ -491,20 +484,16 @@ def _exit_prompt(view: GridView, failed_points: list[tuple[int, int]], hint: str
         avoid = (
             f"\n이미 이 근처를 눌렀지만 화면이 그대로였다: {shown}. 그 자리는 다시 고르지 않는다."
         )
-    return f"""
-이 이미지는 모바일 게임 화면 전체다. 크기: 가로 {view.width}px, 세로 {view.height}px.
-청록색 격자: 위쪽 가장자리 글자(A~{last_col})가 열, 왼쪽 가장자리 숫자(1~{view.rows})가 행이다. 칸 하나는 {view.cell}px이다.
-
-자동 탐색기가 이 화면에서 빠져나갈 길을 찾고 있다.{situation}아래 순서로 하나만 고른다.
-1. 이 화면이나 팝업을 닫거나 이전 화면으로 돌아가는 요소: X 아이콘, 닫기, 뒤로 화살표,
-   확인/OK(정보 안내 팝업일 때만), 나중에, 홈 탭. -> kind="button"
-2. 1이 없고 모달 팝업 뒤로 어둡게 가려진 배경이 보이면, 팝업 바깥의 어두운 빈 곳 한 점. -> kind="outside"
-3. 둘 다 없으면 kind="none", cell="", x=-1, y=-1.
-결제·구매·가격·광고 시청·로그인·계정 연결·설치 버튼은 절대 고르지 않는다.{avoid}
-
-cell에는 고른 점이 있는 칸("C5" 형식), x, y에는 그 점의 픽셀 좌표(이 이미지 기준),
-label에는 그 요소에 보이는 글자나 모양(바깥이면 "팝업 바깥"), confidence는 0~1로 적는다.
-"""
+    return render_prompt(
+        "exit_finder",
+        width=view.width,
+        height=view.height,
+        last_col=column_name(view.cols - 1),
+        rows=view.rows,
+        cell=view.cell,
+        situation=situation,
+        avoid=avoid,
+    )
 
 
 def find_exit_target(
@@ -523,12 +512,13 @@ def find_exit_target(
 
     height, width = image.shape[:2]
     view = build_grid_view(image, (0, 0, width, height))
+    system_prompt, prompt = _exit_prompt(view, list(failed_points or []), hint)
     try:
         location: ExitLocation = request(
             client,
             model=model,
-            system_prompt=EXIT_SYSTEM_PROMPT,
-            prompt=_exit_prompt(view, list(failed_points or []), hint),
+            system_prompt=system_prompt,
+            prompt=prompt,
             full_image=view.image,
             board_image=None,
             board_note="",

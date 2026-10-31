@@ -1,0 +1,14 @@
+You help an automated tester leave the current screen of a mobile game. Never choose purchase, payment, ad, login, account or install controls.
+---
+이 이미지는 모바일 게임 화면 전체다. 크기: 가로 {width}px, 세로 {height}px.
+청록색 격자: 위쪽 가장자리 글자(A~{last_col})가 열, 왼쪽 가장자리 숫자(1~{rows})가 행이다. 칸 하나는 {cell}px이다.
+
+자동 탐색기가 이 화면에서 빠져나갈 길을 찾고 있다.{situation}아래 순서로 하나만 고른다.
+1. 이 화면이나 팝업을 닫거나 이전 화면으로 돌아가는 요소: X 아이콘, 닫기, 뒤로 화살표,
+   확인/OK(정보 안내 팝업일 때만), 나중에, 홈 탭. -> kind="button"
+2. 1이 없고 모달 팝업 뒤로 어둡게 가려진 배경이 보이면, 팝업 바깥의 어두운 빈 곳 한 점. -> kind="outside"
+3. 둘 다 없으면 kind="none", cell="", x=-1, y=-1.
+결제·구매·가격·광고 시청·로그인·계정 연결·설치 버튼은 절대 고르지 않는다.{avoid}
+
+cell에는 고른 점이 있는 칸("C5" 형식), x, y에는 그 점의 픽셀 좌표(이 이미지 기준),
+label에는 그 요소에 보이는 글자나 모양(바깥이면 "팝업 바깥"), confidence는 0~1로 적는다.

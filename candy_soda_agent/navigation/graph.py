@@ -18,6 +18,7 @@ from config import (
     SCREEN_MATCH_MAX_BUTTON_DIFF,
     SCREEN_REUSE_MAX_DISTANCE,
 )
+from game_knowledge import FALLBACK_ROLE
 from image_utils import board_fingerprint, fingerprint_distance
 from navigation.observer import screen_buttons, screen_id
 from navigation.policy import navigation_action_key_from_label
@@ -43,18 +44,26 @@ def _adjacency(
     return adjacency
 
 
+# 경로 재생에서 연달아 이 횟수만큼 예상한 화면에 못 간 간선은 길 찾기에서 뺍니다(다시 성공하면
+# 되살아남). 실측(run_2026-10-27_05-44-27): 뒤로 키가 안 먹는 탭 화면에서 예전 "뒤로" 간선을
+# 세션마다 다시 골라 같은 화면을 맴돌았습니다.
+EDGE_BROKEN_AFTER = 2
+
+
 def bfs_nearest_matching(
     graph: NavigationGraph,
     source: str,
     is_target: Callable[[str], bool],
     extra_edges: Iterable[NavigationEdge] = (),
     avoid: Callable[[str], bool] | None = None,
+    skip_edge: Callable[[NavigationEdge], bool] | None = None,
 ) -> list[NavigationEdge] | None:
     """source에서 시작해 is_target을 만족하는 가장 가까운 노드까지의 간선 경로를
     간선 수 기준 최단으로 찾습니다. source 자신이 만족하면 빈 리스트를 반환합니다.
     도달 가능한 노드 중에 없으면 None입니다(2단계: 원거리 프론티어 탐색에 씁니다).
 
     avoid: True를 돌려주는 노드는 지나가지도, 도착하지도 않습니다(플레이 화면 등).
+    skip_edge: True를 돌려주는 간선은 쓰지 않습니다(고장 난 간선).
 
     NavigationGraph 데이터만으로 동작하는 자유 함수입니다 — GraphStore(파일 I/O가
     있는 실시간 저장소) 없이도 survey_report.py 같은 곳에서 그대로 재사용합니다."""
@@ -69,6 +78,8 @@ def bfs_nearest_matching(
         node_id, path = queue.popleft()
         for edge in adjacency.get(node_id, []):
             if edge.target in visited:
+                continue
+            if skip_edge is not None and skip_edge(edge):
                 continue
             if avoid is not None and avoid(edge.target):
                 continue
@@ -86,10 +97,11 @@ def bfs_path(
     target: str,
     extra_edges: Iterable[NavigationEdge] = (),
     avoid: Callable[[str], bool] | None = None,
+    skip_edge: Callable[[NavigationEdge], bool] | None = None,
 ) -> list[NavigationEdge] | None:
     """source에서 target까지의 최단 간선 경로. (2단계: 루트 리셋 후 재계획에 씁니다.)"""
     return bfs_nearest_matching(
-        graph, source, lambda node_id: node_id == target, extra_edges, avoid
+        graph, source, lambda node_id: node_id == target, extra_edges, avoid, skip_edge
     )
 
 
@@ -293,6 +305,8 @@ class GraphStore:
         # 대표 화면 전체의 HOG 특징 색인(처음 쓸 때 대표 이미지로 만듭니다)과 마지막 비교 결과.
         self._hog_index: ScreenIndex | None = None
         self.last_hog_match: tuple[str | None, float] = (None, 1.0)
+        # 그래프에 없는 지름길 간선(공통 버튼)의 재생 실패 횟수. 그래프 간선은 edge.failures에 저장.
+        self._extra_failures: dict[tuple[str, str, str], int] = {}
 
     # -- 공통 띠를 뺀 지문 ------------------------------------------------------
 
@@ -421,6 +435,7 @@ class GraphStore:
                 target=target,
                 action=edge.action,
                 action_key=action_key,
+                failures=edge.failures,
             ))
 
         self.graph.nodes = nodes
@@ -449,7 +464,7 @@ class GraphStore:
         extra_edges: Iterable[NavigationEdge] = (),
     ) -> list[NavigationEdge] | None:
         return bfs_nearest_matching(
-            self.graph, source, is_target, extra_edges, self.avoid_node
+            self.graph, source, is_target, extra_edges, self.avoid_node, self.is_broken
         )
 
     def bfs_path(
@@ -458,7 +473,43 @@ class GraphStore:
         target: str,
         extra_edges: Iterable[NavigationEdge] = (),
     ) -> list[NavigationEdge] | None:
-        return bfs_path(self.graph, source, target, extra_edges, self.avoid_node)
+        return bfs_path(self.graph, source, target, extra_edges, self.avoid_node, self.is_broken)
+
+    # -- 고장 난 간선 -----------------------------------------------------------
+
+    def _stored_edge(self, edge: NavigationEdge) -> NavigationEdge | None:
+        return next(
+            (
+                stored for stored in self.graph.edges
+                if stored.source == edge.source
+                and stored.target == edge.target
+                and stored.action_key == edge.action_key
+            ),
+            None,
+        )
+
+    def is_broken(self, edge: NavigationEdge) -> bool:
+        key = (edge.source, edge.action_key, edge.target)
+        failures = max(edge.failures, self._extra_failures.get(key, 0))
+        return failures >= EDGE_BROKEN_AFTER
+
+    def note_edge_result(self, edge: NavigationEdge, ok: bool) -> None:
+        """경로 재생(또는 루트로 가는 길)에서 이 간선을 눌러 본 결과를 남깁니다.
+        실패가 EDGE_BROKEN_AFTER번 이어지면 길 찾기에서 빠지고, 성공하면 0으로 돌아갑니다."""
+        stored = self._stored_edge(edge)
+        if stored is None:
+            key = (edge.source, edge.action_key, edge.target)
+            self._extra_failures[key] = 0 if ok else self._extra_failures.get(key, 0) + 1
+            return
+        failures = 0 if ok else stored.failures + 1
+        if failures != stored.failures:
+            stored.failures = failures
+            if failures == EDGE_BROKEN_AFTER:
+                print(
+                    f"[PATH] '{stored.action}' 간선({stored.source} -> {stored.target})이 "
+                    f"{failures}번 연달아 안 맞아 길 찾기에서 뺍니다."
+                )
+            self.save()
 
     def bfs_spanning_tree(
         self, root: str
@@ -540,6 +591,7 @@ class GraphStore:
                 representative=str(image_path),
                 buttons=buttons,
                 fingerprint=fingerprint,
+                role=decision.screen_role,
             )
             self.graph.nodes[node_id] = node
         else:
@@ -548,6 +600,9 @@ class GraphStore:
             # 그래야 다음 관찰부터 이 노드도 지문으로 찾을 수 있습니다.
             if not node.fingerprint and fingerprint:
                 node.fingerprint = fingerprint
+            # 역할은 처음 정한 값을 지키고, 비었거나 모를 때만 이번 분석으로 채웁니다.
+            if node.role in ("", FALLBACK_ROLE):
+                node.role = decision.screen_role
 
         node.visits += 1
         self.save()
@@ -572,13 +627,14 @@ class GraphStore:
         action: str,
         action_key: str,
     ) -> None:
-        # 동일 간선이 없으면 새 간선을 추가합니다.
-        if any(
-            edge.source == source
-            and edge.target == target
-            and edge.action_key == action_key
-            for edge in self.graph.edges
-        ):
+        # 동일 간선이 없으면 새 간선을 추가합니다. 있으면 실제로 다시 이어졌으니 고장 표시를 지웁니다.
+        existing = self._stored_edge(
+            NavigationEdge(source=source, target=target, action=action, action_key=action_key)
+        )
+        if existing is not None:
+            if existing.failures:
+                existing.failures = 0
+                self.save()
             return
         edge = NavigationEdge(
             source=source,

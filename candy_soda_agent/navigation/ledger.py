@@ -22,11 +22,11 @@ from config import NAVIGATION_LEDGER_PATH
 from schemas import ActionLedger, LedgerEntry
 
 # 실행 시점에 알 수 있는 시도 결과. finalize()가 한 스텝 뒤 관찰로 채웁니다.
-Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found" | "global" | "play_entry"
+Verdict = str  # "new_screen" | "known_screen" | "no_change" | "blocked" | "failed" | "not_visible" | "missed" | "not_found" | "global" | "play_entry" | "external"
 
 # 탭 없이 프론티어에서 빠진 판정입니다(도달 포기 / 후보에서 사라짐 / 확대 확인에서 못 찾음 /
 # 공통 버튼으로 옮겨짐 / 플레이 진입 버튼이라 안 누름).
-CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global", "play_entry"})
+CLOSED_WITHOUT_TAP = frozenset({"blocked", "not_visible", "not_found", "global", "play_entry", "external"})
 
 # 실패로 닫혀 다시 시도할 가치가 있는 판정(reopen_failed): 눌러도 화면 그대로 / 확대 확인에서
 # 못 찾음 / 가는 길이 반복 실패. 새 화면·아는 화면으로 간 것, 공통 버튼으로 합쳐진 것, 플레이
@@ -175,8 +175,11 @@ class LedgerStore:
         entry.last_seen = _now()
         self.save()
 
-    def close_play_entry(self, screen_id: str, action_key: str, action_label: str) -> bool:
-        """플레이 진입 버튼(PLAY_POLICY=avoid)을 기록만 하고 프론티어에서 뺍니다.
+    def close_play_entry(
+        self, screen_id: str, action_key: str, action_label: str, verdict: str = "play_entry"
+    ) -> bool:
+        """플레이 진입 버튼(PLAY_POLICY=avoid, verdict=play_entry)이나 외부 공유·초대 버튼
+        (verdict=external)을 기록만 하고 프론티어에서 뺍니다.
 
         보고서에 "봤지만 누르지 않음"으로 남도록 처음 보는 버튼도 항목을 만들어 닫습니다.
         정책을 켜기 전에 이미 눌러 본 항목(판정이 있는 것)은 기록을 지우지 않고 그대로 둡니다.
@@ -187,9 +190,9 @@ class LedgerStore:
         if entry is None:
             entry = LedgerEntry(screen_id=screen_id, action_key=action_key, action_label=action_label)
             self.ledger.entries[key] = entry
-        elif entry.verdict == "play_entry" or not is_open_entry(entry):
+        elif entry.verdict == verdict or not is_open_entry(entry):
             return False
-        entry.verdict = "play_entry"
+        entry.verdict = verdict
         entry.last_seen = _now()
         self.save()
         return True

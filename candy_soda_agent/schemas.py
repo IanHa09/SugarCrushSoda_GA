@@ -6,11 +6,20 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
-from game_knowledge import FALLBACK_SCREEN_TYPE, MAX_BUTTON_LIMIT, screen_type_ids
+from game_knowledge import (
+    FALLBACK_ROLE,
+    FALLBACK_SCREEN_TYPE,
+    MAX_BUTTON_LIMIT,
+    map_role_ids,
+    screen_type_ids,
+)
 
 # 조사 모델이 고를 수 있는 화면 타입. knowledge/screen_types.json에서 enabled인 id를
 # 파일 순서대로 읽습니다(Literal[("a", "b")]는 Literal["a", "b"]와 같습니다).
 SurveyScreenType = Literal[screen_type_ids()]  # type: ignore[valid-type]
+# 조사 모델이 고를 수 있는 화면 역할. knowledge/map_knowledge.json의 모든 장르 노드 id + unknown
+# (프롬프트에는 지금 게임 장르의 역할만 나옵니다).
+SurveyScreenRole = Literal[map_role_ids()]  # type: ignore[valid-type]
 
 # 모델이 프롬프트의 개수/길이 제한을 넘겨도 스키마로 강제하면 ValidationError로 응답 전체가 버려지므로, 실패 대신 아래 헬퍼로 조용히 잘라냅니다.
 
@@ -200,6 +209,9 @@ class SurveyDecision(BaseModel):
 
     # 허용 값은 knowledge/screen_types.json이 정합니다(위 SurveyScreenType).
     screen_type: SurveyScreenType = FALLBACK_SCREEN_TYPE  # type: ignore[valid-type]
+    # 장르 화면 지도에서 가장 가까운 역할. 같은 화면 판정에는 쓰지 않고(노드가 갈리지 않게)
+    # 그래프 노드의 role과 보고서의 장르 지도 대조에만 씁니다. 예전 분석 파일에는 없어 unknown.
+    screen_role: SurveyScreenRole = FALLBACK_ROLE  # type: ignore[valid-type]
     summary: str = ""
     visible_text: list[str] = Field(default_factory=list)
     game_elements: list[SurveyElement] = Field(default_factory=list)
@@ -256,6 +268,9 @@ class ScreenNode(BaseModel):
     # 플레이 화면에서 나오는 도중에 처음 본 화면(나가기 확인창 등)이면 True. 이런 화면은
     # 버튼을 프론티어로 등록하지 않고, 다시 만나도 "플레이에서 빠져나왔다"고 보지 않습니다.
     play_flow: bool = False
+    # 장르 화면 지도의 역할(SurveyDecision.screen_role). 처음 관찰 때 정하고, 비었거나 unknown일 때만
+    # 나중 분석으로 채웁니다. 예전 run의 노드는 빈 값입니다.
+    role: str = ""
 
 
 class NavigationEdge(BaseModel):
@@ -265,6 +280,9 @@ class NavigationEdge(BaseModel):
     target: str
     action: str = ""
     action_key: str = ""
+    # 경로 재생에서 이 간선을 눌렀는데 연달아 target에 못 간 횟수(다시 성공하면 0).
+    # graph.EDGE_BROKEN_AFTER번 이상이면 길 찾기에서 뺍니다.
+    failures: int = 0
 
 
 class NavigationGraph(BaseModel):
@@ -306,6 +324,7 @@ class LedgerEntry(BaseModel):
             "not_found",
             "global",
             "play_entry",
+            "external",
         ]
     ] = None
     target_screen_id: Optional[str] = None
@@ -372,9 +391,12 @@ class ExitLocation(BaseModel):
 
 
 class NavTab(BaseModel):
-    """탭바 찾기(tap_refine.find_nav_tabs)가 돌려주는 탭 하나. 좌표 규칙은 TapLocation과 같습니다."""
+    """탭바 찾기(tap_refine.find_nav_tabs)가 돌려주는 탭 하나. 좌표 규칙은 TapLocation과 같습니다.
+    text: 탭에 보이는 글자(없으면 ""), icon: 아이콘 모양 묘사, is_home: 홈으로 가는 탭."""
 
-    label: str = ""
+    text: str = ""
+    icon: str = ""
+    is_home: bool = False
     cell: str = ""
     x: int = Field(default=-1, ge=-1)
     y: int = Field(default=-1, ge=-1)

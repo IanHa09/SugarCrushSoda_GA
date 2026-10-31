@@ -27,8 +27,9 @@ import cv2
 import numpy as np
 
 
+from survey_metrics import game_root
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_GAME_ROOT = REPO_ROOT / "output" / "candy_crush_soda"
 
 # 역할별 마커 색(BGR)
 ROLE_COLORS = {
@@ -48,13 +49,14 @@ def _resolve_log(args: argparse.Namespace) -> Path:
     # --log > --run > current_run.txt 순서로 조사 로그 경로를 정합니다.
     if args.log:
         return Path(args.log).resolve()
+    root = game_root()  # output/<GAME_SLUG>
     run_id = args.run
     if not run_id:
-        pointer = DEFAULT_GAME_ROOT / "current_run.txt"
+        pointer = root / "current_run.txt"
         if not pointer.exists():
-            raise SystemExit("current_run.txt가 없습니다. --run 또는 --log를 지정하세요.")
+            raise SystemExit(f"{pointer}가 없습니다. --run 또는 --log를 지정하세요(GAME_SLUG 확인).")
         run_id = pointer.read_text(encoding="utf-8").strip()
-    return DEFAULT_GAME_ROOT / "runs" / run_id / "game_survey.jsonl"
+    return root / "runs" / run_id / "game_survey.jsonl"
 
 
 def _resolve_image(raw_path: str) -> Path | None:

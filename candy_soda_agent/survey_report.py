@@ -35,7 +35,7 @@ from config import (
 from config import NAVIGATION_GRAPH_PATH as CURRENT_RUN_GRAPH_PATH
 from config import NAVIGATION_LEDGER_PATH as CURRENT_RUN_LEDGER_PATH
 from config import NAVIGATION_UI_CHROME_PATH as CURRENT_RUN_UI_CHROME_PATH
-from game_knowledge import active_profile, screen_type_labels
+from game_knowledge import PREVALENCE_ORDER, ScreenMap, active_profile, screen_type_labels
 from navigation.graph import (
     bfs_spanning_tree,
     fragmented_screen_types,
@@ -381,6 +381,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
     hidden_by_screen: dict[str, list[str]] = defaultdict(list)
     not_found_by_screen: dict[str, list[str]] = defaultdict(list)
     play_entry_by_screen: dict[str, list[str]] = defaultdict(list)
+    external_by_screen: dict[str, list[str]] = defaultdict(list)
     for entry in ledger.ledger.entries.values():
         label = entry.action_label or entry.action_key
         if is_open_entry(entry):
@@ -394,6 +395,8 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
             not_found_by_screen[entry.screen_id].append(label)
         elif entry.verdict == "play_entry":
             play_entry_by_screen[entry.screen_id].append(label)
+        elif entry.verdict == "external":
+            external_by_screen[entry.screen_id].append(label)
 
     sections = (
         ("### 아직 안 눌러본 프론티어", untried_by_screen,
@@ -402,6 +405,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
         ("### 다시 봐도 후보에 안 나와 정리함(not_visible)", hidden_by_screen, "- 없음"),
         ("### 누르기 전 확대 확인에서 못 찾아 정리함(not_found)", not_found_by_screen, "- 없음"),
         ("### 플레이 진입이라 누르지 않음(play_entry)", play_entry_by_screen, "- 없음"),
+        ("### 외부 공유·초대라 누르지 않음(external)", external_by_screen, "- 없음"),
     )
     for heading, by_screen, empty_text in sections:
         lines.extend([heading, ""])
@@ -412,6 +416,101 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
                 f"- **{_screen_label_for(screen_id_key)}**: {', '.join(sorted(labels))}"
             )
         lines.append("")
+
+
+def _active_screen_map() -> ScreenMap | None:
+    try:
+        return active_profile().screen_map
+    except Exception:  # noqa: BLE001 - 지식 파일 문제로 보고서를 못 쓰면 안 됩니다.
+        return None
+
+
+def _append_genre_map_section(
+    lines: list[str],
+    graph: NavigationGraph | None,
+    screen_map: ScreenMap | None,
+) -> None:
+    """장르 화면 지도(knowledge/map_knowledge.json)와 실제 구조도를 화면 역할 단위로 대 봅니다.
+    찾은 역할, 못 찾은 역할(흔한 것부터), 지도에 없는 전환(이상 간선 후보)을 적습니다."""
+
+    if screen_map is None or graph is None or not graph.nodes:
+        return
+    lines.extend([
+        "## Genre Map",
+        "",
+        "장르 화면 지도(`knowledge/map_knowledge.json`)와 실제 구조도를 화면 역할 단위로 대 봤습니다. "
+        "역할은 조사 모델이 화면마다 고른 값(`screen_role`)이고, common/often/some은 지도에 적은 "
+        "대략값(측정치 아님)입니다.",
+        "",
+    ])
+    nodes_by_role: dict[str, list[Any]] = defaultdict(list)
+    for node in graph.nodes.values():
+        if screen_map.role(node.role) is not None:
+            nodes_by_role[node.role].append(node)
+    if not nodes_by_role:
+        lines.extend(["- 역할이 기록된 화면이 없습니다(역할 기록 전에 만든 run이면 새 run부터 채워집니다).", ""])
+        return
+
+    def _name(role_id: str) -> str:
+        return f"{screen_map.role(role_id).label_ko}(`{role_id}`)"
+
+    found = set(nodes_by_role)
+    reachable = screen_map.safe_reachable()
+    labeled = sum(len(nodes) for nodes in nodes_by_role.values())
+    lines.extend([
+        f"- 역할을 붙인 화면 {labeled}/{len(graph.nodes)}개, 찾은 역할 {len(found)}개. "
+        f"앱 시작·홈에서 플레이·결제·광고·게임 밖을 거치지 않고 갈 수 있는 역할 {len(reachable)}개 중 "
+        f"{len(found & reachable)}개.",
+        "",
+        "### 찾은 역할",
+        "",
+    ])
+    for role in screen_map.roles:
+        nodes = nodes_by_role.get(role.id)
+        if not nodes:
+            continue
+        off_types = sorted({node.screen_type for node in nodes} - set(role.screen_types))
+        note = (
+            f" — 화면 타입 {', '.join(off_types)}는 지도 후보({', '.join(role.screen_types)})에 없음"
+            if off_types else ""
+        )
+        lines.append(
+            f"- {_name(role.id)}, {role.prevalence}: 화면 {len(nodes)}개, "
+            f"근거 분류 {', '.join(role.element_categories)}{note}"
+        )
+
+    lines.extend(["", "### 못 찾은 역할", ""])
+    missing = [role for role in screen_map.roles if role.id not in found]
+    for prevalence in PREVALENCE_ORDER:
+        names = [_name(r.id) for r in missing if r.prevalence == prevalence and r.id in reachable]
+        if names:
+            lines.append(f"- {prevalence}: {', '.join(names)}")
+    gated = [_name(r.id) for r in missing if r.id not in reachable]
+    if gated:
+        lines.append(f"- 플레이·결제·광고·게임 밖을 거쳐야 갈 수 있음(기본 동작으로는 안 감): {', '.join(gated)}")
+    if not missing:
+        lines.append("- 없음")
+
+    lines.extend([
+        "",
+        "### 지도에 없는 전환",
+        "",
+        "역할 사이 전환 중 지도에 없는 것입니다. 역할을 잘못 붙였거나, 게임 밖(에뮬레이터 창 등)으로 "
+        "나간 흔적이거나, 이 게임만의 구조일 수 있으니 대표 이미지로 확인하세요.",
+        "",
+    ])
+    odd = []
+    for edge in graph.edges:
+        source, target = graph.nodes.get(edge.source), graph.nodes.get(edge.target)
+        if source is None or target is None or source.role == target.role:
+            continue
+        if {source.role, target.role} <= found and not screen_map.expects(source.role, target.role):
+            odd.append(
+                f"- {_name(source.role)} --({edge.action or 'unknown'})--> {_name(target.role)} "
+                f"(`{edge.source}` → `{edge.target}`)"
+            )
+    lines.extend(odd or ["- 없음"])
+    lines.append("")
 
 
 def _append_persistent_ui_section(
@@ -556,8 +655,10 @@ def generate_survey_markdown(
     evidence_limit: int | None = SURVEY_REPORT_EVIDENCE_LIMIT,
     ledger: LedgerStore | None = None,
     chrome: dict[str, Any] | None = None,
+    screen_map: ScreenMap | None = None,
 ) -> str:
-    """전체 기록을 누적한 게임 구조 조사 보고서를 생성합니다 (Evidence Index만 최근 건수로 제한)."""
+    """전체 기록을 누적한 게임 구조 조사 보고서를 생성합니다 (Evidence Index만 최근 건수로 제한).
+    screen_map을 주지 않으면 지금 게임(GAME_TITLE)의 장르 화면 지도로 대 봅니다."""
 
     lines = [
         "# Game Structure Survey",
@@ -601,6 +702,7 @@ def generate_survey_markdown(
 
     _append_persistent_ui_section(lines, graph, ledger, chrome)
     _append_frontier_section(lines, graph, ledger)
+    _append_genre_map_section(lines, graph, screen_map or _active_screen_map())
 
     screen_examples: dict[str, dict[str, Any]] = {}
     # 3단계: 요소 하나가 여러 화면에 나올 수 있으니 첫 등장만 남기지 않고

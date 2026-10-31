@@ -16,6 +16,7 @@
 
 결과: <run 폴더>/metrics.md, metrics.csv
 config.py를 import하지 않으므로(새 run 포인터를 만들지 않음) 아무 때나 돌려도 됩니다.
+run 폴더는 output/<GAME_SLUG>/ 아래에서 찾습니다(환경 변수 → candy_soda_agent/.env → 기본값).
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import os
 import statistics
 from collections import Counter, deque
 from collections.abc import Callable
@@ -34,10 +36,26 @@ import cv2
 import numpy as np
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_GAME_ROOT = REPO_ROOT / "output" / "candy_crush_soda"
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+# config.GAME_SLUG의 기본값과 같습니다.
+DEFAULT_GAME_SLUG = "candy_crush_soda"
 # config.SAME_SCREEN_PIXEL_THRESHOLD와 같은 값입니다(config를 import하지 않으려고 복사).
 DEFAULT_CHANGE_THRESHOLD = 0.01
 TAP_ACTION_TYPES = {"tap_button", "back_key", "escape"}
+
+
+def game_root() -> Path:
+    """이 게임의 결과 폴더 output/<GAME_SLUG>. 다른 게임을 조사할 때 .env의 GAME_SLUG를 따릅니다
+    (예전에는 output/candy_crush_soda로 고정돼 다른 게임의 run을 못 찾았습니다)."""
+    slug = os.getenv("GAME_SLUG", "").strip()
+    if not slug and ENV_PATH.exists():
+        try:
+            from dotenv import dotenv_values
+        except ImportError:  # dotenv가 없으면 기본값을 씁니다.
+            dotenv_values = None
+        if dotenv_values is not None:
+            slug = (dotenv_values(ENV_PATH).get("GAME_SLUG") or "").strip()
+    return REPO_ROOT / "output" / (slug or DEFAULT_GAME_SLUG)
 
 
 @dataclass
@@ -356,13 +374,14 @@ def format_session_line(metrics: SessionMetrics) -> str:
 def _resolve_run_dir(args: argparse.Namespace) -> Path:
     if args.run_dir:
         return Path(args.run_dir).resolve()
+    root = game_root()
     run_id = args.run
     if not run_id:
-        pointer = DEFAULT_GAME_ROOT / "current_run.txt"
+        pointer = root / "current_run.txt"
         if not pointer.exists():
-            raise SystemExit("current_run.txt가 없습니다. --run 또는 --run-dir를 지정하세요.")
+            raise SystemExit(f"{pointer}가 없습니다. --run 또는 --run-dir를 지정하세요(GAME_SLUG 확인).")
         run_id = pointer.read_text(encoding="utf-8").strip()
-    return DEFAULT_GAME_ROOT / "runs" / run_id
+    return root / "runs" / run_id
 
 
 def main() -> None:
