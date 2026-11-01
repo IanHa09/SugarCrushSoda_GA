@@ -1,0 +1,13 @@
+{
+  "_설명": [
+    "조사할 게임 목록입니다. 다른 게임을 조사할 때는 여기 한 줄을 더하고 .env의 GAME_TITLE만 바꿉니다.",
+    "키: 게임 제목. .env의 GAME_TITLE과 같아야 합니다(대소문자·공백 차이는 무시).",
+    "genre: ui_knowledge.json의 \"genres\" 키, screen_types.json의 \"genres\" 값과 같은 이름. 거기 없는 장르면 \"_default\"만 씁니다.",
+    "slug: 결과 폴더 이름(output/<slug>/). 영어 소문자·숫자·밑줄만 쓰고 게임마다 달라야 합니다. 바꾸면 예전 run을 이어 가지 못합니다.",
+    "package: Android 패키지 이름(adb로 게임을 다시 켤 때 씀, 확인: adb shell pm list packages <일부 이름>). 모르면 \"\"로 두면 재시작 단계만 꺼집니다.",
+    "여기 없는 제목도 돌아갑니다: 장르는 _default, slug는 제목에서 만들고(예: Royal Match -> royal_match), 재시작은 꺼집니다."
+  ],
+  "games": {
+    "Candy Crush Soda Saga": {"genre": "match3", "slug": "candy_crush_soda", "package": "com.king.candycrushsodasaga"}
+  }
+}

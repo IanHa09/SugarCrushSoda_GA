@@ -1,0 +1,22 @@
+{
+  "_설명": [
+    "조사 모델이 버튼과 게임 요소에 붙이는 분류입니다. 조사 응답 스키마(schemas.py)의 허용 값과 조사 프롬프트(prompts/survey.txt)의 role 설명이 여기서 나옵니다.",
+    "id는 기록에 남는 값이라 바꾸면 예전 run과 이어지지 않습니다. description은 자유롭게 고쳐도 됩니다.",
+    "button_roles: 위에서부터 프롬프트에 나옵니다. description이 빈 role(unknown)은 프롬프트에 나오지 않습니다. unknown은 지우면 안 됩니다(응답 기본값).",
+    "어떤 role을 눌러도 되는지는 안전장치라 이 파일이 아니라 코드(game_knowledge.SAFE_BUTTON_ROLES: safe_navigation, progression, structure)가 정합니다. 그 셋은 지우거나 이름을 바꿀 수 없고, 여기 새 role을 더하면 기록만 되고 눌리지 않습니다.",
+    "element_categories: 게임 요소(game_elements) 분류. map_knowledge.json의 element_categories도 이 값만 쓸 수 있습니다."
+  ],
+  "button_roles": [
+    {"id": "safe_navigation", "description": "닫기, 뒤로, 홈처럼 화면 이동을 되돌리거나 정리하는 버튼"},
+    {"id": "progression", "description": "Next, Continue, Claim처럼 다음 화면을 보기 위한 진행 버튼"},
+    {"id": "structure", "description": "메뉴, 설정, 보상, 상점처럼 게임 구조를 더 보여주는 버튼"},
+    {"id": "risky_monetization", "description": "구매, 결제, 가격, 재화 구매, 패키지 구매"},
+    {"id": "risky_ad", "description": "광고 시청, watch ad, rewarded ad"},
+    {"id": "risky_account", "description": "로그인, 계정 연결, 개인정보, 권한 요청"},
+    {"id": "unknown", "description": ""}
+  ],
+  "element_categories": [
+    "core_play", "objective", "progression", "reward", "currency", "booster", "obstacle",
+    "character", "ui", "monetization", "ad", "social", "account", "other"
+  ]
+}
