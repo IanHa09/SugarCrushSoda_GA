@@ -1,0 +1,73 @@
+{
+  "screen_type": "menu",
+  "screen_role": "team",
+  "summary": "팀 가입 화면으로 팀을 검색하고 가입할 수 있는 옵션이 있습니다.",
+  "visible_text": [
+    "팀 가입하기",
+    "팀 검색",
+    "가입 승인",
+    "자유 가입",
+    "팀 만들기",
+    "엠블럼"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "팀 검색 바",
+      "evidence": "팀 이름 검색 필드"
+    },
+    {
+      "category": "ui",
+      "name": "팀 목록",
+      "evidence": "팀 가입 가능한 목록 표시"
+    },
+    {
+      "category": "ui",
+      "name": "팀 만들기 버튼",
+      "evidence": "팀 생성을 위한 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "상단 UI 아이콘",
+      "evidence": "재화 및 생명 아이콘 검사"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "팀 만들기",
+      "role": "structure",
+      "bbox": {
+        "x1": 370,
+        "y1": 1258,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.745,
+        "y": 0.9662
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "팀 생성 버튼"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 709,
+        "y1": 39,
+        "x2": 752,
+        "y2": 86
+      },
+      "center": {
+        "x": 0.9701,
+        "y": 0.0464
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "화면 닫기 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -1,0 +1,100 @@
+{
+  "screen_type": "menu",
+  "screen_role": "info_popup",
+  "summary": "이 화면은 새로운 카드 컬렉션에 대한 정보를 보여줍니다.",
+  "visible_text": [
+    "수집",
+    "새로운 컬렉션",
+    "레벨 39에 도달해 카드 컬렉션을 잠금 해제하세요!"
+  ],
+  "game_elements": [
+    {
+      "category": "other",
+      "name": "새로운 컬렉션 알림",
+      "evidence": "새로운 카드 컬렉션에 대한 설명이 포함되어 있습니다."
+    },
+    {
+      "category": "other",
+      "name": "캐릭터 및 애완동물",
+      "evidence": "화면의 캐릭터와 강아지 아이콘이 포함되어 있습니다."
+    },
+    {
+      "category": "ui",
+      "name": "탭바",
+      "evidence": "화면 아래에 여러 아이콘이 포함된 네비게이션 바가 있습니다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (지도 아이콘 위에 핀 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.05843293492695883,
+        "y": 0.9554896142433235
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (트로피 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1899070385126162,
+        "y": 0.9554896142433235
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "홈",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.31739707835325365,
+        "y": 0.9554896142433235
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.648074369189907,
+        "y": 0.9235905044510386
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "수집",
+      "role": "progression",
+      "bbox": {
+        "x1": 176,
+        "y1": 129,
+        "x2": 339,
+        "y2": 189
+      },
+      "center": {
+        "x": 0.342,
+        "y": 0.118
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "컬렉션 잠금 해제 클릭을 유도하는 버튼입니다."
+    }
+  ],
+  "evidence_notes": [
+    "팝업 화면으로 게임 내 새로운 기능을 알리는 배너입니다."
+  ],
+  "uncertainties": [
+    "팝업 유형이 많이 겹치겠지만, 지금은 확실히 수집 정보 팝업 유형입니다."
+  ]
+}

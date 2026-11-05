@@ -1,0 +1,65 @@
+{
+  "screen_type": "popup",
+  "screen_role": "offer_popup",
+  "summary": "보상 제공을 위한 팝업으로 여러 게임을 소개합니다.",
+  "visible_text": [
+    "GIFT BOX",
+    "01 애니팡2",
+    "이동하기",
+    "02 위베어베어스 더퍼즐",
+    "+10",
+    "03 애니팡3",
+    "+10",
+    "04 애니팡 사천성"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "보상 내용",
+      "evidence": "여러 게임과 보상 아이템 표시"
+    },
+    {
+      "category": "ui",
+      "name": "이동하기 버튼",
+      "evidence": "상단에 보이는 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "이동하기",
+      "role": "progression",
+      "bbox": {
+        "x1": 401,
+        "y1": 204,
+        "x2": 752,
+        "y2": 254
+      },
+      "center": {
+        "x": 0.7656,
+        "y": 0.1699
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "보상 미션을 확인하기 위한 진행 버튼."
+    },
+    {
+      "label": "닫기(팝업 X 아이콘)",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 731,
+        "y1": 30,
+        "x2": 752,
+        "y2": 52
+      },
+      "center": {
+        "x": 0.9847,
+        "y": 0.0304
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "팝업을 닫기 위한 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

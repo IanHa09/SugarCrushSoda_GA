@@ -1,0 +1,117 @@
+{
+  "screen_type": "menu",
+  "screen_role": "leaderboard",
+  "summary": "리더보드 화면으로 플레이어 순위를 보여줍니다.",
+  "visible_text": [
+    "랭킹",
+    "플레이어",
+    "로야",
+    "서소영",
+    "백호1",
+    "5일 남음"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "하트",
+      "evidence": "생명 아이콘이 표시됨"
+    },
+    {
+      "category": "currency",
+      "name": "자원",
+      "evidence": "코인과 젬 표시"
+    },
+    {
+      "category": "social",
+      "name": "팀",
+      "evidence": "팀 아이콘이 있음"
+    },
+    {
+      "category": "social",
+      "name": "플레이어",
+      "evidence": "플레이어 목록이 나타남"
+    },
+    {
+      "category": "ui",
+      "name": "랭킹 타이틀",
+      "evidence": "'랭킹'이라는 제목으로 표시됨"
+    },
+    {
+      "category": "core_play",
+      "name": "상위 플레이어 정보",
+      "evidence": "상위 플레이어 이름 및 점수"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 717,
+        "y1": 10,
+        "x2": 740,
+        "y2": 30
+      },
+      "center": {
+        "x": 0.9675,
+        "y": 0.0148
+      },
+      "region": "top_bar",
+      "confidence": 0.99,
+      "reason": "UI 상단에 있는 닫기 버튼입니다."
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": {
+        "x1": 556,
+        "y1": 20,
+        "x2": 617,
+        "y2": 40
+      },
+      "center": {
+        "x": 0.7789,
+        "y": 0.0223
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "팀에 대한 링크를 제공합니다."
+    },
+    {
+      "label": "튜토리얼",
+      "role": "structure",
+      "bbox": {
+        "x1": 14,
+        "y1": 20,
+        "x2": 103,
+        "y2": 40
+      },
+      "center": {
+        "x": 0.0777,
+        "y": 0.0223
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "튜토리얼에 대한 링크를 제공합니다."
+    },
+    {
+      "label": "내 점수",
+      "role": "structure",
+      "bbox": {
+        "x1": 12,
+        "y1": 1226,
+        "x2": 211,
+        "y2": 1250
+      },
+      "center": {
+        "x": 0.1481,
+        "y": 0.9184
+      },
+      "region": "content",
+      "confidence": 0.96,
+      "reason": "내 점수를 나타내는 버튼입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

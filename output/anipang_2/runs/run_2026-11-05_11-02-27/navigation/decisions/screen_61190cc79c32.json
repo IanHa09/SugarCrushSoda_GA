@@ -1,0 +1,77 @@
+{
+  "screen_type": "menu",
+  "screen_role": "profile",
+  "summary": "사용자 프로필 화면으로, 트로피 및 최고 기록 확인이 가능한 화면입니다.",
+  "visible_text": [
+    "미욕",
+    "트로피 28/33",
+    "블랙홀",
+    "별자리 구조대",
+    "랭킹 점수"
+  ],
+  "game_elements": [
+    {
+      "category": "account",
+      "name": "프로필 아이콘",
+      "evidence": "상단에 사용자의 프로필 이미지가 표시되며, 클릭 가능하다."
+    },
+    {
+      "category": "objective",
+      "name": "트로피",
+      "evidence": "현재 보유한 트로피 수가 표시된다."
+    },
+    {
+      "category": "currency",
+      "name": "블랙홀",
+      "evidence": "게임 내 화폐 수치가 표시된다."
+    },
+    {
+      "category": "currency",
+      "name": "별자리 구조대",
+      "evidence": "다른 화폐 수치가 표시된다."
+    },
+    {
+      "category": "currency",
+      "name": "랭킹 점수",
+      "evidence": "랭킹 점수가 표시된다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 709,
+        "y1": 38,
+        "x2": 740,
+        "y2": 69
+      },
+      "center": {
+        "x": 0.9622,
+        "y": 0.0397
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "화면을 닫기 위한 버튼으로, 프로필 화면에서 일반적이다."
+    },
+    {
+      "label": "일반 기록",
+      "role": "structure",
+      "bbox": {
+        "x1": 267,
+        "y1": 1167,
+        "x2": 486,
+        "y2": 1237
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.8917
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "프로필 화면 내에서 다른 기록을 볼 수 있는 버튼이다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

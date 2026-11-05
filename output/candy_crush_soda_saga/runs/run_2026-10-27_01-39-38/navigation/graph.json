@@ -1,0 +1,273 @@
+{
+  "nodes": {
+    "screen_0f8eb684abf1": {
+      "id": "screen_0f8eb684abf1",
+      "screen_type": "home",
+      "summary": "게임의 홈 화면으로, 레벨 번호와 관련 버튼들이 배치되어 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_0f8eb684abf1.png",
+      "visits": 9,
+      "buttons": [
+        "home",
+        "레벨 #",
+        "별",
+        "아래 번호 #"
+      ],
+      "fingerprint": "297ce1b4a27cab050cc46c43f39ddb1987522b535961bcc3a962a96ab552b696",
+      "play_flow": false
+    },
+    "screen_ed79bd0a3f5e": {
+      "id": "screen_ed79bd0a3f5e",
+      "screen_type": "shop",
+      "summary": "게임 내 재화 및 상품 구매 화면으로, 다양한 아이템과 가격이 표시되어 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_ed79bd0a3f5e.png",
+      "visits": 7,
+      "buttons": [
+        "상점 닫기"
+      ],
+      "fingerprint": "9f007208c68092aad6a8e03cd7549356b2aa80dc804e4210d294d294579024b6",
+      "play_flow": false
+    },
+    "screen_a550b0312d05": {
+      "id": "screen_a550b0312d05",
+      "screen_type": "menu",
+      "summary": "친구와 메시지함 옵션을 제공하는 화면으로, 친구 추가 기능이 있습니다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_a550b0312d05.png",
+      "visits": 18,
+      "buttons": [
+        "friends",
+        "메시지함",
+        "친구 더 추가하기"
+      ],
+      "fingerprint": "bf00fa70c008a200a2c095d49e308b80f528e950d61483809a809838a492a4b6",
+      "play_flow": false
+    },
+    "screen_43ecd1bf025f": {
+      "id": "screen_43ecd1bf025f",
+      "screen_type": "popup",
+      "summary": "친구를 추가하는 안내 창으로, 사용자에게 친구와 함께 플레이를 권장하는 메시지가 포함되어 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_43ecd1bf025f.png",
+      "visits": 9,
+      "buttons": [
+        "close",
+        "friends",
+        "메시지함",
+        "초대하기"
+      ],
+      "fingerprint": "bf00f870d688cc508c508000a16e915a876a8000821882188000d800a490a4b6",
+      "play_flow": false
+    },
+    "screen_4312ef935c57": {
+      "id": "screen_4312ef935c57",
+      "screen_type": "popup",
+      "summary": "친구 추가를 위한 안내 창으로, 사용자가 친구와 함께 플레이할 것을 권장하는 메시지를 포함하고 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_4312ef935c57.png",
+      "visits": 3,
+      "buttons": [
+        "close",
+        "friends",
+        "메시지함"
+      ],
+      "fingerprint": "dd067860ce00cc508c508000816c915a92423001592d80008370800076802cc0",
+      "play_flow": false
+    },
+    "screen_9749095b7573": {
+      "id": "screen_9749095b7573",
+      "screen_type": "menu",
+      "summary": "계정 및 개인 정보 보호 설정을 선택하는 화면으로, 공유 대상을 설정하는 옵션이 있습니다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_9749095b7573.png",
+      "visits": 1,
+      "buttons": [
+        "back",
+        "계속"
+      ],
+      "fingerprint": "200160007770906042e09d4a8f4c9802ac028000800080008000800080038001",
+      "play_flow": false
+    },
+    "screen_29344fc062d0": {
+      "id": "screen_29344fc062d0",
+      "screen_type": "popup",
+      "summary": "친구와 함께 플레이하는 것을 권장하는 안내 창으로, 하트를 보내는 기능에 대한 설명이 포함되어 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_29344fc062d0.png",
+      "visits": 7,
+      "buttons": [
+        "close",
+        "확인"
+      ],
+      "fingerprint": "18027f027e00fe007240fec0fe00ff00ff00f52cfd40fe40ff00ff007f007e00",
+      "play_flow": false
+    },
+    "screen_775834a794f4": {
+      "id": "screen_775834a794f4",
+      "screen_type": "popup",
+      "summary": "앱 업데이트를 알리는 안내 창으로, 업데이트 버튼이 있으며, 캐릭터와 함께하는 그래픽 요소가 포함되어 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_775834a794f4.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "업데이트"
+      ],
+      "fingerprint": "fc02ff007f407f30f320fb20f2e8009e000a0940f8900e001e88000000000000",
+      "play_flow": false
+    },
+    "screen_fb62f06fbee0": {
+      "id": "screen_fb62f06fbee0",
+      "screen_type": "level",
+      "summary": "레벨 시작 화면으로, 목표 및 부스터 선택 기능을 제공하며, 게임 시작 버튼이 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_fb62f06fbee0.png",
+      "visits": 12,
+      "buttons": [
+        "close",
+        "home",
+        "게임 시작",
+        "부스터 선택"
+      ],
+      "fingerprint": "c07ee1b4e290e300c0c0c604c6acc164c974caacc218c6dcd00ca086b0503696",
+      "play_flow": false
+    },
+    "screen_50d8b4a941c2": {
+      "id": "screen_50d8b4a941c2",
+      "screen_type": "unknown",
+      "summary": "화면 구조가 확인되지 않음.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_50d8b4a941c2.png",
+      "visits": 1,
+      "buttons": [],
+      "fingerprint": "00000000000000000000000000000000000080000800600024003c001e06161e",
+      "play_flow": false
+    },
+    "screen_407184539506": {
+      "id": "screen_407184539506",
+      "screen_type": "popup",
+      "summary": "Chrome 알림 설정 안내 팝업으로, 알림을 관리할 수 있는 방법을 제공하며, 사용안함이나 계속 버튼이 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_01-39-38\\navigation\\representatives\\screen_407184539506.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "계속"
+      ],
+      "fingerprint": "8836a22a8000c00088088748870886288708874e944cc002c015800100000000",
+      "play_flow": false
+    }
+  },
+  "edges": [
+    {
+      "source": "screen_0f8eb684abf1",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "상점",
+      "action_key": "4d1a8bd6aa5945126e31d9062e916f2cdea370bb"
+    },
+    {
+      "source": "screen_ed79bd0a3f5e",
+      "target": "screen_a550b0312d05",
+      "action": "친구",
+      "action_key": "fa32c13c1ead798eebc9528e4068e9bce20c1fb4"
+    },
+    {
+      "source": "screen_a550b0312d05",
+      "target": "screen_43ecd1bf025f",
+      "action": "친구 더 추가하기",
+      "action_key": "9f6b664fd85a55dea431e391df865e9a482d0b93"
+    },
+    {
+      "source": "screen_43ecd1bf025f",
+      "target": "screen_4312ef935c57",
+      "action": "초대하기",
+      "action_key": "f972f23bce07acca694aa9e6dbd457f981554bc4"
+    },
+    {
+      "source": "screen_4312ef935c57",
+      "target": "screen_9749095b7573",
+      "action": "Quick Share",
+      "action_key": "48f35cec3ffa146c09a4fcd87894521650c0e132"
+    },
+    {
+      "source": "screen_9749095b7573",
+      "target": "screen_43ecd1bf025f",
+      "action": "계속",
+      "action_key": "ee23e38d31efd831dc5f429f270a902e3274389e"
+    },
+    {
+      "source": "screen_4312ef935c57",
+      "target": "screen_a550b0312d05",
+      "action": "블루투스",
+      "action_key": "fd576b2208ab851f78071bdbf0c07f28d4857c3a"
+    },
+    {
+      "source": "screen_a550b0312d05",
+      "target": "screen_29344fc062d0",
+      "action": "i 아이콘",
+      "action_key": "01610830f09e25149f45dbda0b0a9fbd01098ce4"
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_a550b0312d05",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6"
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_a550b0312d05",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_775834a794f4",
+      "target": "screen_0f8eb684abf1",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_0f8eb684abf1",
+      "target": "screen_fb62f06fbee0",
+      "action": "아래 번호 10",
+      "action_key": "881805d843e7775dc98a654397aa7c007346bb0a"
+    },
+    {
+      "source": "screen_fb62f06fbee0",
+      "target": "screen_0f8eb684abf1",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90"
+    },
+    {
+      "source": "screen_4312ef935c57",
+      "target": "screen_50d8b4a941c2",
+      "action": "Chrome",
+      "action_key": "8e208194c9c27bb27e33dec7fa02dc40cd34ef10"
+    },
+    {
+      "source": "screen_43ecd1bf025f",
+      "target": "screen_a550b0312d05",
+      "action": "초대하기",
+      "action_key": "f972f23bce07acca694aa9e6dbd457f981554bc4"
+    },
+    {
+      "source": "screen_a550b0312d05",
+      "target": "screen_29344fc062d0",
+      "action": "정보 아이콘(i)",
+      "action_key": "9b05d4645206114723a6c84553763f5e6917d91b"
+    },
+    {
+      "source": "screen_a550b0312d05",
+      "target": "screen_29344fc062d0",
+      "action": "information icon (i)",
+      "action_key": "83fe8d8375bcaa282e4ac66c735344a8ab7e7bbd"
+    },
+    {
+      "source": "screen_0f8eb684abf1",
+      "target": "screen_fb62f06fbee0",
+      "action": "레벨 8",
+      "action_key": "e44e1e13655ebbe4846a1d1fd6c740e17a1154ea"
+    },
+    {
+      "source": "screen_0f8eb684abf1",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "친구",
+      "action_key": "fa32c13c1ead798eebc9528e4068e9bce20c1fb4"
+    },
+    {
+      "source": "screen_ed79bd0a3f5e",
+      "target": "screen_0f8eb684abf1",
+      "action": "별 아이콘",
+      "action_key": "3f23568a85e44321a0a998f88c66d7d1e8a815f2"
+    }
+  ]
+}

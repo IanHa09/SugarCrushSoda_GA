@@ -1,0 +1,164 @@
+{
+  "screen_type": "menu",
+  "screen_role": "friends",
+  "summary": "순위표와 친구 관련 기능이 포함된 화면입니다.",
+  "visible_text": [
+    "순위표",
+    "친구",
+    "플레이터",
+    "팀",
+    "친구 목록",
+    "친구 추가",
+    "Facebook에 연결:",
+    "연결"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "순위표",
+      "evidence": "큰 글씨로 '순위표' 표기"
+    },
+    {
+      "category": "ui",
+      "name": "친구 옵션",
+      "evidence": "'친구', '플레이터', '팀' 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "연결 버튼",
+      "evidence": "Facebook 연결 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "친구 목록 버튼",
+      "evidence": "'친구 목록' 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "친구 추가 버튼",
+      "evidence": "'친구 추가' 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (지도 아이콘 위에 빨간 위치 표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.12749003984063745,
+        "y": 0.9651335311572701
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (성문 모양 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5962815405046481,
+        "y": 0.9651335311572701
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (방패에 사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8300132802124834,
+        "y": 0.9651335311572701
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (카드 세 장과 잎사귀 무늬 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9468791500664011,
+        "y": 0.9235905044510386
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 3,
+        "y1": 3,
+        "x2": 37,
+        "y2": 41
+      },
+      "center": {
+        "x": 0.0266,
+        "y": 0.0163
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "닫기 버튼입니다."
+    },
+    {
+      "label": "친구 목록",
+      "role": "progression",
+      "bbox": {
+        "x1": 100,
+        "y1": 291,
+        "x2": 423,
+        "y2": 373
+      },
+      "center": {
+        "x": 0.3473,
+        "y": 0.2463
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "친구 목록으로 이동하는 버튼입니다."
+    },
+    {
+      "label": "친구 추가",
+      "role": "structure",
+      "bbox": {
+        "x1": 430,
+        "y1": 291,
+        "x2": 580,
+        "y2": 373
+      },
+      "center": {
+        "x": 0.6707,
+        "y": 0.2463
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "친구 추가 버튼입니다."
+    },
+    {
+      "label": "연결",
+      "role": "risky_account",
+      "bbox": {
+        "x1": 100,
+        "y1": 752,
+        "x2": 552,
+        "y2": 826
+      },
+      "center": {
+        "x": 0.4329,
+        "y": 0.5853
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "Facebook 연결 요청 버튼입니다."
+    }
+  ],
+  "evidence_notes": [
+    "게임의 친구와 관련된 내용을 보여주는 화면입니다."
+  ],
+  "uncertainties": []
+}

@@ -1,0 +1,91 @@
+{
+  "screen_type": "shop",
+  "summary": "게임 내 구매 화면으로, 다양한 아이템과 패키지를 보여줌.",
+  "visible_text": [
+    "특별 상품",
+    "10",
+    "5",
+    "골드 특가",
+    "만원",
+    "한정 혜택!"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "특별 상품",
+      "evidence": "화면 중앙에 다양한 보상 옵션이 나열되어 있음."
+    },
+    {
+      "category": "monetization",
+      "name": "골드 특가",
+      "evidence": "화면 하단에서 금고 아이콘과 함께 보이는 패키지."
+    },
+    {
+      "category": "monetization",
+      "name": "한정 혜택",
+      "evidence": "화면 중앙 하단에 강조된 혜택 문구."
+    },
+    {
+      "category": "monetization",
+      "name": "구매 가격",
+      "evidence": "화면의 가격 정보가 적극적으로 노출됨."
+    },
+    {
+      "category": "ui",
+      "name": "탭바",
+      "evidence": "화면 하단에 여러 아이콘이 있는 탐색 바가 존재."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "둘째 탭 (분홍 파랑 대화 말풍선 속 사람 두 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3069828722002635,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (노란 별이 초록 사각판 위에 있는 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5177865612648221,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍 사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7325428194993412,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9486166007905138,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

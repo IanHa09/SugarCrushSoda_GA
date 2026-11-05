@@ -1,0 +1,152 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 중심 화면으로 레벨 번호 버튼과 메뉴 아이콘이 포함되어 있습니다.",
+  "visible_text": [
+    "레벨 2",
+    "홈",
+    "태스크",
+    "가득",
+    "2049"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "코인",
+      "evidence": "2049"
+    },
+    {
+      "category": "ui",
+      "name": "하트",
+      "evidence": "5"
+    },
+    {
+      "category": "ui",
+      "name": "보석",
+      "evidence": "0"
+    },
+    {
+      "category": "ui",
+      "name": "설정 아이콘",
+      "evidence": ""
+    },
+    {
+      "category": "ui",
+      "name": "레벨 버튼",
+      "evidence": "레벨 2"
+    },
+    {
+      "category": "ui",
+      "name": "홈 버튼",
+      "evidence": "홈"
+    },
+    {
+      "category": "ui",
+      "name": "태스크 버튼",
+      "evidence": "태스크"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (지도와 위치핀 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.11686586985391766,
+        "y": 0.9762611275964391
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (트로피 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2788844621513944,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (방패 안 사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7715803452855245,
+        "y": 0.9762611275964391
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (클로버가 그려진 카드 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9375830013280213,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "레벨 2",
+      "role": "progression",
+      "bbox": {
+        "x1": 286,
+        "y1": 1165,
+        "x2": 482,
+        "y2": 1260
+      },
+      "center": {
+        "x": 0.51,
+        "y": 0.8995
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "레벨 시작 버튼."
+    },
+    {
+      "label": "태스크",
+      "role": "structure",
+      "bbox": {
+        "x1": 654,
+        "y1": 1165,
+        "x2": 732,
+        "y2": 1260
+      },
+      "center": {
+        "x": 0.9203,
+        "y": 0.8995
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "게임 구조를 보여주는 버튼."
+    },
+    {
+      "label": "설정",
+      "role": "structure",
+      "bbox": {
+        "x1": 685,
+        "y1": 70,
+        "x2": 733,
+        "y2": 116
+      },
+      "center": {
+        "x": 0.9416,
+        "y": 0.069
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "게임 설정을 여는 아이콘."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

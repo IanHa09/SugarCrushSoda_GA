@@ -1,0 +1,147 @@
+{
+  "screen_type": "popup",
+  "summary": "친구를 추가하는 안내 창으로, 사용자에게 친구와 함께 플레이를 권장하는 메시지가 포함되어 있다.",
+  "visible_text": [
+    "친구 더 추가",
+    "연락처",
+    "소다 플레이어",
+    "초대하기"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "초대하기 버튼",
+      "evidence": "친구를 초대하는 기능 제공."
+    },
+    {
+      "category": "core_play",
+      "name": "친구 아이콘",
+      "evidence": "소다 플레이어 아이콘."
+    },
+    {
+      "category": "ui",
+      "name": "팝업 종료 버튼",
+      "evidence": "팝업 닫기 위한 X 아이콘."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.14663143989431968,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "별",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5376486129458389,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7318361955085865,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9273447820343461,
+        "y": 0.9770029673590505
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "초대하기",
+      "role": "progression",
+      "bbox": {
+        "x1": 240,
+        "y1": 1173,
+        "x2": 516,
+        "y2": 1245
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.8969
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "다음 화면으로 진행하는 버튼."
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 678,
+        "y1": 2,
+        "x2": 755,
+        "y2": 78
+      },
+      "center": {
+        "x": 0.9465,
+        "y": 0.0297
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "팝업을 닫는 버튼."
+    },
+    {
+      "label": "친구",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 0,
+        "y1": 125,
+        "x2": 172,
+        "y2": 186
+      },
+      "center": {
+        "x": 0.1136,
+        "y": 0.1154
+      },
+      "region": "top_bar",
+      "confidence": 0.85,
+      "reason": "친구 메뉴로 돌아가는 버튼."
+    },
+    {
+      "label": "메시지함",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 212,
+        "y1": 125,
+        "x2": 384,
+        "y2": 186
+      },
+      "center": {
+        "x": 0.3937,
+        "y": 0.1154
+      },
+      "region": "top_bar",
+      "confidence": 0.85,
+      "reason": "메시지함 메뉴로 돌아가는 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

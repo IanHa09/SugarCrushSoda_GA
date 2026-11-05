@@ -1,0 +1,144 @@
+{
+  "screen_type": "popup",
+  "summary": "활동 참여와 보상을 안내하는 팝업 화면.",
+  "visible_text": [
+    "활동",
+    "즐기고, 이기고, 전진해요!",
+    "활동에 참여해 더 재미있고",
+    "큰 보상을 받고, 더 힘차게 진행하세요.",
+    "계속 플레이하여 보상을 해제하세요!",
+    "플레이!"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "정보 아이콘",
+      "evidence": "좌측 상단에 위치한 아이콘."
+    },
+    {
+      "category": "ui",
+      "name": "플레이 버튼",
+      "evidence": "중앙에 크고 강조된 버튼."
+    },
+    {
+      "category": "ui",
+      "name": "탭바",
+      "evidence": "하단에 있는 여러 아이콘들."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "i 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.08827404479578392,
+        "y": 0.04970326409495549
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "첫째 탭 (작은 가게 천막 아이콘에 빨간 느낌표)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.08827404479578392,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (분홍색 파란색 사람 두 명 말풍선 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1857707509881423,
+        "y": 0.9258160237388724
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (노란 별 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.4005270092226614,
+        "y": 0.9317507418397626
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍색 네 명 사람 모임 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.616600790513834,
+        "y": 0.9258160237388724
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "플레이",
+      "role": "progression",
+      "bbox": {
+        "x1": 309,
+        "y1": 1058,
+        "x2": 450,
+        "y2": 1112
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.8049
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "게임을 진행하기 위한 버튼."
+    },
+    {
+      "label": "정보 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 28,
+        "y1": 35,
+        "x2": 105,
+        "y2": 112
+      },
+      "center": {
+        "x": 0.0876,
+        "y": 0.0545
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "팝업 내용에 대한 추가 정보를 제공."
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": {
+        "x1": 625,
+        "y1": 128,
+        "x2": 755,
+        "y2": 188
+      },
+      "center": {
+        "x": 0.9091,
+        "y": 0.1172
+      },
+      "region": "content",
+      "confidence": 0.7,
+      "reason": "현재 활동의 제목으로 사용."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

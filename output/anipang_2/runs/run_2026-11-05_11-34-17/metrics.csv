@@ -1,0 +1,2 @@
+﻿session,session_id,steps,taps,taps_changed,taps_unchanged,taps_unknown,hit_rate,change_source,refine_used,refine_found,refine_not_found,refine_errors,refine_median_shift_px,back_keys,escapes,restarts,new_screens,cum_screens,new_transitions,cum_transitions,stop
+1,2026-11-05_11-34-18,22,18,10,8,0,0.556,tap_effect,16,13,3,0,80.7,3,8,0,7,7,10,10,other(stuck_resurvey)

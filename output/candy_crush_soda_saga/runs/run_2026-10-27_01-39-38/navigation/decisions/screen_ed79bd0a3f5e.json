@@ -1,0 +1,194 @@
+{
+  "screen_type": "shop",
+  "summary": "게임 내 재화 및 상품 구매 화면으로, 다양한 아이템과 가격이 표시되어 있다.",
+  "visible_text": [
+    "상점",
+    "구매일로부터 7일 내 정액 청약 가능하다.",
+    "특별 상품",
+    "작은 스낵!",
+    "주간 할인",
+    "골드 특가",
+    "₩5,500"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "스낵 상품",
+      "evidence": "구매 가능한 아이템 나열"
+    },
+    {
+      "category": "monetization",
+      "name": "주간 할인",
+      "evidence": "특정 아이템의 할인 제안"
+    },
+    {
+      "category": "monetization",
+      "name": "골드 상품",
+      "evidence": "골드 재화 구매 항목"
+    },
+    {
+      "category": "ui",
+      "name": "가격 표시",
+      "evidence": "₩5,500로 가격 표기"
+    },
+    {
+      "category": "ui",
+      "name": "상점 제목",
+      "evidence": "상점이라는 제목 표시"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": {
+        "x1": 12,
+        "y1": 1317,
+        "x2": 157,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.1113,
+        "y": 0.9881
+      },
+      "region": "bottom_nav",
+      "confidence": 0.9,
+      "reason": "탭에 위치한 구조 버튼"
+    },
+    {
+      "label": "별 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 227,
+        "y1": 1317,
+        "x2": 272,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.3287,
+        "y": 0.9881
+      },
+      "region": "bottom_nav",
+      "confidence": 0.9,
+      "reason": "탭에 위치한 별 버튼"
+    },
+    {
+      "label": "캘린더 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 278,
+        "y1": 1317,
+        "x2": 323,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.3959,
+        "y": 0.9881
+      },
+      "region": "bottom_nav",
+      "confidence": 0.9,
+      "reason": "탭에 위치한 캘린더 버튼"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2985468956406869,
+        "y": 0.9406528189910979
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.49933949801849403,
+        "y": 0.9421364985163204
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6988110964332893,
+        "y": 0.9406528189910979
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "이벤트",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9062087186261559,
+        "y": 0.9436201780415431
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "구매 아이템 버튼",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 170,
+        "y1": 370,
+        "x2": 290,
+        "y2": 550
+      },
+      "center": {
+        "x": 0.3038,
+        "y": 0.3412
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "구매 및 결제를 요구하는 상품 아이템."
+    },
+    {
+      "label": "구매 아이템 버튼",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 420,
+        "y1": 370,
+        "x2": 540,
+        "y2": 550
+      },
+      "center": {
+        "x": 0.6341,
+        "y": 0.3412
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "구매 및 결제를 요구하는 상품 아이템."
+    },
+    {
+      "label": "판매 상품 버튼",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 460,
+        "y1": 840,
+        "x2": 650,
+        "y2": 970
+      },
+      "center": {
+        "x": 0.7332,
+        "y": 0.6714
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "상품 구매를 위해 가격이 표기되어 있다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

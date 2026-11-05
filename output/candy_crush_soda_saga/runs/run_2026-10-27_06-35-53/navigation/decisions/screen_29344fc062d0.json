@@ -1,0 +1,107 @@
+{
+  "screen_type": "popup",
+  "summary": "보상 안내 팝업으로, 활동 참여를 독려하며 추가 보상을 제공하는 내용.",
+  "visible_text": [
+    "즐기고, 이기고, 진진해요!",
+    "활동에 참여해 더 재미있고 큰 보상을 받고,",
+    "더 힘차게 진행하세요."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "X 아이콘이 화면 우측 상단에 위치."
+    },
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "확인 버튼이 화면 하단 중앙에 위치."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "홈",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.057971014492753624,
+        "y": 0.9896142433234422
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "연습",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2859025032938076,
+        "y": 0.9933234421364985
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (메달 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7417654808959157,
+        "y": 0.9925816023738873
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9644268774703557,
+        "y": 0.9933234421364985
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 264,
+        "y1": 1169,
+        "x2": 494,
+        "y2": 1212
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.8832
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "보상 수락을 위한 진행 버튼."
+    },
+    {
+      "label": "X 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 711,
+        "y1": 80,
+        "x2": 749,
+        "y2": 118
+      },
+      "center": {
+        "x": 0.9618,
+        "y": 0.0734
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "팝업을 닫기 위한 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -1,0 +1,108 @@
+{
+  "screen_type": "menu",
+  "summary": "계정 및 개인 정보 보호 설정을 선택하는 화면으로, 공유 대상을 설정하는 옵션이 있습니다.",
+  "visible_text": [
+    "Quick Share 설정",
+    "나와 공유할 수 있는 대상",
+    "내 프로필",
+    "계속"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "뒤로 버튼",
+      "evidence": "화면 왼쪽 상단에 위치"
+    },
+    {
+      "category": "ui",
+      "name": "계속 버튼",
+      "evidence": "화면 하단 중앙에 위치"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.09907529722589167,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3011889035667107,
+        "y": 0.9465875370919882
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5033025099075297,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "이벤트",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7067371202113606,
+        "y": 0.9458456973293768
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "뒤로",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 0,
+        "y1": 40,
+        "x2": 60,
+        "y2": 100
+      },
+      "center": {
+        "x": 0.0396,
+        "y": 0.0519
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "화면 오른쪽 상단에 위치한 뒤로 버튼"
+    },
+    {
+      "label": "계속",
+      "role": "progression",
+      "bbox": {
+        "x1": 620,
+        "y1": 1230,
+        "x2": 756,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.9089,
+        "y": 0.9559
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "화면 하단 중앙에 위치한 컨티뉴 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

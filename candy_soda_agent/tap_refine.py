@@ -40,6 +40,7 @@ from config import (
 )
 from game_knowledge import label_rules, render_prompt
 from llm_request import request_structured_vision
+from navigation.policy import nav_tab_ordinal
 from schemas import ExitLocation, NavTabs, TapLocation
 
 
@@ -96,6 +97,8 @@ class TapRefineResult:
     passes: list[dict[str, Any]] = field(default_factory=list)
     api_calls: int = 0
     error: str | None = None
+    # 찾은 자리에 실제로 보인 글자·모양(찾았을 때만). 누르면 안 되는 버튼인지 다시 볼 때 씁니다.
+    seen_label: str = ""
 
     @property
     def shift_px(self) -> float | None:
@@ -300,9 +303,12 @@ def refine_tap_target(
     crop_fraction: float = TAP_REFINE_CROP_FRACTION,
     min_confidence: float = TAP_REFINE_MIN_CONFIDENCE,
     full_fallback: bool = TAP_REFINE_FULL_FALLBACK,
+    full_only: bool = False,
     request: Callable[..., Any] = request_structured_vision,
 ) -> TapRefineResult:
-    """버튼의 center(0~1) 주변을 확대해 실제 위치를 다시 찾고, 원본 픽셀 좌표를 돌려줍니다."""
+    """버튼의 center(0~1) 주변을 확대해 실제 위치를 다시 찾고, 원본 픽셀 좌표를 돌려줍니다.
+    full_only: 확대 없이 화면 전체에서만 찾습니다(빗나간 버튼 재시도: 처음 좌표가 틀렸으면 그
+    주변을 잘라 봐도 버튼이 잘린 영역 밖·끝에 있음. 실측: 메시지함 4번 다 옆 '친구' 칸)."""
 
     height, width = image.shape[:2]
     center = button.center
@@ -313,10 +319,10 @@ def refine_tap_target(
     result = TapRefineResult(found=False, initial=initial)
 
     side = max(1, round(crop_fraction * max(width, height)))
-    plans: list[tuple[str, tuple[int, int, int, int]]] = [
-        ("zoom", crop_box(width, height, initial[0], initial[1], side)),
-    ]
-    if full_fallback:
+    plans: list[tuple[str, tuple[int, int, int, int]]] = (
+        [] if full_only else [("zoom", crop_box(width, height, initial[0], initial[1], side))]
+    )
+    if full_fallback or full_only:
         plans.append(("full", (0, 0, width, height)))
 
     for pass_name, box in plans:
@@ -350,6 +356,7 @@ def refine_tap_target(
             result.found = True
             result.x, result.y = source
             result.used_pass = pass_name
+            result.seen_label = location.seen_label
             return result
 
     return result
@@ -388,19 +395,16 @@ class ExitTarget:
 
 # 화면 아래에서 잘라 볼 높이 비율(탭바는 보통 7~10%).
 NAV_BAND_FRACTION = 0.16
-# 글자 없는 탭은 왼쪽부터의 순서로 이름을 붙입니다. 모델이 아이콘에 지어 붙인 이름은 화면마다
-# 달라져(실측: 같은 달력 탭이 "활동"/"이벤트") 같은 탭이 다른 버튼으로 갈렸습니다. 숫자는
-# 버튼 키를 만들 때 #으로 바뀌므로 낱말로 씁니다.
-NAV_TAB_ORDINALS = ("첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째", "일곱째", "여덟째")
-
-
+# 글자 없는 탭은 왼쪽부터의 순서로 이름을 붙입니다(순서 낱말은 navigation/policy.py). 모델이 아이콘에
+# 지어 붙인 이름은 화면마다 달라져(실측: 같은 달력 탭이 "활동"/"이벤트") 같은 탭이 다른 버튼으로
+# 갈렸습니다.
 def nav_tab_label(index: int, text: str, icon: str, is_home: bool) -> str:
     """탭 라벨: 보이는 글자 > 홈 > "넷째 탭 (사람 두 명 아이콘)"(괄호 안은 키에서 빠짐)."""
     if text.strip():
         return text.strip()
     if is_home:
         return "홈"
-    ordinal = NAV_TAB_ORDINALS[index] if index < len(NAV_TAB_ORDINALS) else f"{index + 1}번째"
+    ordinal = nav_tab_ordinal(index)
     return f"{ordinal} 탭 ({icon.strip()})" if icon.strip() else f"{ordinal} 탭"
 
 
@@ -410,6 +414,7 @@ class NavTabTarget:
     x: int
     y: int
     selected: bool = False
+    index: int = -1  # 왼쪽부터의 순서(선택된 탭 포함, 0부터)
 
 
 def find_nav_tabs(
@@ -461,7 +466,7 @@ def find_nav_tabs(
             continue
         x, y = view.to_source(*point)
         label = nav_tab_label(index, tab.text, tab.icon, tab.is_home)
-        tabs.append(NavTabTarget(label, min(x, width - 1), min(y, height - 1), tab.selected))
+        tabs.append(NavTabTarget(label, min(x, width - 1), min(y, height - 1), tab.selected, index))
     return tabs
 
 

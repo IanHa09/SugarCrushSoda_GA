@@ -150,6 +150,9 @@ class SurveyPromptRuleTests(unittest.TestCase):
         self.assertIn("칸 안의 상품 이름·기간·혜택 글자도", prompts[0])
         self.assertIn("닫기(X 아이콘)·뒤로 버튼이 보이면", prompts[0])
         self.assertIn("가려진 뒤 화면의 버튼(탭바 포함)은 넣지 않는다", prompts[0])
+        # 실측: 홈의 설정 톱니가 후보에 없었고, 레벨 8·9·10이 같은 키인데 후보 칸 셋을 차지함.
+        self.assertIn("화면 모서리의 작은 아이콘 버튼(톱니바퀴, i, 프로필 사진 등)도", prompts[0])
+        self.assertIn("숫자만 다른 같은 종류의 버튼은 지금 누를 수 있는 것 하나만", prompts[0])
 
 
 if __name__ == "__main__":

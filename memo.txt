@@ -28,6 +28,10 @@
 .venv/bin/python candy_soda_agent/survey_metrics.py
 .venv/bin/python candy_soda_agent/debug_survey_points.py
 
+# 게임 고르기 (안 주면 adb로 지금 떠 있는 게임을 감지, 못 하면 games.txt 목록에서 번호 선택)
+.venv/bin/python candy_soda_agent/main.py --autodrive --survey-taps --game "Royal Match"
+make autodrive GAME="Royal Match"
+
 # 단축키 모드
 .venv/bin/python candy_soda_agent/main.py --hotkeys
 

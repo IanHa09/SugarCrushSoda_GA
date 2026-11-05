@@ -1,0 +1,107 @@
+{
+  "screen_type": "home",
+  "summary": "게임의 중심 화면으로 보드와 레벨 정보가 포함됨.",
+  "visible_text": [
+    "5",
+    "Full",
+    "50",
+    "10",
+    "홈"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "생명 (하트)",
+      "evidence": "좌측 상단에 생명 아이콘이 위치함."
+    },
+    {
+      "category": "ui",
+      "name": "재화 (골드)",
+      "evidence": "좌측 상단에 골드 카운트가 위치함."
+    },
+    {
+      "category": "ui",
+      "name": "레벨 번호",
+      "evidence": "탈락된 레벨 번호가 화면 하단에 표시됨."
+    },
+    {
+      "category": "ui",
+      "name": "성공률",
+      "evidence": "안내창 아래 별 점수가 위치함."
+    },
+    {
+      "category": "ui",
+      "name": "보스 아이콘",
+      "evidence": "하단 중앙에 보스 아이콘이 위치함."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (가게 처럼 보이는 분홍 하얀색 천막 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.16073781291172595,
+        "y": 0.9688427299703264
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (말풍선 안에 사람 둘 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.30303030303030304,
+        "y": 0.9718100890207715
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍 흰색 배경에 사람 모양 3명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7984189723320159,
+        "y": 0.9703264094955489
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력 모양에 체크 표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9380764163372859,
+        "y": 0.9725519287833828
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "설정",
+      "role": "structure",
+      "bbox": {
+        "x1": 715,
+        "y1": 1012,
+        "x2": 755,
+        "y2": 1052
+      },
+      "center": {
+        "x": 0.9684,
+        "y": 0.7656
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "우측 상단에 위치한 설정 아이콘."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

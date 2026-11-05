@@ -1,0 +1,524 @@
+{
+  "bands": {
+    "top": 95,
+    "bottom": 143,
+    "height": 1348,
+    "width": 759,
+    "support": 3
+  },
+  "bands_node_ids": [
+    "screen_8e3bb71d39af",
+    "screen_ed79bd0a3f5e",
+    "screen_83795821337b",
+    "screen_05edc17450ec",
+    "screen_e03a03472329",
+    "screen_c671802e4734",
+    "screen_dcfcab05030c",
+    "screen_df915252ea31",
+    "screen_29344fc062d0"
+  ],
+  "actions": {
+    "8f41cdd12c36748bb803d6eefe73810157aaad95": {
+      "label": "첫째 탭 (가게 처럼 보이는 분홍 하얀색 천막 아이콘)",
+      "positions": {
+        "screen_8e3bb71d39af": [
+          122.0,
+          1306.0
+        ],
+        "screen_83795821337b": [
+          112.0,
+          1278.0
+        ],
+        "screen_05edc17450ec": [
+          82.0,
+          1307.0
+        ],
+        "screen_e03a03472329": [
+          44.0,
+          1265.0
+        ],
+        "screen_dcfcab05030c": [
+          87.0,
+          1301.0
+        ],
+        "screen_df915252ea31": [
+          82.0,
+          1267.0
+        ]
+      },
+      "regions": {
+        "screen_8e3bb71d39af": "bottom_nav",
+        "screen_83795821337b": "bottom_nav",
+        "screen_05edc17450ec": "bottom_nav",
+        "screen_e03a03472329": "bottom_nav",
+        "screen_dcfcab05030c": "bottom_nav",
+        "screen_df915252ea31": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "91a48de94b7f1113a5a8888f081197a295b4ffee": {
+      "label": "둘째 탭 (말풍선 안에 사람 둘 아이콘)",
+      "positions": {
+        "screen_8e3bb71d39af": [
+          230.0,
+          1310.0
+        ],
+        "screen_ed79bd0a3f5e": [
+          209.0,
+          1291.0
+        ],
+        "screen_83795821337b": [
+          188.0,
+          1277.0
+        ],
+        "screen_e03a03472329": [
+          145.0,
+          1265.0
+        ],
+        "screen_dcfcab05030c": [
+          223.0,
+          1301.0
+        ],
+        "screen_df915252ea31": [
+          135.0,
+          1254.0
+        ]
+      },
+      "regions": {
+        "screen_8e3bb71d39af": "bottom_nav",
+        "screen_ed79bd0a3f5e": "bottom_nav",
+        "screen_83795821337b": "bottom_nav",
+        "screen_e03a03472329": "bottom_nav",
+        "screen_dcfcab05030c": "bottom_nav",
+        "screen_df915252ea31": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "447b189ef2c5793f47a4221d2b556571d8807bc0": {
+      "label": "넷째 탭 (분홍 흰색 배경에 사람 모양 3명 아이콘)",
+      "positions": {
+        "screen_8e3bb71d39af": [
+          606.0,
+          1308.0
+        ],
+        "screen_ed79bd0a3f5e": [
+          524.0,
+          1290.0
+        ],
+        "screen_e03a03472329": [
+          491.0,
+          1245.0
+        ],
+        "screen_df915252ea31": [
+          383.0,
+          1262.0
+        ]
+      },
+      "regions": {
+        "screen_8e3bb71d39af": "bottom_nav",
+        "screen_ed79bd0a3f5e": "bottom_nav",
+        "screen_e03a03472329": "bottom_nav",
+        "screen_df915252ea31": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "2c72cbcebe2789611ea13fb2119c02c8575e524d": {
+      "label": "다섯째 탭 (달력 모양에 체크 표시 아이콘)",
+      "positions": {
+        "screen_8e3bb71d39af": [
+          712.0,
+          1311.0
+        ],
+        "screen_ed79bd0a3f5e": [
+          672.0,
+          1292.0
+        ],
+        "screen_83795821337b": [
+          676.0,
+          1277.0
+        ],
+        "screen_05edc17450ec": [
+          687.0,
+          1314.0
+        ],
+        "screen_dcfcab05030c": [
+          660.0,
+          1297.0
+        ],
+        "screen_df915252ea31": [
+          643.0,
+          1245.0
+        ]
+      },
+      "regions": {
+        "screen_8e3bb71d39af": "bottom_nav",
+        "screen_ed79bd0a3f5e": "bottom_nav",
+        "screen_83795821337b": "bottom_nav",
+        "screen_05edc17450ec": "bottom_nav",
+        "screen_dcfcab05030c": "bottom_nav",
+        "screen_df915252ea31": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e": {
+      "label": "설정",
+      "positions": {
+        "screen_8e3bb71d39af": [
+          735.0,
+          1032.0
+        ],
+        "screen_dcfcab05030c": [
+          25.0,
+          24.9
+        ],
+        "screen_05edc17450ec": [
+          320.0,
+          1320.5
+        ]
+      },
+      "regions": {
+        "screen_8e3bb71d39af": "top_bar",
+        "screen_dcfcab05030c": "top_bar",
+        "screen_05edc17450ec": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "4d1a8bd6aa5945126e31d9062e916f2cdea370bb": {
+      "label": "상점",
+      "positions": {
+        "screen_ed79bd0a3f5e": [
+          64.0,
+          1296.0
+        ],
+        "screen_83795821337b": [
+          75.5,
+          1315.5
+        ]
+      },
+      "regions": {
+        "screen_ed79bd0a3f5e": "bottom_nav",
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "ece5670fea5cb0fb64481ab412d3bcadc32c3178": {
+      "label": "상점 닫기",
+      "positions": {
+        "screen_ed79bd0a3f5e": [
+          737.0,
+          18.1
+        ]
+      },
+      "regions": {
+        "screen_ed79bd0a3f5e": "popup"
+      },
+      "height": 1348
+    },
+    "a540c6bda018d2baa737e9c7aa873174525fe2ea": {
+      "label": "셋째 탭 (노란 별 아이콘 위에 초록색 사각형)",
+      "positions": {
+        "screen_83795821337b": [
+          262.0,
+          1278.0
+        ],
+        "screen_05edc17450ec": [
+          394.0,
+          1314.0
+        ],
+        "screen_e03a03472329": [
+          245.0,
+          1265.0
+        ],
+        "screen_dcfcab05030c": [
+          359.0,
+          1301.0
+        ]
+      },
+      "regions": {
+        "screen_83795821337b": "bottom_nav",
+        "screen_05edc17450ec": "bottom_nav",
+        "screen_e03a03472329": "bottom_nav",
+        "screen_dcfcab05030c": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "04244903515ec733df037bf7f153f86b383a7aef": {
+      "label": "닫기 (X)",
+      "positions": {
+        "screen_83795821337b": [
+          16.0,
+          16.0
+        ],
+        "screen_05edc17450ec": [
+          40.0,
+          41.0
+        ],
+        "screen_c671802e4734": [
+          736.5,
+          39.0
+        ],
+        "screen_df915252ea31": [
+          744.0,
+          35.0
+        ],
+        "screen_29344fc062d0": [
+          736.0,
+          54.1
+        ]
+      },
+      "regions": {
+        "screen_83795821337b": "popup",
+        "screen_05edc17450ec": "popup",
+        "screen_c671802e4734": "popup",
+        "screen_df915252ea31": "popup",
+        "screen_29344fc062d0": "popup"
+      },
+      "height": 1348
+    },
+    "a75b4d0c99965a49f64556d2c6e329bf960c5d9f": {
+      "label": "넷째 탭 (핑크색과 흰색 사람 얼굴 세 개가 다이아몬드 모양 배경 안에…",
+      "positions": {
+        "screen_05edc17450ec": [
+          546.0,
+          1314.0
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "01610830f09e25149f45dbda0b0a9fbd01098ce4": {
+      "label": "i 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          67.0,
+          67.0
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "unknown"
+      },
+      "height": 1348
+    },
+    "3de325470dd1425b15d476d744e069de69de7b4b": {
+      "label": "활동",
+      "positions": {
+        "screen_e03a03472329": [
+          643.0,
+          1245.0
+        ]
+      },
+      "regions": {
+        "screen_e03a03472329": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "3fede7e0cbf56e1bbf863db76600ef6970c38997": {
+      "label": "? 아이콘",
+      "positions": {
+        "screen_e03a03472329": [
+          41.0,
+          115.0
+        ]
+      },
+      "regions": {
+        "screen_e03a03472329": "top_bar"
+      },
+      "height": 1348
+    },
+    "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6": {
+      "label": "확인",
+      "positions": {
+        "screen_c671802e4734": [
+          379.5,
+          1216.4
+        ],
+        "screen_29344fc062d0": [
+          379.5,
+          1245.0
+        ]
+      },
+      "regions": {
+        "screen_c671802e4734": "popup",
+        "screen_29344fc062d0": "popup"
+      },
+      "height": 1348
+    },
+    "fa32c13c1ead798eebc9528e4068e9bce20c1fb4": {
+      "label": "친구",
+      "positions": {
+        "screen_05edc17450ec": [
+          159.0,
+          87.5
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "top_bar"
+      },
+      "height": 1348
+    },
+    "8a9519cb613e4ac814c864c54c3cdb746f0a7a7c": {
+      "label": "메시지함",
+      "positions": {
+        "screen_05edc17450ec": [
+          226.5,
+          87.5
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "top_bar"
+      },
+      "height": 1348
+    },
+    "cd75e389611398875406d55c03755b2838ea8930": {
+      "label": "경고 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          37.5,
+          73.1
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "3f23568a85e44321a0a998f88c66d7d1e8a815f2": {
+      "label": "별 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          132.0,
+          73.1
+        ],
+        "screen_83795821337b": [
+          224.0,
+          1245.6
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "bottom_nav",
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "029c9a43f019d9aa27cd7a042e39caf81a32b5b4": {
+      "label": "달력 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          450.0,
+          73.1
+        ],
+        "screen_83795821337b": [
+          303.0,
+          1245.6
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "bottom_nav",
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "fd5ba56ea24bf6271f92da1c8f62237923a8e22b": {
+      "label": "저장",
+      "positions": {
+        "screen_dcfcab05030c": [
+          672.0,
+          1280.5
+        ]
+      },
+      "regions": {
+        "screen_dcfcab05030c": "content"
+      },
+      "height": 1348
+    },
+    "4d0d0c333357999911be8b41a102a5c98cad3d41": {
+      "label": "취소",
+      "positions": {
+        "screen_dcfcab05030c": [
+          563.0,
+          1280.5
+        ]
+      },
+      "regions": {
+        "screen_dcfcab05030c": "content"
+      },
+      "height": 1348
+    },
+    "8bebb96a37939e76049926402db0813a6fde54bd": {
+      "label": "!",
+      "positions": {
+        "screen_83795821337b": [
+          67.0,
+          1246.5
+        ]
+      },
+      "regions": {
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "cc3ecd0d2cb0a9bd74655d0e9c011311b6aa3e6c": {
+      "label": "인물 아이콘",
+      "positions": {
+        "screen_83795821337b": [
+          145.0,
+          1245.6
+        ]
+      },
+      "regions": {
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "385853c1e18b5838470ccede78be4a8a329218a5": {
+      "label": "팀 아이콘",
+      "positions": {
+        "screen_83795821337b": [
+          531.5,
+          1315.5
+        ]
+      },
+      "regions": {
+        "screen_83795821337b": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "9b05d4645206114723a6c84553763f5e6917d91b": {
+      "label": "정보 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          57.0,
+          55.0
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "top_bar"
+      },
+      "height": 1348
+    },
+    "e5582e61e238547dd37d0fab37934380503f9b14": {
+      "label": "알림 아이콘",
+      "positions": {
+        "screen_05edc17450ec": [
+          57.0,
+          937.5
+        ]
+      },
+      "regions": {
+        "screen_05edc17450ec": "bottom_nav"
+      },
+      "height": 1348
+    }
+  },
+  "global_actions": [
+    "8f41cdd12c36748bb803d6eefe73810157aaad95",
+    "91a48de94b7f1113a5a8888f081197a295b4ffee",
+    "447b189ef2c5793f47a4221d2b556571d8807bc0",
+    "2c72cbcebe2789611ea13fb2119c02c8575e524d",
+    "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e",
+    "4d1a8bd6aa5945126e31d9062e916f2cdea370bb",
+    "a540c6bda018d2baa737e9c7aa873174525fe2ea"
+  ]
+}

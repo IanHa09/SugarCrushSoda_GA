@@ -12,7 +12,7 @@ def parse_args() -> argparse.Namespace:
     """명령줄 인자를 정의하고 파싱합니다."""
 
     parser = argparse.ArgumentParser(
-        description="Candy Crush Soda 화면 분석 에이전트"
+        description="모바일 게임 화면 분석·구조 조사 에이전트"
     )
     parser.add_argument(
         "--once",
@@ -87,6 +87,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "새 run 폴더로 시작합니다(current_run.txt도 새 run으로 바뀌어 다음 실행부터 "
             "이어집니다). 예전 run의 그래프와 섞지 않을 때 씁니다."
+        ),
+    )
+    parser.add_argument(
+        "--game",
+        metavar="제목",
+        help=(
+            "조사할 게임(knowledge/games.txt의 제목). 안 주면 adb로 지금 떠 있는 게임을 "
+            "알아내고, 못 알아내면 목록에서 고르게 합니다."
         ),
     )
     parser.add_argument(

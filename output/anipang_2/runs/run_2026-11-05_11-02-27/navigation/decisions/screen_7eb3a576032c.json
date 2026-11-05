@@ -1,0 +1,144 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+  "visible_text": [
+    "5일 남음",
+    "무료뽑기",
+    "내 위치",
+    "아일랜드",
+    "스페이스",
+    "코스모스"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "코스모스 버튼",
+      "evidence": "좌측 중간에 위치"
+    },
+    {
+      "category": "ui",
+      "name": "스페이스 버튼",
+      "evidence": "좌측 아래에 위치"
+    },
+    {
+      "category": "ui",
+      "name": "아일랜드 버튼",
+      "evidence": "좌측 하단에 위치"
+    },
+    {
+      "category": "currency",
+      "name": "코인",
+      "evidence": "상단 중앙에 위치"
+    },
+    {
+      "category": "currency",
+      "name": "하트",
+      "evidence": "상단 우측에 위치"
+    },
+    {
+      "category": "ui",
+      "name": "보상 팝업",
+      "evidence": "우측 상단에 위치"
+    },
+    {
+      "category": "booster",
+      "name": "부스터 관련 아이콘",
+      "evidence": "팝업 목록에서 확인 가능"
+    },
+    {
+      "category": "ui",
+      "name": "레벨 번호",
+      "evidence": "알맞게 배치된 뱀 형태로 확인 가능"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "아일랜드",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 82,
+        "y1": 1225,
+        "x2": 164,
+        "y2": 1275
+      },
+      "center": {
+        "x": 0.1633,
+        "y": 0.9273
+      },
+      "region": "bottom_nav",
+      "confidence": 0.95,
+      "reason": "탭으로 선택 가능한 네비게이션 아이콘"
+    },
+    {
+      "label": "내 위치",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 40,
+        "y1": 1265,
+        "x2": 148,
+        "y2": 1325
+      },
+      "center": {
+        "x": 0.1248,
+        "y": 0.9607
+      },
+      "region": "bottom_nav",
+      "confidence": 0.9,
+      "reason": "게임의 다른 화면으로 이동하는 버튼입니다."
+    },
+    {
+      "label": "스페이스",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 42,
+        "y1": 1160,
+        "x2": 143,
+        "y2": 1242
+      },
+      "center": {
+        "x": 0.1228,
+        "y": 0.8909
+      },
+      "region": "bottom_nav",
+      "confidence": 0.8,
+      "reason": "게임의 다른 화면으로 이동하는 버튼입니다."
+    },
+    {
+      "label": "코스모스",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 42,
+        "y1": 1059,
+        "x2": 143,
+        "y2": 1161
+      },
+      "center": {
+        "x": 0.1228,
+        "y": 0.8234
+      },
+      "region": "bottom_nav",
+      "confidence": 0.85,
+      "reason": "게임의 다른 화면으로 이동하는 버튼입니다."
+    },
+    {
+      "label": "무료뽑기",
+      "role": "progression",
+      "bbox": {
+        "x1": 34,
+        "y1": 200,
+        "x2": 152,
+        "y2": 251
+      },
+      "center": {
+        "x": 0.1235,
+        "y": 0.1673
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "보상을 받기 위한 버튼입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

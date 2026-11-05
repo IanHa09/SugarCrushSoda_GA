@@ -1,0 +1,90 @@
+{
+  "screen_type": "popup",
+  "summary": "앱 업데이트를 알리는 안내 창으로, 업데이트 버튼이 있으며, 캐릭터와 함께하는 그래픽 요소가 포함되어 있다.",
+  "visible_text": [
+    "업데이트 타임",
+    "앱을 업데이트해",
+    "최신 이벤트와",
+    "컨텐츠를 즐기세요!",
+    "업데이트"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "업데이트 버튼",
+      "evidence": "버튼은 화면 중앙에 표시됨."
+    },
+    {
+      "category": "ui",
+      "name": "캐릭터",
+      "evidence": "녹색 캐릭터가 왼쪽에 표시됨."
+    },
+    {
+      "category": "ui",
+      "name": "폰 이미지",
+      "evidence": "업데이트 아이콘이 있는 전화기 이미지가 중앙에 있음."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.15059445178335534,
+        "y": 0.9725519287833828
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.34610303830911493,
+        "y": 0.9814540059347181
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "업데이트",
+      "role": "progression",
+      "bbox": {
+        "x1": 253,
+        "y1": 1088,
+        "x2": 502,
+        "y2": 1184
+      },
+      "center": {
+        "x": 0.4987,
+        "y": 0.8427
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "업데이트를 진행하기 위한 버튼이므로 progression으로 분류됨."
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 690,
+        "y1": 18,
+        "x2": 738,
+        "y2": 66
+      },
+      "center": {
+        "x": 0.9432,
+        "y": 0.0312
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "팝업을 닫기 위한 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -1,0 +1,67 @@
+{
+  "screen_type": "popup",
+  "screen_role": "info_popup",
+  "summary": "트로피 설명 팝업으로, 새로운 트로피에 대한 정보를 제공합니다.",
+  "visible_text": [
+    "튜토리얼",
+    "트로피가 새롭게 생겼어요!",
+    "보유 트로피에서 획득한 트로피를 볼 수 있고",
+    "미보유 트로피의 획득 방법을 알 수 있어요!",
+    "다음"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "화면 오른쪽 위 X 아이콘"
+    },
+    {
+      "category": "core_play",
+      "name": "트로피 아이콘",
+      "evidence": "가운데의 트로피 이미지"
+    },
+    {
+      "category": "ui",
+      "name": "다음 진행 버튼",
+      "evidence": "화면 아래의 '다음' 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 678,
+        "y1": 10,
+        "x2": 733,
+        "y2": 64
+      },
+      "center": {
+        "x": 0.9369,
+        "y": 0.0274
+      },
+      "region": "popup",
+      "confidence": 0.99,
+      "reason": "닫기 버튼이 명확하게 보임."
+    },
+    {
+      "label": "다음",
+      "role": "progression",
+      "bbox": {
+        "x1": 530,
+        "y1": 1076,
+        "x2": 678,
+        "y2": 1141
+      },
+      "center": {
+        "x": 0.8021,
+        "y": 0.8223
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "다음 진행 버튼이 명확하게 보임."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

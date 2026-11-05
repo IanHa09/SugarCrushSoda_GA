@@ -1,0 +1,131 @@
+{
+  "screen_type": "menu",
+  "screen_role": "shop",
+  "summary": "카드 수집과 관련된 상점 화면으로, 카드팩 구매와 보상을 안내하는 내용을 포함한다.",
+  "visible_text": [
+    "카드 수집",
+    "종소리 시즌",
+    "카드팩 구매",
+    "보유 포인트",
+    "브론즈",
+    "실버",
+    "골드",
+    "카드 수집 완료시 보상"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "카드 수집",
+      "evidence": "상단에 표시된 카테고리 제목"
+    },
+    {
+      "category": "currency",
+      "name": "보유 포인트",
+      "evidence": "'보유 포인트 0' 문구"
+    },
+    {
+      "category": "monetization",
+      "name": "카드팩 구매",
+      "evidence": "구매 옵션으로 제시된 카드팩들"
+    },
+    {
+      "category": "character",
+      "name": "캐릭터 아이템",
+      "evidence": "하단의 여러 캐릭터 이미지 아이템"
+    },
+    {
+      "category": "reward",
+      "name": "보상 안내",
+      "evidence": "상단에 보상 설명 표시"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 746,
+        "y1": 6,
+        "x2": 752,
+        "y2": 19
+      },
+      "center": {
+        "x": 0.9947,
+        "y": 0.0093
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "창을 닫는 버튼"
+    },
+    {
+      "label": "카드팩 구매",
+      "role": "structure",
+      "bbox": {
+        "x1": 20,
+        "y1": 179,
+        "x2": 267,
+        "y2": 244
+      },
+      "center": {
+        "x": 0.1906,
+        "y": 0.1569
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "카드팩 구매를 위한 메뉴 영역"
+    },
+    {
+      "label": "브론즈",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 20,
+        "y1": 244,
+        "x2": 126,
+        "y2": 313
+      },
+      "center": {
+        "x": 0.0969,
+        "y": 0.2066
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "구매할 수 있는 옵션"
+    },
+    {
+      "label": "실버",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 138,
+        "y1": 245,
+        "x2": 239,
+        "y2": 313
+      },
+      "center": {
+        "x": 0.2503,
+        "y": 0.207
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "구매할 수 있는 옵션"
+    },
+    {
+      "label": "골드",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 245,
+        "y1": 245,
+        "x2": 356,
+        "y2": 313
+      },
+      "center": {
+        "x": 0.3991,
+        "y": 0.207
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "구매할 수 있는 옵션"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -1,0 +1,131 @@
+{
+  "screen_type": "popup",
+  "screen_role": "reward_popup",
+  "summary": "보상 박스 팝업으로 여러 게임들과 관련된 혜택을 소개하며 링크를 제공합니다.",
+  "visible_text": [
+    "GIFT BOX",
+    "애니팡2",
+    "이동하기",
+    "We bare bears 더퍼즐",
+    "애니팡3",
+    "애니팡 사천성",
+    "하트 5개를 받으세요",
+    "보상버튼을 클릭 후 미션을 완료해야 보상이 지급됩니다."
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "인게임 재화(하트)",
+      "evidence": "하트 10개(MAX) 표시"
+    },
+    {
+      "category": "monetization",
+      "name": "인게임 재화(코인)",
+      "evidence": "코인 3150 표시"
+    },
+    {
+      "category": "monetization",
+      "name": "인게임 재화(보석)",
+      "evidence": "100 보석 표시"
+    },
+    {
+      "category": "ui",
+      "name": "보상 박스 타이틀",
+      "evidence": "상단에 GIFT BOX 표시"
+    },
+    {
+      "category": "ui",
+      "name": "이동하기 버튼",
+      "evidence": "보상 박스 접근 버튼(determined by '이동하기' text)"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 0,
+        "y1": 0,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.4996
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "팝업이 전체 화면을 덮고 있기 때문에 사용자에게 닫거나 넘길 필요가 있습니다."
+    },
+    {
+      "label": "이동하기",
+      "role": "progression",
+      "bbox": {
+        "x1": 389,
+        "y1": 631,
+        "x2": 633,
+        "y2": 704
+      },
+      "center": {
+        "x": 0.6786,
+        "y": 0.4952
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "보상 박스의 두 번째 게임으로 이동할 수 있는 버튼입니다."
+    },
+    {
+      "label": "보상받기(애니팡2)",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 20,
+        "y1": 159,
+        "x2": 300,
+        "y2": 250
+      },
+      "center": {
+        "x": 0.2125,
+        "y": 0.1517
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "보상 내용이 포함되어 있어 금전적 거래의 가능성이 있습니다."
+    },
+    {
+      "label": "보상받기(애니팡3)",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 20,
+        "y1": 350,
+        "x2": 300,
+        "y2": 440
+      },
+      "center": {
+        "x": 0.2125,
+        "y": 0.293
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "보상 내용이 포함되어 있어 금전적 거래의 가능성이 있습니다."
+    },
+    {
+      "label": "보상받기(애니팡 사천성)",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 20,
+        "y1": 536,
+        "x2": 300,
+        "y2": 626
+      },
+      "center": {
+        "x": 0.2125,
+        "y": 0.431
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "보상 내용이 포함되어 있어 금전적 거래의 가능성이 있습니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

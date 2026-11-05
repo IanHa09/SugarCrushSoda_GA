@@ -1,0 +1,83 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임 중심 화면으로 성과 재화 정보가 포함되어 있습니다.",
+  "visible_text": [
+    "0",
+    "10",
+    "💎",
+    "▶"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "생명 아이콘",
+      "evidence": "화면 왼쪽 하단에 위치"
+    },
+    {
+      "category": "currency",
+      "name": "보석",
+      "evidence": "화면 우측에 보이는 아이콘"
+    },
+    {
+      "category": "currency",
+      "name": "재화",
+      "evidence": "하단 재화 표시 아이콘"
+    },
+    {
+      "category": "progression",
+      "name": "진행 바",
+      "evidence": "화면 상단에 위치한 진행 바"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "홈",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.06905710491367861,
+        "y": 0.9213649851632048
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "꿀단지 아이콘",
+      "role": "structure",
+      "bbox": {
+        "x1": 421,
+        "y1": 64,
+        "x2": 489,
+        "y2": 132
+      },
+      "center": {
+        "x": 0.6042,
+        "y": 0.0727
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "재화 구매와 관련된 구조 요소"
+    },
+    {
+      "label": "보석 수",
+      "role": "structure",
+      "bbox": {
+        "x1": 570,
+        "y1": 64,
+        "x2": 653,
+        "y2": 126
+      },
+      "center": {
+        "x": 0.8121,
+        "y": 0.0705
+      },
+      "region": "top_bar",
+      "confidence": 0.85,
+      "reason": "재화 표시 요소"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

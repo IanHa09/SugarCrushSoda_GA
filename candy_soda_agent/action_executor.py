@@ -299,6 +299,19 @@ def _ensure_game_window_active(expected_window_title: str) -> None:
         )
 
 
+def bring_game_to_front(expected_window_title: str = GAME_WINDOW_TITLE) -> bool:
+    """캡처 전에 게임 창을 맨 앞으로 올립니다. 캡처는 화면의 정해진 영역을 그대로 찍어서, 다른 창이
+    덮고 있으면 그 창을 분석합니다(실측: 애니팡 1스텝에 Claude 앱을 찍고, 그 버튼 자리를 게임에서
+    눌러 환경설정이 열림). 올렸으면 True, 이미 맨 앞이거나 창 제목 설정이 없으면 False."""
+
+    if not expected_window_title or _application_matches(
+        expected_window_title, active_application_name()
+    ):
+        return False
+    _ensure_game_window_active(expected_window_title)
+    return True
+
+
 ANDROID_KEYCODE_BACK = "4"
 ADB_TIMEOUT_SECONDS = 20
 
@@ -377,7 +390,7 @@ def check_game_package(
     """게임 재시작에 쓸 패키지가 에뮬레이터에 설치돼 있는지 확인합니다."""
 
     if not package:
-        return False, "GAME_PACKAGE가 비어 있습니다."
+        return False, "games.txt에 이 게임의 패키지 칸이 비어 있습니다."
     try:
         result = _run_adb(_adb_command(adb_path, serial, "shell", "pm", "list", "packages", package))
     except (OSError, subprocess.TimeoutExpired) as error:
@@ -390,15 +403,17 @@ def check_game_package(
     if package in installed:
         return True, package
     hint = ""
+    # 같은 회사 패키지(com.king.* 이면 king)를 찾아 보여 줍니다.
+    vendor = package.split(".")[1] if package.count(".") >= 1 else package
     try:
-        similar = _run_adb(_adb_command(adb_path, serial, "shell", "pm", "list", "packages", "king"))
+        similar = _run_adb(_adb_command(adb_path, serial, "shell", "pm", "list", "packages", vendor))
         names = [
             line.strip().removeprefix("package:")
             for line in (similar.stdout or "").splitlines()
             if line.strip().startswith("package:")
         ]
         if names:
-            hint = f" (설치된 king 패키지: {', '.join(names[:5])} — 맞는 이름을 GAME_PACKAGE에 적으세요)"
+            hint = f" (설치된 {vendor} 패키지: {', '.join(names[:5])} — 맞는 이름을 games.txt의 패키지 칸에 적으세요)"
     except (OSError, subprocess.TimeoutExpired):
         pass
     return False, f"패키지 {package!r}를 찾지 못했습니다{hint}"

@@ -1,0 +1,309 @@
+{
+  "nodes": {
+    "screen_8e3bb71d39af": {
+      "id": "screen_8e3bb71d39af",
+      "screen_type": "home",
+      "summary": "게임의 중심 화면으로 보드와 레벨 정보가 포함됨.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_8e3bb71d39af.png",
+      "visits": 5,
+      "buttons": [
+        "#",
+        "home",
+        "settings"
+      ],
+      "fingerprint": "28fae1f4a27c2a841ccc4c44d29ddb399752675259e0bdc2a962a962b556b696",
+      "play_flow": false
+    },
+    "screen_ed79bd0a3f5e": {
+      "id": "screen_ed79bd0a3f5e",
+      "screen_type": "shop",
+      "summary": "아이템 구매를 위한 상점 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_ed79bd0a3f5e.png",
+      "visits": 14,
+      "buttons": [
+        "상점 닫기"
+      ],
+      "fingerprint": "df007208c68092a896a8e0389748934ab2aa80bc802ec630d6b4d6b455b425b6",
+      "play_flow": false
+    },
+    "screen_83795821337b": {
+      "id": "screen_83795821337b",
+      "screen_type": "popup",
+      "summary": "팀 관련 정보를 안내하는 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_83795821337b.png",
+      "visits": 48,
+      "buttons": [
+        "close",
+        "별",
+        "완료 체크리스트",
+        "캘린더",
+        "팀",
+        "팝업",
+        "플레이"
+      ],
+      "fingerprint": "ff00ff008980b960a468a1d881709c60cb14e504f5209e00ca08d02092aab2d2",
+      "play_flow": false
+    },
+    "screen_05edc17450ec": {
+      "id": "screen_05edc17450ec",
+      "screen_type": "popup",
+      "summary": "팀 관련 정보를 안내하는 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_05edc17450ec.png",
+      "visits": 53,
+      "buttons": [
+        "close",
+        "friends",
+        "메시지함",
+        "친구 더 추가"
+      ],
+      "fingerprint": "bf00f070c0008a9486c095e09c308b80f528f550f79482809a009818a4b6a4b6",
+      "play_flow": false
+    },
+    "screen_e03a03472329": {
+      "id": "screen_e03a03472329",
+      "screen_type": "popup",
+      "summary": "활동 안내를 위한 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_e03a03472329.png",
+      "visits": 8,
+      "buttons": [
+        "별",
+        "아이콘",
+        "아이콘 #",
+        "플레이",
+        "활동"
+      ],
+      "fingerprint": "bf00fd008280b8c0f1e0b4c0821cb240d970da8c84809e009a20c00c925cb25a",
+      "play_flow": false
+    },
+    "screen_c671802e4734": {
+      "id": "screen_c671802e4734",
+      "screen_type": "popup",
+      "summary": "참여 활동을 안내하는 보상 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_c671802e4734.png",
+      "visits": 5,
+      "buttons": [
+        "확인"
+      ],
+      "fingerprint": "3a067d02ff00fc80fc60f0e0fe90ff00ff00eb60dd80ff20ff00fe00ff007f00",
+      "play_flow": false
+    },
+    "screen_dcfcab05030c": {
+      "id": "screen_dcfcab05030c",
+      "screen_type": "menu",
+      "summary": "게임 설정 메뉴 화면으로, 디스플레이 설정을 조정할 수 있는 옵션이 포함되어 있습니다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_dcfcab05030c.png",
+      "visits": 2,
+      "buttons": [
+        "settings",
+        "저장",
+        "취소",
+        "팀",
+        "플레이"
+      ],
+      "fingerprint": "fd00aa00810099640c2088f288d088f08c8188d10b488e008a00806092aa92d2",
+      "play_flow": false
+    },
+    "screen_df915252ea31": {
+      "id": "screen_df915252ea31",
+      "screen_type": "level",
+      "summary": "레벨 시작 화면으로, 목표와 부스터 선택을 안내하는 팝업이 나타나고, 게임 시작 버튼이 있는 구조입니다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_df915252ea31.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "게임 시작"
+      ],
+      "fingerprint": "ed000800e680e0c0c0c4c45cc68cc164cab4caacc698c6d8e010c064a2aa55d2",
+      "play_flow": false
+    },
+    "screen_29344fc062d0": {
+      "id": "screen_29344fc062d0",
+      "screen_type": "popup",
+      "summary": "친구들과 함께하면 더 즐거워요!라는 안내 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_05-44-27\\navigation\\representatives\\screen_29344fc062d0.png",
+      "visits": 6,
+      "buttons": [
+        "close",
+        "확인"
+      ],
+      "fingerprint": "3d027e00fe00fac0f240fc80fe80ff00ff00e52cff40ff00ff00fe00ff005f40",
+      "play_flow": false
+    }
+  },
+  "edges": [
+    {
+      "source": "screen_8e3bb71d39af",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "첫째 탭 (가게 처럼 보이는 분홍 하얀색 천막 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95"
+    },
+    {
+      "source": "screen_ed79bd0a3f5e",
+      "target": "screen_83795821337b",
+      "action": "넷째 탭 (분홍색, 흰색 사람 세 명 다이아몬드형 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_05edc17450ec",
+      "action": "셋째 탭 (노란 별 아이콘 위에 초록색 사각형)",
+      "action_key": "a540c6bda018d2baa737e9c7aa873174525fe2ea"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_83795821337b",
+      "action": "넷째 탭 (핑크색과 흰색 사람 얼굴 세 개가 다이아몬드 모양 배경 안에…",
+      "action_key": "a75b4d0c99965a49f64556d2c6e329bf960c5d9f"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_e03a03472329",
+      "action": "다섯째 탭 (달력 아이콘 분홍색 체크 표시)",
+      "action_key": "2c72cbcebe2789611ea13fb2119c02c8575e524d"
+    },
+    {
+      "source": "screen_e03a03472329",
+      "target": "screen_c671802e4734",
+      "action": "? 아이콘",
+      "action_key": "3fede7e0cbf56e1bbf863db76600ef6970c38997"
+    },
+    {
+      "source": "screen_c671802e4734",
+      "target": "screen_e03a03472329",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6"
+    },
+    {
+      "source": "screen_c671802e4734",
+      "target": "screen_e03a03472329",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_e03a03472329",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "첫째 탭 (작은 가게 아이콘에 느낌표 알림 배지)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_c671802e4734",
+      "action": "i 아이콘",
+      "action_key": "01610830f09e25149f45dbda0b0a9fbd01098ce4"
+    },
+    {
+      "source": "screen_c671802e4734",
+      "target": "screen_05edc17450ec",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "첫째 탭 (작은 점포 간판 모양 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_dcfcab05030c",
+      "action": "뒤로 화살표 아이콘",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90"
+    },
+    {
+      "source": "screen_dcfcab05030c",
+      "target": "screen_df915252ea31",
+      "action": "저장",
+      "action_key": "fd5ba56ea24bf6271f92da1c8f62237923a8e22b"
+    },
+    {
+      "source": "screen_df915252ea31",
+      "target": "screen_83795821337b",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "!",
+      "action_key": "8bebb96a37939e76049926402db0813a6fde54bd"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_8e3bb71d39af",
+      "action": "인물 아이콘",
+      "action_key": "cc3ecd0d2cb0a9bd74655d0e9c011311b6aa3e6c"
+    },
+    {
+      "source": "screen_8e3bb71d39af",
+      "target": "screen_83795821337b",
+      "action": "넷째 탭 (분홍 흰색 배경에 사람 모양 3명 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_8e3bb71d39af",
+      "action": "별 아이콘",
+      "action_key": "3f23568a85e44321a0a998f88c66d7d1e8a815f2"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "첫째 탭 (가게 외관 아이콘 위에 느낌표 배지)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_05edc17450ec",
+      "action": "둘째 탭 (분홍색과 파란색 사람 얼굴 말풍선 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_29344fc062d0",
+      "action": "정보 아이콘",
+      "action_key": "9b05d4645206114723a6c84553763f5e6917d91b"
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_05edc17450ec",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_29344fc062d0",
+      "action": "정보 안내 i 아이콘",
+      "action_key": "c64c5f7ca45c863c24fcd5c011786e6ae5fbd844"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_ed79bd0a3f5e",
+      "action": "상점 아이콘",
+      "action_key": "4d1a8bd6aa5945126e31d9062e916f2cdea370bb"
+    },
+    {
+      "source": "screen_e03a03472329",
+      "target": "screen_05edc17450ec",
+      "action": "둘째 탭 (말풍선 안에 사람 두 명 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee"
+    },
+    {
+      "source": "screen_05edc17450ec",
+      "target": "screen_29344fc062d0",
+      "action": "i (정보) 아이콘",
+      "action_key": "01610830f09e25149f45dbda0b0a9fbd01098ce4"
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_05edc17450ec",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6"
+    },
+    {
+      "source": "screen_83795821337b",
+      "target": "screen_dcfcab05030c",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef"
+    }
+  ]
+}

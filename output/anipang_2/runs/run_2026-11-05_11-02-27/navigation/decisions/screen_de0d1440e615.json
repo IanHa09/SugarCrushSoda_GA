@@ -1,0 +1,113 @@
+{
+  "screen_type": "menu",
+  "screen_role": "event_hub",
+  "summary": "트로피 수집 및 전시를 위한 화면으로, 사용자가 보유한 트로피를 확인하고 올리는 UI입니다.",
+  "visible_text": [
+    "보유 트로피",
+    "전체",
+    "일반",
+    "랭킹",
+    "기타"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "X 버튼 있음"
+    },
+    {
+      "category": "currency",
+      "name": "트로피 수",
+      "evidence": "0/30, 0/3, 등으로 표시됨"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 708,
+        "y1": 20,
+        "x2": 743,
+        "y2": 55
+      },
+      "center": {
+        "x": 0.9635,
+        "y": 0.0278
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "팝업 닫기 버튼"
+    },
+    {
+      "label": "전체",
+      "role": "progression",
+      "bbox": {
+        "x1": 135,
+        "y1": 110,
+        "x2": 245,
+        "y2": 150
+      },
+      "center": {
+        "x": 0.2523,
+        "y": 0.0964
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "트로피 전시를 전체로 선택하는 버튼"
+    },
+    {
+      "label": "일반",
+      "role": "progression",
+      "bbox": {
+        "x1": 252,
+        "y1": 110,
+        "x2": 357,
+        "y2": 150
+      },
+      "center": {
+        "x": 0.4044,
+        "y": 0.0964
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "트로피 전시를 일반으로 설정하는 버튼"
+    },
+    {
+      "label": "랭킹",
+      "role": "progression",
+      "bbox": {
+        "x1": 358,
+        "y1": 110,
+        "x2": 460,
+        "y2": 150
+      },
+      "center": {
+        "x": 0.5432,
+        "y": 0.0964
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "트로피 전시를 랭킹으로 설정하는 버튼"
+    },
+    {
+      "label": "기타",
+      "role": "progression",
+      "bbox": {
+        "x1": 461,
+        "y1": 110,
+        "x2": 558,
+        "y2": 150
+      },
+      "center": {
+        "x": 0.6766,
+        "y": 0.0964
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "트로피 전시를 기타로 설정하는 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

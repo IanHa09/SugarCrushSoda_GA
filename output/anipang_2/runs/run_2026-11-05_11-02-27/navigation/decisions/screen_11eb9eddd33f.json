@@ -1,0 +1,195 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+  "visible_text": [
+    "100",
+    "3150",
+    "10",
+    "MAX",
+    "5일 남음",
+    "무료 뽐내기",
+    "레벨 1",
+    "지도 이동"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "하트",
+      "evidence": "상단 우측에 위치해 생명 상태를 보여줌"
+    },
+    {
+      "category": "ui",
+      "name": "코인",
+      "evidence": "상단 우측에 위치해 재화 상태를 보여줌"
+    },
+    {
+      "category": "ui",
+      "name": "레벨 번호",
+      "evidence": "레벨을 선택할 수 있는 구름 모양의 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "무료 보너스 버튼",
+      "evidence": "특별 보너스를 받기 위한 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "이동 버튼",
+      "evidence": "지도를 탐색하기 위한 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (선물 상자와 금은 색 동전 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.11155378486055777,
+        "y": 0.9451038575667656
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (컬러 숫자 블록 1,2,3 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.30677290836653387,
+        "y": 0.9436201780415431
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "NEW",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.4116865869853918,
+        "y": 0.9436201780415431
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (빨간 하트와 오른쪽 화살표 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5073041168658698,
+        "y": 0.9436201780415431
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (파란 방패와 사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6148738379814077,
+        "y": 0.9436201780415431
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "무료",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7237715803452855,
+        "y": 0.9406528189910979
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "일곱째 탭 (봉투(쪽지) 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8207171314741036,
+        "y": 0.9451038575667656
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "여덟째 탭 (회색 톱니바퀴 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9243027888446215,
+        "y": 0.9421364985163204
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "하트 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 691,
+        "y1": 34,
+        "x2": 743,
+        "y2": 82
+      },
+      "center": {
+        "x": 0.9522,
+        "y": 0.043
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "생명 상태를 확인할 수 있음"
+    },
+    {
+      "label": "코인 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 644,
+        "y1": 34,
+        "x2": 688,
+        "y2": 82
+      },
+      "center": {
+        "x": 0.8845,
+        "y": 0.043
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "재화 상태를 확인할 수 있음"
+    },
+    {
+      "label": "레벨 1",
+      "role": "progression",
+      "bbox": {
+        "x1": 423,
+        "y1": 596,
+        "x2": 469,
+        "y2": 645
+      },
+      "center": {
+        "x": 0.5923,
+        "y": 0.4603
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "레벨 선택을 위한 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": [
+    "최근 기록과 같은 구조의 화면입니다."
+  ]
+}

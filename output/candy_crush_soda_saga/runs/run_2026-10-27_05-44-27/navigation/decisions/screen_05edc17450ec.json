@@ -1,0 +1,194 @@
+{
+  "screen_type": "popup",
+  "summary": "팀 관련 정보를 안내하는 팝업 화면.",
+  "visible_text": [
+    "친구들과 함께하면 더 즐거워요!",
+    "팀은 하트를 보내주고 어려운 상황에서",
+    "당신을 도와줄 수 있어요.",
+    "계속 플레이해 소설을 해주세요!",
+    "친구 더 추가"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 아이콘",
+      "evidence": "상단에 표시된 X 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "친구 탭",
+      "evidence": "탭바에서 친구와 메시지탭 표시"
+    },
+    {
+      "category": "ui",
+      "name": "친구 더 추가 버튼",
+      "evidence": "팝업 하단에 노란 버튼으로 표시"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "정보 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 35,
+        "y1": 35,
+        "x2": 79,
+        "y2": 75
+      },
+      "center": {
+        "x": 0.0751,
+        "y": 0.0408
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "화면 정보를 보는데 사용되는 아이콘."
+    },
+    {
+      "label": "알림 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 35,
+        "y1": 915,
+        "x2": 79,
+        "y2": 960
+      },
+      "center": {
+        "x": 0.0751,
+        "y": 0.6955
+      },
+      "region": "bottom_nav",
+      "confidence": 0.9,
+      "reason": "게임 내 알림을 확인하는 아이콘."
+    },
+    {
+      "label": "친구 더 추가",
+      "role": "progression",
+      "bbox": {
+        "x1": 278,
+        "y1": 1040,
+        "x2": 479,
+        "y2": 1134
+      },
+      "center": {
+        "x": 0.4987,
+        "y": 0.8064
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "플레이를 진행하기 위한 버튼이다."
+    },
+    {
+      "label": "설정 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 280,
+        "y1": 1294,
+        "x2": 360,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.4216,
+        "y": 0.9796
+      },
+      "region": "bottom_nav",
+      "confidence": 0.8,
+      "reason": "탭바에 위치한 버튼이다."
+    },
+    {
+      "label": "친구",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 129,
+        "y1": 70,
+        "x2": 189,
+        "y2": 105
+      },
+      "center": {
+        "x": 0.2095,
+        "y": 0.0649
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "탭을 통해 친구 섹션으로 이동."
+    },
+    {
+      "label": "메시지함",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 195,
+        "y1": 70,
+        "x2": 258,
+        "y2": 105
+      },
+      "center": {
+        "x": 0.2984,
+        "y": 0.0649
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "탭을 통해 메시지함으로 이동."
+    },
+    {
+      "label": "i 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.08827404479578392,
+        "y": 0.04970326409495549
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "첫째 탭 (작은 점포 간판 모양 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1080368906455863,
+        "y": 0.9695845697329377
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (노란 별 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5191040843214756,
+        "y": 0.9747774480712166
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (핑크색과 흰색 사람 얼굴 세 개가 다이아몬드 모양 배경 안에…",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7193675889328063,
+        "y": 0.9747774480712166
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력에 체크표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9051383399209486,
+        "y": 0.9747774480712166
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

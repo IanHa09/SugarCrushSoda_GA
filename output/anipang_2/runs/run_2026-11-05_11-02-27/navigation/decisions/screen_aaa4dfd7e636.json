@@ -1,0 +1,195 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+  "visible_text": [
+    "100",
+    "3150",
+    "10",
+    "MAX",
+    "5일 남음",
+    "25일 남음",
+    "매일매일! '무료 보너스' 받으세요~!"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "사람 아이콘(프로필)",
+      "evidence": "위쪽 중앙에 위치"
+    },
+    {
+      "category": "currency",
+      "name": "보석",
+      "evidence": "위쪽에 '100' 표시"
+    },
+    {
+      "category": "currency",
+      "name": "골드",
+      "evidence": "위쪽에 '3150' 표시"
+    },
+    {
+      "category": "currency",
+      "name": "하트 (생명)",
+      "evidence": "위쪽에 '10 MAX' 표시"
+    },
+    {
+      "category": "booster",
+      "name": "5일 남음 보상",
+      "evidence": "화면 중앙 검은색 배경 오른쪽에 위치"
+    },
+    {
+      "category": "objective",
+      "name": "레벨 번호",
+      "evidence": "보드에 '1', '2', '3', '4', '5', '6', '7', '8' 표시"
+    },
+    {
+      "category": "ui",
+      "name": "판지 아이콘 (동전 수집 요약)",
+      "evidence": "중앙 아래 좌측에 위치"
+    },
+    {
+      "category": "ui",
+      "name": "지도 및 배경",
+      "evidence": "전체 화면을 차지"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (선물 상자 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.04249667994687915,
+        "y": 0.9688427299703264
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (번호표 1 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1301460823373174,
+        "y": 0.973293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (토끼 손가락 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.22709163346613545,
+        "y": 0.9762611275964391
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (하트와 화살표 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3240371845949535,
+        "y": 0.9725519287833828
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (사람 두 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.41301460823373176,
+        "y": 0.9695845697329377
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "여섯째 탭 (편지 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5112881806108898,
+        "y": 0.9695845697329377
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "일곱째 탭 (톱니바퀴 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.598937583001328,
+        "y": 0.9688427299703264
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "레벨 1 버튼",
+      "role": "progression",
+      "bbox": {
+        "x1": 351,
+        "y1": 1021,
+        "x2": 427,
+        "y2": 1120
+      },
+      "center": {
+        "x": 0.5166,
+        "y": 0.7941
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "레벨 1 선택 버튼"
+    },
+    {
+      "label": "애드 보너스",
+      "role": "risky_ad",
+      "bbox": {
+        "x1": 445,
+        "y1": 1223,
+        "x2": 523,
+        "y2": 1283
+      },
+      "center": {
+        "x": 0.6428,
+        "y": 0.9295
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "광고 시청으로 보상을 주는 버튼"
+    },
+    {
+      "label": "세계 이동",
+      "role": "structure",
+      "bbox": {
+        "x1": 652,
+        "y1": 1113,
+        "x2": 735,
+        "y2": 1172
+      },
+      "center": {
+        "x": 0.921,
+        "y": 0.8476
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "세계 이동 기능을 제공하는 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

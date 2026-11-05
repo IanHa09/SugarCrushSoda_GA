@@ -1,0 +1,84 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 레벨 선택과 보상 안내가 있는 형태입니다.",
+  "visible_text": [
+    "SHOP",
+    "혜택 확인하기",
+    "게임으로",
+    "SCROLL DOWN",
+    "Click!"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "Shop 아이콘",
+      "evidence": "ui 상점 아이콘이 화면 중앙에 있음"
+    },
+    {
+      "category": "ui",
+      "name": "게임 시작 버튼",
+      "evidence": "플레이를 위해 클릭해야 할 버튼이 있음"
+    },
+    {
+      "category": "ui",
+      "name": "스크롤 안내 아이콘",
+      "evidence": "스크롤 하라는 지시가 있음"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "게임으로",
+      "role": "progression",
+      "bbox": {
+        "x1": 326,
+        "y1": 650,
+        "x2": 453,
+        "y2": 711
+      },
+      "center": {
+        "x": 0.5173,
+        "y": 0.5048
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "플레이 화면으로 넘어가기 위한 버튼"
+    },
+    {
+      "label": "Shop",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 302,
+        "y1": 500,
+        "x2": 450,
+        "y2": 586
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.4028
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "'Shop' 버튼으로 재화 구매할 수 있는 팝업으로 연결될 가능성 있음"
+    },
+    {
+      "label": "SCROLL DOWN",
+      "role": "progression",
+      "bbox": {
+        "x1": 305,
+        "y1": 750,
+        "x2": 455,
+        "y2": 800
+      },
+      "center": {
+        "x": 0.5046,
+        "y": 0.5749
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "아래로 스크롤하라는 유도 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

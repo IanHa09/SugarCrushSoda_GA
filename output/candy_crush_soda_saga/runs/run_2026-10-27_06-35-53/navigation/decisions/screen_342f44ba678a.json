@@ -1,0 +1,101 @@
+{
+  "screen_type": "popup",
+  "summary": "팀원과 협력할 것을 독려하는 안내 팝업으로, 팀 지원과 레벨 도달 목표를 제시하고 있다.",
+  "visible_text": [
+    "함께하면 더 좋아요!",
+    "팀원에게 하트를 받고",
+    "레벨 26에 도달해 팀을 잠금 해제하세요!",
+    "플레이"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "플레이 버튼",
+      "evidence": "플레이 버튼이 화면 하단에 위치해 있다."
+    },
+    {
+      "category": "ui",
+      "name": "탭바",
+      "evidence": "화면 하단에 글자 없이 아이콘들로 구성된 탭바가 존재한다."
+    },
+    {
+      "category": "ui",
+      "name": "목표 안내 세부 사항",
+      "evidence": "팀원과 협력해야 한다는 내용이 적혀 있다."
+    },
+    {
+      "category": "character",
+      "name": "오징어 캐릭터",
+      "evidence": "팝업 중앙에 등장하는 캐릭터 그림이 있다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (가게 천막 아이콘에 느낌표 배지)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.11594202898550725,
+        "y": 0.9643916913946587
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (말풍선 안에 사람 두 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.24110671936758893,
+        "y": 0.9643916913946587
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (별 모양 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.466403162055336,
+        "y": 0.9695845697329377
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력 모양 아이콘에 체크 표시)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9051383399209486,
+        "y": 0.9643916913946587
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "플레이",
+      "role": "progression",
+      "bbox": {
+        "x1": 338,
+        "y1": 1240,
+        "x2": 421,
+        "y2": 1306
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.9444
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "사용자가 다음 화면으로 진행하기 위해 클릭할 수 있는 버튼이다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

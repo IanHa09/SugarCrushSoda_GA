@@ -271,6 +271,10 @@ class ScreenNode(BaseModel):
     # 장르 화면 지도의 역할(SurveyDecision.screen_role). 처음 관찰 때 정하고, 비었거나 unknown일 때만
     # 나중 분석으로 채웁니다. 예전 run의 노드는 빈 값입니다.
     role: str = ""
+    # 처음 분석 때 탭바 찾기가 본 "지금 선택된 탭": 왼쪽부터의 순서(0부터, -1 = 모름·탭바 없음)와
+    # 그 탭 아래 뜬 글자(예: "친구"). 구조도의 탭 이름과 빗나간 탭 판정에 씁니다.
+    tab_index: int = -1
+    tab_name: str = ""
 
 
 class NavigationEdge(BaseModel):

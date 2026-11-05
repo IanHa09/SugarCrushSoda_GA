@@ -1,0 +1,192 @@
+{
+  "screen_type": "shop",
+  "summary": "아이템 구매를 위한 상점 화면.",
+  "visible_text": [
+    "상점",
+    "특별 상품",
+    "작은 스낵!",
+    "주간 할인",
+    "골드 특가"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "특별 상품",
+      "evidence": "여러 아이템과 가격이 나열됨."
+    },
+    {
+      "category": "monetization",
+      "name": "골드 특가",
+      "evidence": "골드 구매 옵션이 나열됨."
+    },
+    {
+      "category": "monetization",
+      "name": "주간 할인",
+      "evidence": "할인 아이템 목록이 표시됨."
+    },
+    {
+      "category": "currency",
+      "name": "골드",
+      "evidence": "상단에 골드 아이콘과 수량 표시."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.08432147562582346,
+        "y": 0.9614243323442137
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (분홍색, 파란색 사람 두 명 말풍선 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2753623188405797,
+        "y": 0.9577151335311572
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍색, 흰색 사람 세 명 다이아몬드형 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6903820816864296,
+        "y": 0.956973293768546
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (분홍색 체크 표시 달력 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8853754940711462,
+        "y": 0.9584569732937686
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "상점 닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 716,
+        "y1": 2,
+        "x2": 758,
+        "y2": 34
+      },
+      "center": {
+        "x": 0.971,
+        "y": 0.0134
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "X 아이콘으로 상점 닫기 역할."
+    },
+    {
+      "label": "₩5,500",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 649,
+        "y1": 652,
+        "x2": 757,
+        "y2": 738
+      },
+      "center": {
+        "x": 0.9262,
+        "y": 0.5156
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "구매 버튼으로 가격이 표시됨."
+    },
+    {
+      "label": "₩5,500",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 648,
+        "y1": 546,
+        "x2": 757,
+        "y2": 624
+      },
+      "center": {
+        "x": 0.9256,
+        "y": 0.434
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "구매 버튼으로 가격이 표시됨."
+    },
+    {
+      "label": "10",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 222,
+        "y1": 606,
+        "x2": 248,
+        "y2": 628
+      },
+      "center": {
+        "x": 0.3096,
+        "y": 0.4577
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "구매 가능한 아이템 수량."
+    },
+    {
+      "label": "30",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 313,
+        "y1": 606,
+        "x2": 339,
+        "y2": 628
+      },
+      "center": {
+        "x": 0.4295,
+        "y": 0.4577
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "구매 가능한 아이템 수량."
+    },
+    {
+      "label": "60",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 406,
+        "y1": 606,
+        "x2": 431,
+        "y2": 628
+      },
+      "center": {
+        "x": 0.5514,
+        "y": 0.4577
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "구매 가능한 아이템 수량."
+    }
+  ],
+  "evidence_notes": [
+    "상점 화면으로, 아이템 구매가 중심.",
+    "아이템 가격 정보가 포함됨."
+  ],
+  "uncertainties": [
+    "구매와 관련된 아이템으로 모든 상품이 안전하지 않음."
+  ]
+}

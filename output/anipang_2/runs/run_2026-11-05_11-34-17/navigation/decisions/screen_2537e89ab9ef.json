@@ -1,0 +1,296 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 홈 화면으로, 레벨을 선택할 수 있는 지도 형태.",
+  "visible_text": [
+    "25일 남음",
+    "100",
+    "3150",
+    "10",
+    "MAX",
+    "무료보내기",
+    "5일 남음",
+    "코드 입력"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "코인",
+      "evidence": "3150"
+    },
+    {
+      "category": "ui",
+      "name": "하트",
+      "evidence": "10"
+    },
+    {
+      "category": "ui",
+      "name": "레벨 선택",
+      "evidence": "1, 2, 3, 4, 5 레벨 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "일일 보상",
+      "evidence": "25일 남음"
+    },
+    {
+      "category": "ui",
+      "name": "티켓 버튼",
+      "evidence": "무료보내기 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "이벤트 아이콘",
+      "evidence": "5일 남음 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "게임 설정 아이콘",
+      "evidence": "톱니바퀴 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "월드 이동",
+      "evidence": "월드 이동 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "앱 이동",
+      "evidence": "앱 이동 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "프로필 아이콘",
+      "evidence": "프로필 아이콘"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (사탕과 금화가 담긴 빨간색 통 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.05312084993359894,
+        "y": 0.9740356083086054
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (파란색, 노란색, 초록색 카드 겹친 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.17264276228419656,
+        "y": 0.9725519287833828
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "NEW",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.448871181938911,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (파란색 사람 두 명이 그려진 방패 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.648074369189907,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "여섯째 탭 (파란색 편지 봉투 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.747675962815405,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "일곱째 탭 (회색 톱니바퀴 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9468791500664011,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "설정",
+      "role": "structure",
+      "bbox": {
+        "x1": 679,
+        "y1": 1302,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.9502,
+        "y": 0.9826
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "설정 메뉴 이동 가능."
+    },
+    {
+      "label": "레벨 1",
+      "role": "progression",
+      "bbox": {
+        "x1": 370,
+        "y1": 897,
+        "x2": 423,
+        "y2": 952
+      },
+      "center": {
+        "x": 0.5266,
+        "y": 0.6858
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "레벨 시작 버튼."
+    },
+    {
+      "label": "무료 보내기",
+      "role": "risky_account",
+      "bbox": {
+        "x1": 593,
+        "y1": 1229,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.8931,
+        "y": 0.9555
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "회원가입 및 정보를 요구하는 팝업."
+    },
+    {
+      "label": "일일 보상",
+      "role": "structure",
+      "bbox": {
+        "x1": 246,
+        "y1": 1156,
+        "x2": 494,
+        "y2": 1215
+      },
+      "center": {
+        "x": 0.4914,
+        "y": 0.8795
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "일일 보상 관련 유저 인터랙션."
+    },
+    {
+      "label": "코드 입력",
+      "role": "structure",
+      "bbox": {
+        "x1": 671,
+        "y1": 1229,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.9449,
+        "y": 0.9555
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "보상과 관련된 액티비티."
+    },
+    {
+      "label": "레벨 2",
+      "role": "progression",
+      "bbox": {
+        "x1": 413,
+        "y1": 856,
+        "x2": 463,
+        "y2": 893
+      },
+      "center": {
+        "x": 0.5817,
+        "y": 0.6487
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "레벨 시작 버튼."
+    },
+    {
+      "label": "레벨 3",
+      "role": "progression",
+      "bbox": {
+        "x1": 461,
+        "y1": 811,
+        "x2": 509,
+        "y2": 858
+      },
+      "center": {
+        "x": 0.6441,
+        "y": 0.6191
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "레벨 시작 버튼."
+    },
+    {
+      "label": "레벨 4",
+      "role": "progression",
+      "bbox": {
+        "x1": 509,
+        "y1": 764,
+        "x2": 558,
+        "y2": 811
+      },
+      "center": {
+        "x": 0.7085,
+        "y": 0.5842
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "레벨 시작 버튼."
+    },
+    {
+      "label": "레벨 5",
+      "role": "progression",
+      "bbox": {
+        "x1": 558,
+        "y1": 701,
+        "x2": 606,
+        "y2": 748
+      },
+      "center": {
+        "x": 0.7729,
+        "y": 0.5375
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "레벨 시작 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

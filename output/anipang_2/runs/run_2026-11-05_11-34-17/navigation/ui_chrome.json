@@ -1,0 +1,216 @@
+{
+  "bands": {
+    "top": 0,
+    "bottom": 0,
+    "height": 1348,
+    "width": 753,
+    "support": 0
+  },
+  "bands_node_ids": [
+    "screen_2537e89ab9ef",
+    "screen_b181d370d396",
+    "screen_02774c53b0f0",
+    "screen_89fd4deb723b",
+    "screen_316a435e3157",
+    "screen_da2989b6358d",
+    "screen_50d8b4a941c2"
+  ],
+  "actions": {
+    "8f41cdd12c36748bb803d6eefe73810157aaad95": {
+      "label": "첫째 탭 (사탕과 금화가 담긴 빨간색 통 아이콘)",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          40.0,
+          1313.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "91a48de94b7f1113a5a8888f081197a295b4ffee": {
+      "label": "둘째 탭 (파란색, 노란색, 초록색 카드 겹친 아이콘)",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          130.0,
+          1311.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "b03306e880ed69cc8d528222ce420f3cd982753c": {
+      "label": "NEW",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          338.0,
+          1320.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "2c72cbcebe2789611ea13fb2119c02c8575e524d": {
+      "label": "다섯째 탭 (파란색 사람 두 명이 그려진 방패 아이콘)",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          488.0,
+          1320.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "01e8b8b8da04620786705ba15d02b0ee836f3dc9": {
+      "label": "여섯째 탭 (파란색 편지 봉투 아이콘)",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          563.0,
+          1320.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "d67ac652c27575dca7aa2c9de7ba3acb225732ff": {
+      "label": "일곱째 탭 (회색 톱니바퀴 아이콘)",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          713.0,
+          1320.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "bottom_nav"
+      },
+      "height": 1348
+    },
+    "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e": {
+      "label": "설정",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          715.5,
+          1324.5
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "top_bar"
+      },
+      "height": 1348
+    },
+    "3e5af5c690f730429a41b80238102cb1c9427011": {
+      "label": "일일 보상",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          370.0,
+          1185.6
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "content"
+      },
+      "height": 1348
+    },
+    "32b1659b6331129ee719f1e8fa3b20369b9da08e": {
+      "label": "코드 입력",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          711.5,
+          1288.0
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "content"
+      },
+      "height": 1348
+    },
+    "e44e1e13655ebbe4846a1d1fd6c740e17a1154ea": {
+      "label": "레벨 1",
+      "positions": {
+        "screen_2537e89ab9ef": [
+          396.5,
+          924.5
+        ]
+      },
+      "regions": {
+        "screen_2537e89ab9ef": "content"
+      },
+      "height": 1348
+    },
+    "4ef668115c7f201253de4a7224469cdc0cba05ea": {
+      "label": "카드팩 구매",
+      "positions": {
+        "screen_02774c53b0f0": [
+          143.5,
+          211.5
+        ]
+      },
+      "regions": {
+        "screen_02774c53b0f0": "content"
+      },
+      "height": 1348
+    },
+    "a01819af07333537083d839f2a55ca3f13025e78": {
+      "label": "팀 만들기",
+      "positions": {
+        "screen_89fd4deb723b": [
+          376.5,
+          1252.0
+        ]
+      },
+      "regions": {
+        "screen_89fd4deb723b": "content"
+      },
+      "height": 1348
+    },
+    "19966e2ca1cd74a272de0b98021ae92a22dd71cf": {
+      "label": "자유 가입",
+      "positions": {
+        "screen_316a435e3157": [
+          228.0,
+          224.0
+        ]
+      },
+      "regions": {
+        "screen_316a435e3157": "popup"
+      },
+      "height": 1348
+    },
+    "ef1bf1d439c048c9731e4c5e6ae2804527cc69dd": {
+      "label": "가입 승인",
+      "positions": {
+        "screen_316a435e3157": [
+          349.0,
+          224.0
+        ]
+      },
+      "regions": {
+        "screen_316a435e3157": "popup"
+      },
+      "height": 1348
+    },
+    "4bc3d166a02cf8d0fa2388542ced6f624c9c836b": {
+      "label": "이동",
+      "positions": {
+        "screen_da2989b6358d": [
+          703.5,
+          411.5
+        ]
+      },
+      "regions": {
+        "screen_da2989b6358d": "content"
+      },
+      "height": 1348
+    }
+  },
+  "global_actions": []
+}

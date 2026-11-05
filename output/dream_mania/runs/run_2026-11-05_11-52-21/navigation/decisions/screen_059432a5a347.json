@@ -1,0 +1,120 @@
+{
+  "screen_type": "menu",
+  "screen_role": "team",
+  "summary": "팀 가입을 안내하는 화면입니다. 무료 코인과 생명, 채팅 기능이 포함되어 있습니다.",
+  "visible_text": [
+    "팀",
+    "레벨 21에 도달하여 팀에 가입하세요!",
+    "무료코인",
+    "무료생명",
+    "채팅"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "팀 버튼",
+      "evidence": "화면 중앙에 팀 버튼이 위치합니다."
+    },
+    {
+      "category": "currency",
+      "name": "무료 코인",
+      "evidence": "무료 코인 아이콘과 텍스트가 함께 표시됩니다."
+    },
+    {
+      "category": "currency",
+      "name": "무료 생명",
+      "evidence": "무료 생명 아이콘과 텍스트가 함께 표시됩니다."
+    },
+    {
+      "category": "ui",
+      "name": "채팅 버튼",
+      "evidence": "채팅 아이콘이 화면 우측에 위치합니다."
+    },
+    {
+      "category": "character",
+      "name": "캐릭터",
+      "evidence": "여자와 동물 캐릭터가 화면 중앙에 등장합니다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "뒤로 화살표 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.08897742363877822,
+        "y": 0.9495548961424333
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "첫째 탭 (지도에 위치 표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.05312084993359894,
+        "y": 0.9666172106824926
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (트로피 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.19787516600265603,
+        "y": 0.9666172106824926
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (성 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3452855245683931,
+        "y": 0.9688427299703264
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (카드 아이콘 두 장)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9468791500664011,
+        "y": 0.9235905044510386
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": {
+        "x1": 270,
+        "y1": 50,
+        "x2": 480,
+        "y2": 110
+      },
+      "center": {
+        "x": 0.498,
+        "y": 0.0593
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "팀 안내 화면에서 메인 버튼 역할을 합니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

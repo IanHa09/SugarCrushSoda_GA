@@ -1,0 +1,60 @@
+{
+  "screen_type": "unknown",
+  "summary": "화면 구조가 확인되지 않음.",
+  "visible_text": [],
+  "game_elements": [],
+  "button_candidates": [
+    {
+      "label": "홈",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1334214002642008,
+        "y": 0.9614243323442137
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.4319682959048877,
+        "y": 0.9599406528189911
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7476882430647291,
+        "y": 0.9799703264094956
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "이벤트",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9458388375165125,
+        "y": 0.9799703264094956
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": [
+    "화면 내용이 게임 UI 관련 요소를 포함하지 않음."
+  ]
+}
