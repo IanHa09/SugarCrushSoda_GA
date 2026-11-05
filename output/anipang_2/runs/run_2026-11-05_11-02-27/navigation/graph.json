@@ -1,0 +1,867 @@
+{
+  "nodes": {
+    "screen_aaa4dfd7e636": {
+      "id": "screen_aaa4dfd7e636",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_aaa4dfd7e636.png",
+      "visits": 23,
+      "buttons": [
+        "home",
+        "settings",
+        "레벨 #",
+        "세계 이동"
+      ],
+      "fingerprint": "96a5b0c69334a638a8b0313810b0983ca98c39d4fcd0ce30fe0cb87e953ab52a",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_b181d370d396": {
+      "id": "screen_b181d370d396",
+      "screen_type": "popup",
+      "summary": "보상 제공을 위한 팝업으로 여러 게임을 소개합니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_b181d370d396.png",
+      "visits": 8,
+      "buttons": [
+        "close",
+        "이동하기"
+      ],
+      "fingerprint": "96a5d04cc680abf0d9ccf5c4e5b4f0dcc6a0c7bce7dc9a38bccccbdcd538b52a",
+      "play_flow": false,
+      "role": "offer_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_50d8b4a941c2": {
+      "id": "screen_50d8b4a941c2",
+      "screen_type": "unknown",
+      "summary": "이 화면은 게임 UI와 관련된 정보가 없습니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_50d8b4a941c2.png",
+      "visits": 5,
+      "buttons": [],
+      "fingerprint": "c721ce45942088e420944f0c9a32663218b506d9365bb4598cd8ca4c549e6197",
+      "play_flow": false,
+      "role": "unknown",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_068de1e71d3a": {
+      "id": "screen_068de1e71d3a",
+      "screen_type": "popup",
+      "summary": "게임 내 보상을 안내하는 팝업입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_068de1e71d3a.png",
+      "visits": 1,
+      "buttons": [
+        "게임으로"
+      ],
+      "fingerprint": "51e213d4c00ac7d2c62eaa83e1c143e1e1c1b541fe387546f452ff85734668c6",
+      "play_flow": false,
+      "role": "offer_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_29344fc062d0": {
+      "id": "screen_29344fc062d0",
+      "screen_type": "popup",
+      "summary": "랭킹 점수 수신을 안내하는 팝업입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_29344fc062d0.png",
+      "visits": 2,
+      "buttons": [
+        "close",
+        "확인"
+      ],
+      "fingerprint": "86a50102618c6c88c300db44cc5cc68cce8ccf1cc334e2b03505be05b4046245",
+      "play_flow": false,
+      "role": "info_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_3fd34a8353d0": {
+      "id": "screen_3fd34a8353d0",
+      "screen_type": "menu",
+      "summary": "리더보드 화면으로 플레이어 순위를 보여줍니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_3fd34a8353d0.png",
+      "visits": 8,
+      "buttons": [
+        "close",
+        "내 점수",
+        "튜토리얼",
+        "팀"
+      ],
+      "fingerprint": "96a58302618c6cc8c968596748ed4589b7453f15bf05bf85bf05be05bc05f655",
+      "play_flow": false,
+      "role": "leaderboard",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_326c21f5064c": {
+      "id": "screen_326c21f5064c",
+      "screen_type": "menu",
+      "summary": "계정 정보를 표시하고 수정할 수 있는 프로필 화면입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_326c21f5064c.png",
+      "visits": 8,
+      "buttons": [
+        "close",
+        "settings",
+        "보유 트로피",
+        "일반 기록",
+        "전시장 꾸미기",
+        "하트 도움"
+      ],
+      "fingerprint": "c602e2c0779032b1702174017c017b49016908b62d4b0d4306130794429f616b",
+      "play_flow": false,
+      "role": "profile",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_74d409d29297": {
+      "id": "screen_74d409d29297",
+      "screen_type": "menu",
+      "summary": "사용자의 프로필을 편집하는 화면으로 테두리, 배지, 닉네임 등을 설정할 수 있습니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_74d409d29297.png",
+      "visits": 3,
+      "buttons": [
+        "close",
+        "기본 테두리"
+      ],
+      "fingerprint": "0682c606e786f7e0bdd98f32972e8f006b51a4cdb4cd32ab44c568894ccc2aaa",
+      "play_flow": false,
+      "role": "profile",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_8ea31e1e4f17": {
+      "id": "screen_8ea31e1e4f17",
+      "screen_type": "menu",
+      "summary": "전시장 꾸미기 화면으로, 새로운 전시장을 선택하고 꾸미기 위한 UI입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_8ea31e1e4f17.png",
+      "visits": 4,
+      "buttons": [
+        "close",
+        "기본 전시장",
+        "장착중"
+      ],
+      "fingerprint": "068230017c017d017801023180b0616361710d570d4131711717716131510717",
+      "play_flow": false,
+      "role": "shop",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_036fa1ae013b": {
+      "id": "screen_036fa1ae013b",
+      "screen_type": "popup",
+      "summary": "트로피 설명 팝업으로, 새로운 트로피에 대한 정보를 제공합니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_036fa1ae013b.png",
+      "visits": 6,
+      "buttons": [
+        "close",
+        "다음"
+      ],
+      "fingerprint": "068231006000c20082829b4288e6a0f28cc6e268ea42c84418c390d2a2186053",
+      "play_flow": false,
+      "role": "info_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_de0d1440e615": {
+      "id": "screen_de0d1440e615",
+      "screen_type": "menu",
+      "summary": "트로피 수집 및 전시를 위한 화면으로, 사용자가 보유한 트로피를 확인하고 올리는 UI입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_de0d1440e615.png",
+      "visits": 5,
+      "buttons": [
+        "close",
+        "기타",
+        "랭킹",
+        "일반",
+        "전체"
+      ],
+      "fingerprint": "0682b100ec00fd00f8000000db346063e0e7e8c6e31838c318c790d2e31c3853",
+      "play_flow": false,
+      "role": "event_hub",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_61c29569dfcf": {
+      "id": "screen_61c29569dfcf",
+      "screen_type": "menu",
+      "summary": "카드 수집 및 구매를 위한 화면으로, 다양한 카드 팩과 보상을 선택할 수 있는 UI입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_61c29569dfcf.png",
+      "visits": 7,
+      "buttons": [
+        "close",
+        "보상 중 카드"
+      ],
+      "fingerprint": "cec782b8c15cf158c0e89aa6d326b3269926ad6aacc2984ea86eb84ab94ab14a",
+      "play_flow": false,
+      "role": "shop",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_6428c564c297": {
+      "id": "screen_6428c564c297",
+      "screen_type": "menu",
+      "summary": "친구 목록에서 친구에게 하트를 보내는 화면입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_6428c564c297.png",
+      "visits": 6,
+      "buttons": [
+        "close",
+        "on",
+        "하트",
+        "하트 보내기"
+      ],
+      "fingerprint": "96a58302f19e472bb303b40334039303bc03b303bc03b3039c03b302970368ce",
+      "play_flow": false,
+      "role": "friends",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_0499361cf645": {
+      "id": "screen_0499361cf645",
+      "screen_type": "menu",
+      "summary": "친구 목록 공개 설정을 위한 메뉴입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_0499361cf645.png",
+      "visits": 5,
+      "buttons": [
+        "스위치",
+        "확인"
+      ],
+      "fingerprint": "000000000000000060006c006a18625868286b80000000000000000000006153",
+      "play_flow": false,
+      "role": "settings",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_c51f067d123c": {
+      "id": "screen_c51f067d123c",
+      "screen_type": "popup",
+      "summary": "친구에게 하트를 보내는 방법에 대한 안내 팝업입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_c51f067d123c.png",
+      "visits": 7,
+      "buttons": [
+        "하트 보내기",
+        "확인"
+      ],
+      "fingerprint": "86a501024996010b9303b3017301e0f1e178e331b8239302940392029203684e",
+      "play_flow": false,
+      "role": "info_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_9c8f5a01da8d": {
+      "id": "screen_9c8f5a01da8d",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_9c8f5a01da8d.png",
+      "visits": 6,
+      "buttons": [
+        "close",
+        "내 위치",
+        "스페이스",
+        "아일랜드",
+        "코스모스"
+      ],
+      "fingerprint": "96d890939393a693a8d33193909388d3299339d3bed3ee93fed3fed2b4d2b466",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_61190cc79c32": {
+      "id": "screen_61190cc79c32",
+      "screen_type": "menu",
+      "summary": "사용자 프로필 화면으로, 트로피 및 최고 기록 확인이 가능한 화면입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_61190cc79c32.png",
+      "visits": 2,
+      "buttons": [
+        "close",
+        "일반 기록"
+      ],
+      "fingerprint": "c602e600e79032b37cc1d9e150c9318f20e309eb069794d694da371b62b360e7",
+      "play_flow": false,
+      "role": "profile",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_11eb9eddd33f": {
+      "id": "screen_11eb9eddd33f",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_11eb9eddd33f.png",
+      "visits": 3,
+      "buttons": [
+        "레벨 #",
+        "무료 보너스",
+        "지도 이동",
+        "코인",
+        "하트"
+      ],
+      "fingerprint": "96a489b49ce08ec09e41f043f1c2bca4adac779433f010f1e01e641eb53ab52a",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_29344fc062d0_d0e462": {
+      "id": "screen_29344fc062d0_d0e462",
+      "screen_type": "popup",
+      "summary": "보상 프로모션을 위한 팝업으로, 다양한 보상 내용이 제시됩니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_29344fc062d0_d0e462.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "확인"
+      ],
+      "fingerprint": "d0e46244e468844cf6d401c860e8f0f0e0c0e0c010c0c6c0a9c0c0c0a2c0a2c0",
+      "play_flow": false,
+      "role": "reward_popup",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_783631a9bd26": {
+      "id": "screen_783631a9bd26",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_783631a9bd26.png",
+      "visits": 25,
+      "buttons": [
+        "#",
+        "event",
+        "무료보너스",
+        "코인",
+        "특별 보상",
+        "하트"
+      ],
+      "fingerprint": "96a49ab48ce08ee09ec1f053f1c6bca5b8acef9437d010f06036cc06953ab5aa",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_0da5aaec9dbd": {
+      "id": "screen_0da5aaec9dbd",
+      "screen_type": "shop",
+      "summary": "게임 내 재화를 구매하는 화면으로, 다양한 패키지를 판매하고 있습니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_0da5aaec9dbd.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "루비",
+        "코인",
+        "패키지",
+        "하트"
+      ],
+      "fingerprint": "9ea480b4f21cdc38d8ea98209c6a98ee9c6a98ee896ea4eea968ac6aad68b5aa",
+      "play_flow": false,
+      "role": "shop",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_c6e5701c376d": {
+      "id": "screen_c6e5701c376d",
+      "screen_type": "shop",
+      "summary": "게임 내 재화를 구매하는 화면으로, 다양한 패키지를 판매하고 있습니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_c6e5701c376d.png",
+      "visits": 4,
+      "buttons": [
+        "close",
+        "더 보기"
+      ],
+      "fingerprint": "9ea480b4fbb49a6ab24e948e924eb212d416836c924e945ac060c9d2b38cb5aa",
+      "play_flow": false,
+      "role": "shop",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_7eb3a576032c": {
+      "id": "screen_7eb3a576032c",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_7eb3a576032c.png",
+      "visits": 6,
+      "buttons": [
+        "내 위치",
+        "무료뽑기",
+        "스페이스",
+        "코스모스"
+      ],
+      "fingerprint": "96c699d38cd38e939ed3709371d3bcd3bd93f7d336d31ed366d3aed394d7b4e7",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_3bb23609ee12": {
+      "id": "screen_3bb23609ee12",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 레벨 선택과 보상 안내가 있는 형태입니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_3bb23609ee12.png",
+      "visits": 1,
+      "buttons": [
+        "scroll down",
+        "게임으로"
+      ],
+      "fingerprint": "535448c2c7d2676ecf01e14163e0e1c0b2c0fe307dc6f6d2ffc073c22842a1a0",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_89fd4deb723b": {
+      "id": "screen_89fd4deb723b",
+      "screen_type": "menu",
+      "summary": "팀 가입 화면으로 팀을 검색하고 가입할 수 있는 옵션이 있습니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_89fd4deb723b.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "팀 만들기"
+      ],
+      "fingerprint": "96a58502e0015c355835583558355835583158355e35583158355831631b637b",
+      "play_flow": false,
+      "role": "team",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_cd5be623caf7": {
+      "id": "screen_cd5be623caf7",
+      "screen_type": "home",
+      "summary": "게임의 메인 화면으로 다양한 게임 요소가 표시됩니다.",
+      "representative": "output\\anipang_2\\runs\\run_2026-11-05_11-02-27\\navigation\\representatives\\screen_cd5be623caf7.png",
+      "visits": 1,
+      "buttons": [
+        "#",
+        "close"
+      ],
+      "fingerprint": "c721ce45942088e420944f0c9a32663218b506d9365bb4598cd88710a5508a61",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    }
+  },
+  "edges": [
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_b181d370d396",
+      "action": "첫째 탭 (선물 상자 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_b181d370d396",
+      "target": "screen_50d8b4a941c2",
+      "action": "이동하기",
+      "action_key": "28a1e87212fb9d2327c1618785533802c25e1baa",
+      "failures": 0
+    },
+    {
+      "source": "screen_50d8b4a941c2",
+      "target": "screen_aaa4dfd7e636",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 2
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_b181d370d396",
+      "action": "둘째 탭 (번호표 1 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_b181d370d396",
+      "target": "screen_b181d370d396",
+      "action": "이동하기",
+      "action_key": "28a1e87212fb9d2327c1618785533802c25e1baa",
+      "failures": 0
+    },
+    {
+      "source": "screen_50d8b4a941c2",
+      "target": "screen_b181d370d396",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_b181d370d396",
+      "target": "screen_068de1e71d3a",
+      "action": "이동하기",
+      "action_key": "28a1e87212fb9d2327c1618785533802c25e1baa",
+      "failures": 2
+    },
+    {
+      "source": "screen_068de1e71d3a",
+      "target": "screen_aaa4dfd7e636",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_aaa4dfd7e636",
+      "action": "셋째 탭 (토끼 손가락 아이콘)",
+      "action_key": "a540c6bda018d2baa737e9c7aa873174525fe2ea",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_29344fc062d0",
+      "action": "넷째 탭 (하트와 화살표 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 2
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_3fd34a8353d0",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6",
+      "failures": 0
+    },
+    {
+      "source": "screen_3fd34a8353d0",
+      "target": "screen_326c21f5064c",
+      "action": "내 점수",
+      "action_key": "75e005b2d3b006b0edbe766abe653bfc6158cb88",
+      "failures": 0
+    },
+    {
+      "source": "screen_326c21f5064c",
+      "target": "screen_74d409d29297",
+      "action": "설정",
+      "action_key": "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e",
+      "failures": 0
+    },
+    {
+      "source": "screen_74d409d29297",
+      "target": "screen_326c21f5064c",
+      "action": "X",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_326c21f5064c",
+      "target": "screen_8ea31e1e4f17",
+      "action": "전시장 꾸미기",
+      "action_key": "788c26865984da92289c9e3aedf06621af63b48d",
+      "failures": 0
+    },
+    {
+      "source": "screen_8ea31e1e4f17",
+      "target": "screen_326c21f5064c",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_326c21f5064c",
+      "target": "screen_036fa1ae013b",
+      "action": "보유 트로피",
+      "action_key": "1eaf3ab18d6e27bf7ac3b63cf9e2d200fb22b63d",
+      "failures": 0
+    },
+    {
+      "source": "screen_036fa1ae013b",
+      "target": "screen_de0d1440e615",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_de0d1440e615",
+      "target": "screen_326c21f5064c",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_3fd34a8353d0",
+      "target": "screen_aaa4dfd7e636",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_61c29569dfcf",
+      "action": "다섯째 탭 (사람 두 명 아이콘)",
+      "action_key": "2c72cbcebe2789611ea13fb2119c02c8575e524d",
+      "failures": 0
+    },
+    {
+      "source": "screen_61c29569dfcf",
+      "target": "screen_aaa4dfd7e636",
+      "action": "닫기 버튼",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_6428c564c297",
+      "action": "여섯째 탭 (편지 아이콘)",
+      "action_key": "01e8b8b8da04620786705ba15d02b0ee836f3dc9",
+      "failures": 0
+    },
+    {
+      "source": "screen_6428c564c297",
+      "target": "screen_0499361cf645",
+      "action": "ON",
+      "action_key": "b831bdb3a0295d3ede7ba4db051f744412acc865",
+      "failures": 0
+    },
+    {
+      "source": "screen_0499361cf645",
+      "target": "screen_c51f067d123c",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_c51f067d123c",
+      "target": "screen_6428c564c297",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_6428c564c297",
+      "target": "screen_aaa4dfd7e636",
+      "action": "X",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_9c8f5a01da8d",
+      "action": "세계 이동",
+      "action_key": "9ed5d462720763a2154b73b748bc07011559ce72",
+      "failures": 0
+    },
+    {
+      "source": "screen_9c8f5a01da8d",
+      "target": "screen_aaa4dfd7e636",
+      "action": "내 위치",
+      "action_key": "1f0e0bbe24b1ef6352f2ea3822e7dd0fbd676d51",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_aaa4dfd7e636",
+      "action": "레벨 1 버튼",
+      "action_key": "e44e1e13655ebbe4846a1d1fd6c740e17a1154ea",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_61190cc79c32",
+      "action": "세계 이동",
+      "action_key": "9ed5d462720763a2154b73b748bc07011559ce72",
+      "failures": 2
+    },
+    {
+      "source": "screen_61190cc79c32",
+      "target": "screen_3fd34a8353d0",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_9c8f5a01da8d",
+      "target": "screen_aaa4dfd7e636",
+      "action": "코스모스",
+      "action_key": "8e555df9e5cfb582f56bb3174739bcfffb275632",
+      "failures": 0
+    },
+    {
+      "source": "screen_9c8f5a01da8d",
+      "target": "screen_11eb9eddd33f",
+      "action": "스페이스",
+      "action_key": "02bc5e8717e776e189b1f44605100ca901ee10a6",
+      "failures": 1
+    },
+    {
+      "source": "screen_11eb9eddd33f",
+      "target": "screen_61c29569dfcf",
+      "action": "NEW",
+      "action_key": "b03306e880ed69cc8d528222ce420f3cd982753c",
+      "failures": 0
+    },
+    {
+      "source": "screen_61c29569dfcf",
+      "target": "screen_11eb9eddd33f",
+      "action": "닫기 버튼",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 2
+    },
+    {
+      "source": "screen_11eb9eddd33f",
+      "target": "screen_b181d370d396",
+      "action": "첫째 탭 (선물 상자와 금은 색 동전 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_b181d370d396",
+      "target": "screen_29344fc062d0_d0e462",
+      "action": "이동하기",
+      "action_key": "28a1e87212fb9d2327c1618785533802c25e1baa",
+      "failures": 1
+    },
+    {
+      "source": "screen_29344fc062d0_d0e462",
+      "target": "screen_783631a9bd26",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "첫째 탭 (열린 선물 상자 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "둘째 탭 (1, 2, 3 카드 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "무료",
+      "action_key": "33e00659f61f9b3a03df16b667424bd8424dfce3",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "일곱째 탭 (톱니바퀴 아이콘)",
+      "action_key": "d67ac652c27575dca7aa2c9de7ba3acb225732ff",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_0da5aaec9dbd",
+      "action": "코인",
+      "action_key": "66b3bc0c6f199588a87e74a1ffd19ef732611b9d",
+      "failures": 4
+    },
+    {
+      "source": "screen_0da5aaec9dbd",
+      "target": "screen_c6e5701c376d",
+      "action": "패키지",
+      "action_key": "5cbad0ab48330607abd66c72e286ead68c36b399",
+      "failures": 0
+    },
+    {
+      "source": "screen_c6e5701c376d",
+      "target": "screen_c6e5701c376d",
+      "action": "더 보기",
+      "action_key": "5e756d35a496a6dfc23bc9b00dcc9da41e112489",
+      "failures": 0
+    },
+    {
+      "source": "screen_c6e5701c376d",
+      "target": "screen_783631a9bd26",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "100",
+      "action_key": "8bebb96a37939e76049926402db0813a6fde54bd",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "넷째 탭 (하트와 화살표 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_7eb3a576032c",
+      "action": "월드 이동",
+      "action_key": "3673c67cd1b00cc6f019e474deb85c664a1c992b",
+      "failures": 0
+    },
+    {
+      "source": "screen_7eb3a576032c",
+      "target": "screen_783631a9bd26",
+      "action": "무료뽑기",
+      "action_key": "d5e1011aa11c55bdf744d1888d59c9b53dd69a76",
+      "failures": 0
+    },
+    {
+      "source": "screen_7eb3a576032c",
+      "target": "screen_783631a9bd26",
+      "action": "내 위치",
+      "action_key": "1f0e0bbe24b1ef6352f2ea3822e7dd0fbd676d51",
+      "failures": 0
+    },
+    {
+      "source": "screen_7eb3a576032c",
+      "target": "screen_783631a9bd26",
+      "action": "아일랜드",
+      "action_key": "a8c2289a41bd54568b74b741fc1009d90802db6f",
+      "failures": 0
+    },
+    {
+      "source": "screen_783631a9bd26",
+      "target": "screen_783631a9bd26",
+      "action": "월드 이동",
+      "action_key": "3673c67cd1b00cc6f019e474deb85c664a1c992b",
+      "failures": 0
+    },
+    {
+      "source": "screen_3bb23609ee12",
+      "target": "screen_89fd4deb723b",
+      "action": "게임으로",
+      "action_key": "403eb47ae54fd7b99e43537150205546d4587ec0",
+      "failures": 0
+    },
+    {
+      "source": "screen_89fd4deb723b",
+      "target": "screen_61c29569dfcf",
+      "action": "팀 만들기",
+      "action_key": "a01819af07333537083d839f2a55ca3f13025e78",
+      "failures": 0
+    },
+    {
+      "source": "screen_9c8f5a01da8d",
+      "target": "screen_cd5be623caf7",
+      "action": "스페이스",
+      "action_key": "02bc5e8717e776e189b1f44605100ca901ee10a6",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_aaa4dfd7e636",
+      "action": "넷째 탭 (하트와 화살표 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_aaa4dfd7e636",
+      "target": "screen_3fd34a8353d0",
+      "action": "넷째 탭 (하트와 화살표 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_3fd34a8353d0",
+      "target": "screen_3fd34a8353d0",
+      "action": "튜토리얼",
+      "action_key": "45d7baaa0d110e778e3208fc5dedc8acf36a8723",
+      "failures": 0
+    }
+  ]
+}

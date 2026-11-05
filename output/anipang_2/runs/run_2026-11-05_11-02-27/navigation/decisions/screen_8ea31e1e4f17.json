@@ -1,0 +1,126 @@
+{
+  "screen_type": "menu",
+  "screen_role": "shop",
+  "summary": "전시장 꾸미기 화면으로, 새로운 전시장을 선택하고 꾸미기 위한 UI입니다.",
+  "visible_text": [
+    "전시장 꾸미기",
+    "기본 전시장",
+    "장착중",
+    "1/5",
+    "1/20",
+    "0/25",
+    "₩",
+    "기본 전시장입니다."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "오른쪽 위 X 아이콘"
+    },
+    {
+      "category": "monetization",
+      "name": "전시장 상징",
+      "evidence": "전시장 구매 요건 표시"
+    },
+    {
+      "category": "monetization",
+      "name": "전시장 구매 비용",
+      "evidence": "전시장마다 요구하는 코인 수"
+    },
+    {
+      "category": "other",
+      "name": "현재 전시장",
+      "evidence": "기본 전시장이 선택된 상태"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 706,
+        "y1": 16,
+        "x2": 733,
+        "y2": 43
+      },
+      "center": {
+        "x": 0.9555,
+        "y": 0.0219
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "화면을 닫는 비상버튼입니다."
+    },
+    {
+      "label": "장착중",
+      "role": "structure",
+      "bbox": {
+        "x1": 278,
+        "y1": 217,
+        "x2": 476,
+        "y2": 253
+      },
+      "center": {
+        "x": 0.5007,
+        "y": 0.1743
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "현재 선택된 전시장을 표시합니다."
+    },
+    {
+      "label": "₩",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 505,
+        "y1": 589,
+        "x2": 529,
+        "y2": 618
+      },
+      "center": {
+        "x": 0.6866,
+        "y": 0.4477
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "상징적으로 전시장 구매를 위한 수단입니다."
+    },
+    {
+      "label": "1/5",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 531,
+        "y1": 589,
+        "x2": 548,
+        "y2": 618
+      },
+      "center": {
+        "x": 0.7165,
+        "y": 0.4477
+      },
+      "region": "content",
+      "confidence": 0.75,
+      "reason": "전시장 구매를 위한 요구량 표시입니다."
+    },
+    {
+      "label": "기본 전시장",
+      "role": "structure",
+      "bbox": {
+        "x1": 239,
+        "y1": 195,
+        "x2": 278,
+        "y2": 223
+      },
+      "center": {
+        "x": 0.3433,
+        "y": 0.155
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "지금 선택된 전시장의 이름입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

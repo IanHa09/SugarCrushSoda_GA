@@ -1,0 +1,131 @@
+{
+  "screen_type": "level",
+  "summary": "레벨 시작 화면으로, 목표 및 부스터 선택 기능을 제공하며, 게임 시작 버튼이 있다.",
+  "visible_text": [
+    "레벨 10",
+    "목표",
+    "곰돌이를 찾아주세요.",
+    "부스터 선택",
+    "게임 시작!"
+  ],
+  "game_elements": [
+    {
+      "category": "objective",
+      "name": "곰돌이를 찾아주세요.",
+      "evidence": "목표 문구로 이해할 수 있음."
+    },
+    {
+      "category": "booster",
+      "name": "부스터 선택",
+      "evidence": "부스터 선택 옵션이 있음."
+    },
+    {
+      "category": "progression",
+      "name": "게임 시작 버튼",
+      "evidence": "게임 시작 버튼이 화면에 존재."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.08850726552179657,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2998678996036988,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7212681638044914,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9326287978863936,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "게임 시작!",
+      "role": "progression",
+      "bbox": {
+        "x1": 200,
+        "y1": 1075,
+        "x2": 380,
+        "y2": 1130
+      },
+      "center": {
+        "x": 0.3831,
+        "y": 0.8179
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "레벨 시작을 위한 진행 버튼."
+    },
+    {
+      "label": "부스터 선택",
+      "role": "structure",
+      "bbox": {
+        "x1": 110,
+        "y1": 873,
+        "x2": 642,
+        "y2": 1005
+      },
+      "center": {
+        "x": 0.4967,
+        "y": 0.6966
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "부스터 옵션을 선택할 수 있는 부분."
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 690,
+        "y1": 16,
+        "x2": 756,
+        "y2": 82
+      },
+      "center": {
+        "x": 0.9551,
+        "y": 0.0364
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "팝업을 닫는 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

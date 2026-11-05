@@ -17,7 +17,7 @@ from game_knowledge import active_profile
 from navigation.navigator import _add_nav_tabs
 from schemas import NavTab, NavTabs, NormalizedPoint, SurveyButtonCandidate, SurveyDecision
 from navigation.policy import canonical_action_label, navigation_action_key_from_label as key_of
-from tap_refine import NavTabTarget, find_nav_tabs, nav_tab_label
+from tap_refine import NavTabTarget, TapRefineResult, find_nav_tabs, nav_tab_label
 from test_play_policy import AutodriveHarness, _bundle
 
 IMAGE = np.zeros((1348, 757, 3), np.uint8)
@@ -111,22 +111,31 @@ class AddNavTabsTests(unittest.TestCase):
         finder.assert_not_called()
 
 
-class LocatedButtonsSkipRefineTests(AutodriveHarness):
-    def test_tab_finder_buttons_are_tapped_without_refine(self) -> None:
-        tab = SurveyButtonCandidate(
+class LocatedButtonsRefineTests(AutodriveHarness):
+    def _tap_with_refine(self, reason: str):
+        button = SurveyButtonCandidate(
             label="넷째 탭 (사람 두 명 아이콘)", role="structure", region="bottom_nav",
-            center=NormalizedPoint(x=0.7, y=0.95), confidence=1.0, reason="탭바 찾기",
+            center=NormalizedPoint(x=0.7, y=0.95), confidence=1.0, reason=reason,
         )
-        home = SurveyDecision(screen_type="home", button_candidates=[tab])
-        with patch("navigation.navigator.refine_tap_target") as refine:
+        home = SurveyDecision(screen_type="home", button_candidates=[button])
+        found = TapRefineResult(found=True, initial=(2, 3), x=3, y=3, used_pass="zoom",
+                                seen_label="사람 두 명 아이콘")
+        with patch("navigation.navigator.refine_tap_target", return_value=found) as refine:
             mocks = self._run(
                 captures=[_bundle(0), _bundle(200)],
                 decisions=[home, SurveyDecision(screen_type="menu")],
                 max_steps=2,
                 extra_patches=(("navigation.navigator.TAP_REFINE", True),),
             )
-        refine.assert_not_called()
         self.assertEqual(mocks["tapped"], ["넷째 탭 (사람 두 명 아이콘)"])
+        return refine
+
+    def test_tab_finder_buttons_are_refined_before_tapping(self) -> None:
+        # 실측: 탭바 찾기 좌표가 한 칸씩 왼쪽으로 밀려 'N번째 탭'이 N-1번째 아이콘을 눌렀음.
+        self._tap_with_refine("탭바 찾기").assert_called_once()
+
+    def test_exit_finder_buttons_are_tapped_without_refine(self) -> None:
+        self._tap_with_refine("새 화면 나가기 찾기").assert_not_called()
 
 
 if __name__ == "__main__":

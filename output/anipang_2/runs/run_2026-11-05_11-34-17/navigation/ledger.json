@@ -1,0 +1,191 @@
+{
+  "entries": {
+    "screen_2537e89ab9ef:8f41cdd12c36748bb803d6eefe73810157aaad95": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "action_label": "첫째 탭 (사탕과 금화가 담긴 빨간색 통 아이콘)",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_b181d370d396",
+      "last_seen": "2026-11-05T11:34:50.639801+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:91a48de94b7f1113a5a8888f081197a295b4ffee": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "action_label": "둘째 탭 (파란색, 노란색, 초록색 카드 겹친 아이콘)",
+      "attempts": 2,
+      "verdict": "no_change",
+      "target_screen_id": "screen_2537e89ab9ef",
+      "last_seen": "2026-11-05T11:35:13.189759+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:b03306e880ed69cc8d528222ce420f3cd982753c": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "b03306e880ed69cc8d528222ce420f3cd982753c",
+      "action_label": "NEW",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_02774c53b0f0",
+      "last_seen": "2026-11-05T11:35:27.561022+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:2c72cbcebe2789611ea13fb2119c02c8575e524d": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "2c72cbcebe2789611ea13fb2119c02c8575e524d",
+      "action_label": "다섯째 탭 (파란색 사람 두 명이 그려진 방패 아이콘)",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_89fd4deb723b",
+      "last_seen": "2026-11-05T11:35:53.052772+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:01e8b8b8da04620786705ba15d02b0ee836f3dc9": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "01e8b8b8da04620786705ba15d02b0ee836f3dc9",
+      "action_label": "여섯째 탭 (파란색 편지 봉투 아이콘)",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_da2989b6358d",
+      "last_seen": "2026-11-05T11:36:33.360534+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:d67ac652c27575dca7aa2c9de7ba3acb225732ff": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "d67ac652c27575dca7aa2c9de7ba3acb225732ff",
+      "action_label": "일곱째 탭 (회색 톱니바퀴 아이콘)",
+      "attempts": 0,
+      "verdict": null,
+      "target_screen_id": null,
+      "last_seen": "",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e",
+      "action_label": "설정",
+      "attempts": 0,
+      "verdict": null,
+      "target_screen_id": null,
+      "last_seen": "",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:3e5af5c690f730429a41b80238102cb1c9427011": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "3e5af5c690f730429a41b80238102cb1c9427011",
+      "action_label": "일일 보상",
+      "attempts": 0,
+      "verdict": null,
+      "target_screen_id": null,
+      "last_seen": "",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:32b1659b6331129ee719f1e8fa3b20369b9da08e": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "32b1659b6331129ee719f1e8fa3b20369b9da08e",
+      "action_label": "코드 입력",
+      "attempts": 0,
+      "verdict": "not_visible",
+      "target_screen_id": null,
+      "last_seen": "2026-11-05T11:35:08.211205+09:00",
+      "misses": 2,
+      "retries": 0
+    },
+    "screen_2537e89ab9ef:e44e1e13655ebbe4846a1d1fd6c740e17a1154ea": {
+      "screen_id": "screen_2537e89ab9ef",
+      "action_key": "e44e1e13655ebbe4846a1d1fd6c740e17a1154ea",
+      "action_label": "레벨 1",
+      "attempts": 0,
+      "verdict": null,
+      "target_screen_id": null,
+      "last_seen": "",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_b181d370d396:28a1e87212fb9d2327c1618785533802c25e1baa": {
+      "screen_id": "screen_b181d370d396",
+      "action_key": "28a1e87212fb9d2327c1618785533802c25e1baa",
+      "action_label": "이동하기",
+      "attempts": 0,
+      "verdict": "external",
+      "target_screen_id": null,
+      "last_seen": "2026-11-05T11:34:50.640691+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_02774c53b0f0:4ef668115c7f201253de4a7224469cdc0cba05ea": {
+      "screen_id": "screen_02774c53b0f0",
+      "action_key": "4ef668115c7f201253de4a7224469cdc0cba05ea",
+      "action_label": "카드팩 구매",
+      "attempts": 2,
+      "verdict": "no_change",
+      "target_screen_id": "screen_02774c53b0f0",
+      "last_seen": "2026-11-05T11:35:36.592414+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_89fd4deb723b:a01819af07333537083d839f2a55ca3f13025e78": {
+      "screen_id": "screen_89fd4deb723b",
+      "action_key": "a01819af07333537083d839f2a55ca3f13025e78",
+      "action_label": "팀 만들기",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_316a435e3157",
+      "last_seen": "2026-11-05T11:36:07.798662+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_316a435e3157:19966e2ca1cd74a272de0b98021ae92a22dd71cf": {
+      "screen_id": "screen_316a435e3157",
+      "action_key": "19966e2ca1cd74a272de0b98021ae92a22dd71cf",
+      "action_label": "자유 가입",
+      "attempts": 0,
+      "verdict": "not_found",
+      "target_screen_id": null,
+      "last_seen": "2026-11-05T11:36:09.885751+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_316a435e3157:ef1bf1d439c048c9731e4c5e6ae2804527cc69dd": {
+      "screen_id": "screen_316a435e3157",
+      "action_key": "ef1bf1d439c048c9731e4c5e6ae2804527cc69dd",
+      "action_label": "가입 승인",
+      "attempts": 0,
+      "verdict": "not_found",
+      "target_screen_id": null,
+      "last_seen": "2026-11-05T11:36:12.387193+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_da2989b6358d:42171e9db69b68ad03170c6c2e8b423432ed2def": {
+      "screen_id": "screen_da2989b6358d",
+      "action_key": "42171e9db69b68ad03170c6c2e8b423432ed2def",
+      "action_label": "광고 보기",
+      "attempts": 0,
+      "verdict": "external",
+      "target_screen_id": null,
+      "last_seen": "2026-11-05T11:36:33.362415+09:00",
+      "misses": 0,
+      "retries": 0
+    },
+    "screen_da2989b6358d:4bc3d166a02cf8d0fa2388542ced6f624c9c836b": {
+      "screen_id": "screen_da2989b6358d",
+      "action_key": "4bc3d166a02cf8d0fa2388542ced6f624c9c836b",
+      "action_label": "이동",
+      "attempts": 1,
+      "verdict": "new_screen",
+      "target_screen_id": "screen_50d8b4a941c2",
+      "last_seen": "2026-11-05T11:36:43.752305+09:00",
+      "misses": 0,
+      "retries": 0
+    }
+  }
+}

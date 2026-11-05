@@ -1,0 +1,211 @@
+{
+  "screen_type": "shop",
+  "screen_role": "shop",
+  "summary": "게임 내 재화를 구매하는 화면으로, 다양한 패키지를 판매하고 있습니다.",
+  "visible_text": [
+    "첫 구매 루비 2배!",
+    "x5,000",
+    "x25,000",
+    "x50,000",
+    "x55,000",
+    "x150,000",
+    "x180,000",
+    "x325,000"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "패키지 구매",
+      "evidence": "재화 구입 가능한 패키지 목록이 있음"
+    },
+    {
+      "category": "currency",
+      "name": "코인",
+      "evidence": "코인 구매 가격 표시"
+    },
+    {
+      "category": "currency",
+      "name": "루비",
+      "evidence": "루비 구매 가격 표시"
+    },
+    {
+      "category": "currency",
+      "name": "하트",
+      "evidence": "하트 아이콘 표시"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기(X)",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 725,
+        "y1": 15,
+        "x2": 752,
+        "y2": 51
+      },
+      "center": {
+        "x": 0.9807,
+        "y": 0.0245
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "화면을 닫는 기능을 가진 버튼입니다."
+    },
+    {
+      "label": "패키지",
+      "role": "structure",
+      "bbox": {
+        "x1": 0,
+        "y1": 100,
+        "x2": 266,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.1766,
+        "y": 0.0868
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "패키지 항목 선택 버튼."
+    },
+    {
+      "label": "루비",
+      "role": "structure",
+      "bbox": {
+        "x1": 267,
+        "y1": 100,
+        "x2": 383,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.0868
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "루비 구매 선택 버튼."
+    },
+    {
+      "label": "코인",
+      "role": "structure",
+      "bbox": {
+        "x1": 384,
+        "y1": 100,
+        "x2": 500,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.587,
+        "y": 0.0868
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "코인 구매 선택 버튼."
+    },
+    {
+      "label": "하트",
+      "role": "structure",
+      "bbox": {
+        "x1": 501,
+        "y1": 100,
+        "x2": 617,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.7424,
+        "y": 0.0868
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "하트 구매 선택 버튼."
+    },
+    {
+      "label": "x5,000",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 267,
+        "y1": 156,
+        "x2": 383,
+        "y2": 187
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.1272
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "구매 가능한 코인 수량 표시."
+    },
+    {
+      "label": "x25,000",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 267,
+        "y1": 191,
+        "x2": 383,
+        "y2": 225
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.1543
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "구매 가능한 코인 수량 표시."
+    },
+    {
+      "label": "x50,000",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 267,
+        "y1": 226,
+        "x2": 383,
+        "y2": 261
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.1806
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "구매 가능한 코인 수량 표시."
+    },
+    {
+      "label": "x180,000",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 267,
+        "y1": 261,
+        "x2": 383,
+        "y2": 297
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.207
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "구매 가능한 코인 수량 표시."
+    },
+    {
+      "label": "x325,000",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 267,
+        "y1": 297,
+        "x2": 383,
+        "y2": 334
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.2341
+      },
+      "region": "popup",
+      "confidence": 0.7,
+      "reason": "구매 가능한 코인 수량 표시."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

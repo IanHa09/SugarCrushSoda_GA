@@ -59,6 +59,27 @@ def canonical_action_label(label: str) -> str:
     return _alias_canonical(stable) or stable
 
 
+# 글자 없는 탭바 탭은 왼쪽부터의 순서로 이름을 붙입니다(tap_refine.nav_tab_label). 숫자는
+# 버튼 키를 만들 때 #으로 바뀌므로 낱말로 씁니다.
+NAV_TAB_ORDINALS = ("첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째", "일곱째", "여덟째")
+
+
+def nav_tab_ordinal(index: int) -> str:
+    """탭 순서(0부터) -> "둘째"."""
+    return NAV_TAB_ORDINALS[index] if 0 <= index < len(NAV_TAB_ORDINALS) else f"{index + 1}번째"
+
+
+def nav_tab_index(label: str | None) -> int | None:
+    """"둘째 탭 (…)"처럼 순서로 붙인 탭 라벨이면 그 순서(0부터), 아니면 None."""
+    match = re.match(r"(\S+) 탭(?: \(|$)", (label or "").strip())
+    word = match.group(1) if match else ""
+    if word in NAV_TAB_ORDINALS:
+        return NAV_TAB_ORDINALS.index(word)
+    if word.endswith("번째") and word[:-2].isdigit():
+        return int(word[:-2]) - 1
+    return None
+
+
 def navigation_action_key_from_label(label: str) -> str:
     return button_key("navigation", canonical_action_label(label))
 

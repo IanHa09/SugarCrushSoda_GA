@@ -1,0 +1,65 @@
+{
+  "screen_type": "popup",
+  "summary": "친구들과 함께하면 더 즐거워요!라는 안내 팝업 화면.",
+  "visible_text": [
+    "친구들과 함께하면 더 즐거워요!",
+    "친구는 하트를 보내주고",
+    "어려운 상황에서",
+    "당신을 도와줄 수 있어요."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "화면 오른쪽 위에 있는 X 아이콘"
+    },
+    {
+      "category": "core_play",
+      "name": "안내 메시지",
+      "evidence": "친구와 하트 관련 텍스트"
+    },
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "화면 아래 확인 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 266,
+        "y1": 1210,
+        "x2": 493,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.9236
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "확인 버튼은 다음 화면으로 진행하는 역할을 합니다."
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 714,
+        "y1": 22,
+        "x2": 758,
+        "y2": 86
+      },
+      "center": {
+        "x": 0.9697,
+        "y": 0.0401
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "X 아이콘은 팝업을 닫는 안전한 네비게이션입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

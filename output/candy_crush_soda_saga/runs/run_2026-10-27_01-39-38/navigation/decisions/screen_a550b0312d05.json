@@ -1,0 +1,144 @@
+{
+  "screen_type": "menu",
+  "summary": "친구와 메시지함 옵션을 제공하는 화면으로, 친구 추가 기능이 있습니다.",
+  "visible_text": [
+    "친구",
+    "메시지함",
+    "친구들과 함께하면 더 즐거워요!",
+    "하트를 보내주고 어려운 상황에서 당신을 도와줄 수 있어요.",
+    "계속 플레이해 소셜을 해주세요!",
+    "친구 더 추가하기"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "친구 탭",
+      "evidence": "빠른 친구 추가 기능 제공"
+    },
+    {
+      "category": "ui",
+      "name": "메시지함 탭",
+      "evidence": "이전 메시지를 확인할 수 있는 탭"
+    },
+    {
+      "category": "ui",
+      "name": "정보 아이콘",
+      "evidence": "각 기능에 대한 도움말을 제공할 수 있는 아이콘"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "i 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.08850726552179657,
+        "y": 0.04970326409495549
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.05019815059445178,
+        "y": 0.9710682492581603
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.45442536327608984,
+        "y": 0.9703264094955489
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6459709379128138,
+        "y": 0.973293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "이벤트",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8388375165125496,
+        "y": 0.973293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구 더 추가하기",
+      "role": "progression",
+      "bbox": {
+        "x1": 368,
+        "y1": 1175,
+        "x2": 740,
+        "y2": 1238
+      },
+      "center": {
+        "x": 0.7318,
+        "y": 0.895
+      },
+      "region": "content",
+      "confidence": 0.95,
+      "reason": "Friend addition option on the screen."
+    },
+    {
+      "label": "친구",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 20,
+        "y1": 55,
+        "x2": 202,
+        "y2": 117
+      },
+      "center": {
+        "x": 0.1466,
+        "y": 0.0638
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "Tab for friends navigation."
+    },
+    {
+      "label": "메시지함",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 217,
+        "y1": 55,
+        "x2": 400,
+        "y2": 117
+      },
+      "center": {
+        "x": 0.4075,
+        "y": 0.0638
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "Tab for messages navigation."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

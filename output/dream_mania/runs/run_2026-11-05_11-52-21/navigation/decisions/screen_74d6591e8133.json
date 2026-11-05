@@ -1,0 +1,62 @@
+{
+  "screen_type": "level",
+  "screen_role": "level_start",
+  "summary": "레벨 2 시작 화면입니다. 부스터 선택과 플레이 버튼이 포함되어 있습니다.",
+  "visible_text": [
+    "레벨 2",
+    "부스터 선택",
+    "플레이"
+  ],
+  "game_elements": [
+    {
+      "category": "objective",
+      "name": "레벨 목표",
+      "evidence": "36개의 상자"
+    },
+    {
+      "category": "booster",
+      "name": "부스터 선택",
+      "evidence": "잠금 상태의 부스터 아이콘 3개"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "플레이",
+      "role": "progression",
+      "bbox": {
+        "x1": 316,
+        "y1": 1045,
+        "x2": 436,
+        "y2": 1131
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.8071
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "레벨 시작을 위한 진행 버튼"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 682,
+        "y1": 72,
+        "x2": 719,
+        "y2": 109
+      },
+      "center": {
+        "x": 0.9303,
+        "y": 0.0671
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "팝업을 닫는 버튼"
+    }
+  ],
+  "evidence_notes": [
+    "플레이 버튼이 있다는 것은 사용자가 레벨을 시작할 수 있음을 나타냄."
+  ],
+  "uncertainties": []
+}

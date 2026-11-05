@@ -43,7 +43,8 @@ from navigation.graph import (
     unreached_from,
 )
 from navigation.ledger import GLOBAL_SCREEN_ID, LedgerStore, is_open_entry
-from schemas import NavigationGraph
+from navigation.policy import nav_tab_index, nav_tab_ordinal, navigation_action_key_from_label
+from schemas import NavigationEdge, NavigationGraph
 from survey_utils import canonical_name_tokens
 
 
@@ -154,14 +155,144 @@ def _append_fragmentation_warning(
     )
 
 
+# -- 구조도용 보기: 탭 화면 묶기와 화면 이름 -----------------------------------------
+#
+# 탭바는 탭 화면마다 보여서 탭 화면끼리는 서로 다 이어집니다(실측: 상점→친구, 팀→상점…). 관찰한
+# 대로 다 그리면 그 간선이 구조를 가리므로 구조도·계층에서는 탭 화면을 루트 아래 탭 순서대로
+# 나란히 두고 탭 화면끼리 오간 간선은 뺍니다. graph.json은 그대로 둡니다(길 찾기에 필요).
+
+
+def _tab_screens(graph: NavigationGraph, root_id: str) -> dict[str, int]:
+    """탭 화면 ID -> 탭 순서. 선택된 탭이 보인 화면 중 루트이거나 그 탭을 눌러 도착한 화면만
+    셉니다(팝업 뒤로 비친 탭바를 읽은 화면은 그 탭을 눌러 온 게 아니라 빠집니다)."""
+
+    def reached_by_own_tab(node) -> bool:
+        return any(
+            edge.target == node.id
+            and (
+                nav_tab_index(edge.action) == node.tab_index
+                or (node.tab_name and edge.action == node.tab_name)
+            )
+            for edge in graph.edges
+        )
+
+    return {
+        node.id: node.tab_index
+        for node in graph.nodes.values()
+        if node.tab_index >= 0 and (node.id == root_id or reached_by_own_tab(node))
+    }
+
+
+def _tab_labels(graph: NavigationGraph, tabs: dict[str, int]) -> dict[int, str]:
+    """탭 순서 -> 보고서에 쓸 탭 이름 하나. 들어가 본 탭은 "둘째 탭 (친구)"(그 화면에서 선택된
+    탭 아래 뜬 이름), 아니면 처음 기록된 라벨로 고정합니다(아이콘 묘사가 화면마다 달라서)."""
+
+    labels: dict[int, str] = {}
+    for edge in graph.edges:
+        index = nav_tab_index(edge.action)
+        if index is not None:
+            labels.setdefault(index, edge.action)
+    for node_id, index in tabs.items():
+        name = graph.nodes[node_id].tab_name
+        if name:
+            labels[index] = f"{nav_tab_ordinal(index)} 탭 ({name})"
+    return labels
+
+
+def _tab_text(action: str, tab_labels: dict[int, str]) -> str:
+    index = nav_tab_index(action)
+    return tab_labels.get(index, action) if index is not None else action
+
+
+def _node_names(graph: NavigationGraph, tabs: dict[str, int]) -> dict[str, str]:
+    """노드 표시 이름: 탭 화면은 탭 이름, 나머지는 화면 타입 이름이고 같은 이름이 여럿이면
+    발견 순서대로 "Popup(1)", "Popup(2)"처럼 번호를 붙입니다."""
+
+    names = {
+        node.id: (
+            (node.tab_name or f"{nav_tab_ordinal(node.tab_index)} 탭")
+            if node.id in tabs
+            else _screen_label(node.screen_type)
+        )
+        for node in graph.nodes.values()
+    }
+    totals = Counter(names.values())
+    seen: Counter[str] = Counter()
+    for node_id, name in names.items():
+        if totals[name] > 1:
+            seen[name] += 1
+            names[node_id] = f"{name}({seen[name]})"
+    return names
+
+
+def _structure_view(
+    graph: NavigationGraph, root_id: str | None
+) -> tuple[NavigationGraph, dict[str, str], dict[int, str], int]:
+    """(구조도용 그래프, 노드 이름, 탭 이름, 뺀 탭 간선 수). 구조도용 그래프는 루트→탭 화면 간선을
+    탭 순서대로 앞에 두고(홈에서 직접 누른 적이 없어도), 탭 화면끼리 오간 간선은 뺍니다."""
+
+    tabs = _tab_screens(graph, root_id) if root_id else {}
+    tab_labels = _tab_labels(graph, tabs)
+    edges = [
+        NavigationEdge(
+            source=root_id, target=node_id,
+            action=tab_labels.get(index) or f"{nav_tab_ordinal(index)} 탭",
+        )
+        for node_id, index in sorted(tabs.items(), key=lambda item: item[1])
+        if node_id != root_id
+    ]
+    hidden = 0
+    for edge in graph.edges:
+        if edge.source in tabs and edge.target in tabs and edge.source != edge.target:
+            hidden += edge.source != root_id  # 루트→탭은 위에서 다시 그리므로 셈에서 뺍니다.
+            continue
+        edges.append(edge.model_copy(update={"action": _tab_text(edge.action, tab_labels)}))
+    view = graph.model_copy(update={"edges": edges})
+    return view, _node_names(graph, tabs), tab_labels, hidden
+
+
+# 뒤로 가기는 지나온 길에 따라 도착이 달라 합쳐짐 의심에서 뺍니다(화면의 "뒤로"와 키가 같음).
+_BACK_ACTION_KEY = navigation_action_key_from_label("뒤로(키)")
+
+
+def _append_merge_warning(lines: list[str], graph: NavigationGraph, names: dict[str, str]) -> None:
+    """같은 화면의 같은 버튼이 서로 다른 화면으로 갔으면, 다른 화면이 한 노드로 합쳐졌을 수
+    있다고 Overview에 적습니다(실측: 활동·친구 탭의 안내 팝업이 HOG 0.146으로 한 노드가 되어
+    그 "확인"이 활동·친구로 갈림). 닫기류는 연 화면으로 돌아가는 정상일 수도 있어 판단은 사람이."""
+
+    targets: dict[tuple[str, str], list[str]] = defaultdict(list)
+    actions: dict[tuple[str, str], str] = {}
+    for edge in graph.edges:
+        key = edge.action_key or edge.action
+        if edge.source == edge.target or key == _BACK_ACTION_KEY:
+            continue
+        if edge.target not in targets[(edge.source, key)]:
+            targets[(edge.source, key)].append(edge.target)
+        actions.setdefault((edge.source, key), edge.action)
+    for (source, key), arrived in targets.items():
+        if len(arrived) < 2:
+            continue
+        lines.append(
+            f"- ⚠️ 합쳐짐 의심: **{names.get(source, source)}**의 '{actions[(source, key)]}' → "
+            f"{', '.join(names.get(target, target) for target in arrived)}. 같은 버튼이 여러 화면으로 "
+            "갔습니다. 서로 다른 화면이 한 노드로 합쳐졌을 수 있으니 이 화면에 붙은 캡처들을 "
+            "비교하세요(닫기류는 연 화면으로 돌아가는 정상일 수도 있음). 합쳐진 것이면 "
+            "`SCREEN_HOG_MAX_DISTANCE`를 내립니다."
+        )
+
+
 def _append_game_structure_diagram(
     lines: list[str],
     screen_types: set[str],
     graph: NavigationGraph | None,
     root_id: str | None,
+    names: dict[str, str] | None = None,
+    hidden_tab_edges: int = 0,
 ) -> None:
-    """실제 그래프(BFS 트리 + 교차 링크) 또는 발견 화면 기반 구조도 추가."""
+    """실제 그래프(BFS 트리 + 교차 링크) 또는 발견 화면 기반 구조도 추가.
+    graph는 _structure_view의 구조도용 그래프, names는 노드 이름입니다."""
 
+    names = names or {}
     actual_graph = graph if graph and graph.edges else None
     lines.extend([
         "## Game Structure Diagram",
@@ -197,9 +328,8 @@ def _append_game_structure_diagram(
     if actual_graph:
         for node in actual_graph.nodes.values():
             graph_types.add(node.screen_type)
-            lines.append(
-                f'    {_mermaid_node_id(node.id)}["{_mermaid_text(_screen_label(node.screen_type))}"]'
-            )
+            name = names.get(node.id) or _screen_label(node.screen_type)
+            lines.append(f'    {_mermaid_node_id(node.id)}["{_mermaid_text(name)}"]')
     for screen_type in ordered_screen_types:
         if screen_type in graph_types:
             continue
@@ -252,6 +382,11 @@ def _append_game_structure_diagram(
                 f"눌러도 같은 화면으로 돌아온 간선 {self_loop_count}개는 그리지 "
                 "않았습니다(아래 Cross Links 참고)."
             )
+        if hidden_tab_edges:
+            lines.append(
+                f"탭 화면은 루트 아래 탭 순서대로 두고, 탭 화면끼리 오간 간선 {hidden_tab_edges}개는 "
+                "그리지 않았습니다(탭바로 어느 탭에서나 서로 갈 수 있음)."
+            )
     else:
         lines.append("현재 화면 간 전환 기록 없음.")
     lines.append("")
@@ -262,9 +397,12 @@ def _append_screen_hierarchy(
     graph: NavigationGraph,
     root_id: str,
     base_path: Path,
+    names: dict[str, str] | None = None,
 ) -> None:
-    """루트에서 BFS로 만든 스패닝 트리를 들여쓰기 목록으로 펼칩니다(트리 본문)."""
+    """루트에서 BFS로 만든 스패닝 트리를 들여쓰기 목록으로 펼칩니다(트리 본문).
+    graph는 _structure_view의 구조도용 그래프, names는 노드 이름입니다."""
 
+    names = names or {}
     tree, cross_links = bfs_spanning_tree(graph, root_id)
 
     lines.extend(["## Screen Hierarchy", "", "루트에서 BFS로 투영한 화면 계층입니다.", ""])
@@ -273,7 +411,7 @@ def _append_screen_hierarchy(
         node = graph.nodes.get(node_id)
         if node is None:
             return node_id
-        label = _screen_label(node.screen_type)
+        label = names.get(node_id) or _screen_label(node.screen_type)
         return f"**{label}** (`{node.screen_type}`, visits={node.visits})"
 
     def _walk(node_id: str, depth: int, via_action: str | None) -> None:
@@ -354,8 +492,17 @@ def _append_orphan_screens(
     lines.append("")
 
 
-def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, ledger: LedgerStore | None) -> None:
+def _append_frontier_section(
+    lines: list[str],
+    graph: NavigationGraph | None,
+    ledger: LedgerStore | None,
+    names: dict[str, str] | None = None,
+    tab_labels: dict[int, str] | None = None,
+) -> None:
     """원장이 있으면 커버리지, 미도달 프론티어, 포기(blocked) 항목을 보여줍니다."""
+
+    names = names or {}
+    tab_labels = tab_labels or {}
 
     lines.extend(["## Exploration Frontier", ""])
     if ledger is None:
@@ -374,7 +521,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
         if screen_id == GLOBAL_SCREEN_ID:
             return "공통 버튼(네비게이션 바)"
         node = graph.nodes.get(screen_id) if graph else None
-        return _screen_label(node.screen_type) if node else screen_id
+        return (names.get(screen_id) or _screen_label(node.screen_type)) if node else screen_id
 
     untried_by_screen: dict[str, list[str]] = defaultdict(list)
     blocked_by_screen: dict[str, list[str]] = defaultdict(list)
@@ -383,7 +530,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
     play_entry_by_screen: dict[str, list[str]] = defaultdict(list)
     external_by_screen: dict[str, list[str]] = defaultdict(list)
     for entry in ledger.ledger.entries.values():
-        label = entry.action_label or entry.action_key
+        label = _tab_text(entry.action_label, tab_labels) or entry.action_key
         if is_open_entry(entry):
             suffix = " (빗나감, 재시도 대기)" if entry.verdict == "missed" else ""
             untried_by_screen[entry.screen_id].append(label + suffix)
@@ -405,7 +552,7 @@ def _append_frontier_section(lines: list[str], graph: NavigationGraph | None, le
         ("### 다시 봐도 후보에 안 나와 정리함(not_visible)", hidden_by_screen, "- 없음"),
         ("### 누르기 전 확대 확인에서 못 찾아 정리함(not_found)", not_found_by_screen, "- 없음"),
         ("### 플레이 진입이라 누르지 않음(play_entry)", play_entry_by_screen, "- 없음"),
-        ("### 외부 공유·초대라 누르지 않음(external)", external_by_screen, "- 없음"),
+        ("### 게임 밖·광고·뽑기라 누르지 않음(external)", external_by_screen, "- 없음"),
     )
     for heading, by_screen, empty_text in sections:
         lines.extend([heading, ""])
@@ -518,9 +665,13 @@ def _append_persistent_ui_section(
     graph: NavigationGraph | None,
     ledger: LedgerStore | None,
     chrome: dict[str, Any] | None,
+    names: dict[str, str] | None = None,
+    tab_labels: dict[int, str] | None = None,
 ) -> None:
     """여러 화면에 공통으로 보이는 UI(네비게이션 바 등)와 공통 버튼을 보여줍니다."""
 
+    names = names or {}
+    tab_labels = tab_labels or {}
     if not chrome:
         return
     bands = chrome.get("bands") or {}
@@ -543,15 +694,19 @@ def _append_persistent_ui_section(
     actions = chrome.get("actions") or {}
     for key in global_keys:
         entry = actions.get(key) or {}
-        label = entry.get("label") or key
+        label = _tab_text(entry.get("label") or key, tab_labels)
         screens = len(entry.get("positions") or {})
         result = "아직 안 눌러 봄"
         if ledger is not None:
             ledger_entry = ledger.ledger.entries.get(f"{GLOBAL_SCREEN_ID}:{key}")
-            if ledger_entry is not None and ledger_entry.target_screen_id:
+            # no_change로 닫힌 공통 버튼은 target이 자기 자신(__global__)이라 판정을 그대로 씁니다.
+            target_id = ledger_entry.target_screen_id if ledger_entry is not None else None
+            if target_id and target_id != GLOBAL_SCREEN_ID:
                 target = graph.nodes.get(ledger_entry.target_screen_id) if graph else None
                 target_label = (
-                    _screen_label(target.screen_type) if target else ledger_entry.target_screen_id
+                    names.get(target.id) or _screen_label(target.screen_type)
+                    if target
+                    else ledger_entry.target_screen_id
                 )
                 result = f"→ {target_label}"
             elif ledger_entry is not None and ledger_entry.verdict:
@@ -676,6 +831,11 @@ def generate_survey_markdown(
         if record.get("dedupe", {}).get("screen_signature")
     }
     lines.append(f"- Unique screen signatures: {len(unique_screen_signatures)}")
+    actual_graph = graph if graph and graph.edges else None
+    root_id = resolve_root_screen_id(graph, ROOT_SCREEN_ID) if actual_graph else None
+    view, names, tab_labels, hidden_tab_edges = (
+        _structure_view(graph, root_id) if graph else (None, {}, {}, 0)
+    )
     if graph and graph.nodes:
         # 0단계 진단용: 같은 타입에 노드가 많으면 화면이 쪼개지고 있다는 신호입니다.
         counts: dict[str, int] = defaultdict(int)
@@ -686,22 +846,22 @@ def generate_survey_markdown(
         )
         lines.append(f"- Navigation nodes: {len(graph.nodes)} (화면 타입별: {per_type})")
         _append_fragmentation_warning(lines, graph)
+        _append_merge_warning(lines, graph, names)
     lines.append("")
 
     observed_screen_types = {
         _display(record.get("survey", {}).get("screen_type")) for record in records
     }
 
-    actual_graph = graph if graph and graph.edges else None
-    root_id = resolve_root_screen_id(graph, ROOT_SCREEN_ID) if actual_graph else None
-
-    _append_game_structure_diagram(lines, observed_screen_types, graph, root_id)
+    _append_game_structure_diagram(
+        lines, observed_screen_types, view, root_id, names, hidden_tab_edges
+    )
 
     if actual_graph and root_id:
-        _append_screen_hierarchy(lines, graph, root_id, SURVEY_REPORT_PATH.parent)
+        _append_screen_hierarchy(lines, view, root_id, SURVEY_REPORT_PATH.parent, names)
 
-    _append_persistent_ui_section(lines, graph, ledger, chrome)
-    _append_frontier_section(lines, graph, ledger)
+    _append_persistent_ui_section(lines, graph, ledger, chrome, names, tab_labels)
+    _append_frontier_section(lines, graph, ledger, names, tab_labels)
     _append_genre_map_section(lines, graph, screen_map or _active_screen_map())
 
     screen_examples: dict[str, dict[str, Any]] = {}
@@ -751,7 +911,7 @@ def generate_survey_markdown(
     screen_label_by_key: dict[str, str] = {}
     if graph:
         for node in graph.nodes.values():
-            screen_label_by_key[node.id] = _screen_label(node.screen_type)
+            screen_label_by_key[node.id] = names.get(node.id) or _screen_label(node.screen_type)
     for record in records:
         screen_label_by_key.setdefault(
             _screen_key_for_record(record),

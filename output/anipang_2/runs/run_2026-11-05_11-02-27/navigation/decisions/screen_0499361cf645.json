@@ -1,0 +1,75 @@
+{
+  "screen_type": "menu",
+  "screen_role": "settings",
+  "summary": "친구 목록 공개 설정을 위한 메뉴입니다.",
+  "visible_text": [
+    "애니팡2",
+    "이 서비스의 친구 목록에 나를 보여주기",
+    "비공개 시, 더 이상 이 서비스로부터 메시지를 받지 않음",
+    "확인을 누르시면 공개 여부를 변경합니다."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "공개 여부 스위치",
+      "evidence": "스위치가 있는 설정 화면"
+    },
+    {
+      "category": "ui",
+      "name": "게임 로고",
+      "evidence": "위치 상단에 애니팡2 로고"
+    },
+    {
+      "category": "ui",
+      "name": "설명 텍스트",
+      "evidence": "친구 목록 공개 여부에 대한 설명 일정 수량이 보임"
+    },
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "공개 여부 변경 안내에 포함된 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 435,
+        "y1": 1235,
+        "x2": 752,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.7882,
+        "y": 0.9577
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "진행을 위한 확인 버튼입니다."
+    },
+    {
+      "label": "스위치",
+      "role": "structure",
+      "bbox": {
+        "x1": 481,
+        "y1": 120,
+        "x2": 695,
+        "y2": 175
+      },
+      "center": {
+        "x": 0.7809,
+        "y": 0.1094
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "친구 목록 공개 여부를 조정하기 위한 스위치입니다."
+    }
+  ],
+  "evidence_notes": [
+    "전반적으로 설정 관련 메뉴로 특정 기능을 조정하는 옵션입니다."
+  ],
+  "uncertainties": [
+    "이 화면이 다른 설정 메뉴와 유사할 수 있음"
+  ]
+}

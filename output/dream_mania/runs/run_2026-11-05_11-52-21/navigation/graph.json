@@ -1,0 +1,247 @@
+{
+  "nodes": {
+    "screen_dfd9a6abae25": {
+      "id": "screen_dfd9a6abae25",
+      "screen_type": "home",
+      "summary": "게임의 중심 화면으로 레벨 번호 버튼과 메뉴 아이콘이 포함되어 있습니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_dfd9a6abae25.png",
+      "visits": 7,
+      "buttons": [
+        "home",
+        "settings",
+        "레벨 #",
+        "태스크"
+      ],
+      "fingerprint": "909a958a07e00cecc0ef00f0003809ba6a98e88c213ff0342613c335b4cc4e89",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": 2,
+      "tab_name": "홈"
+    },
+    "screen_dc59b68ac442": {
+      "id": "screen_dc59b68ac442",
+      "screen_type": "menu",
+      "summary": "이 화면은 특정 이벤트 지역에 대한 정보를 제공합니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_dc59b68ac442.png",
+      "visits": 9,
+      "buttons": [
+        "상금",
+        "성",
+        "영역",
+        "진행 바",
+        "카드",
+        "팀"
+      ],
+      "fingerprint": "d0c0f164f958fc887a4004027cc0fac0e000e180f9c0f038ecf0f73060692249",
+      "play_flow": false,
+      "role": "event_hub",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_6deea0a55911": {
+      "id": "screen_6deea0a55911",
+      "screen_type": "menu",
+      "summary": "순위표와 친구 관련 기능이 포함된 화면입니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_6deea0a55911.png",
+      "visits": 5,
+      "buttons": [
+        "close",
+        "친구 목록",
+        "친구 추가"
+      ],
+      "fingerprint": "d160c170229c79515ef09c78b6b1be217aa5db8145e31da0390039c064616449",
+      "play_flow": false,
+      "role": "friends",
+      "tab_index": 1,
+      "tab_name": "순위표"
+    },
+    "screen_059432a5a347": {
+      "id": "screen_059432a5a347",
+      "screen_type": "menu",
+      "summary": "팀 가입을 안내하는 화면입니다. 무료 코인과 생명, 채팅 기능이 포함되어 있습니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_059432a5a347.png",
+      "visits": 5,
+      "buttons": [
+        "무료생명",
+        "무료코인",
+        "채팅",
+        "팀"
+      ],
+      "fingerprint": "d0c0c0c0c0a0cc903e007a40f9a8f9b0fcc075a0375867187318000055d14dd9",
+      "play_flow": false,
+      "role": "team",
+      "tab_index": 3,
+      "tab_name": "팀"
+    },
+    "screen_3086ff05cdbf": {
+      "id": "screen_3086ff05cdbf",
+      "screen_type": "menu",
+      "summary": "이 화면은 새로운 카드 컬렉션에 대한 정보를 보여줍니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_3086ff05cdbf.png",
+      "visits": 4,
+      "buttons": [
+        "friends",
+        "map",
+        "shop",
+        "수집",
+        "트로피"
+      ],
+      "fingerprint": "d964d9649304a55ab646b930e4d086c09e863e96a71697be8860db24d1fb4d1b",
+      "play_flow": false,
+      "role": "info_popup",
+      "tab_index": 4,
+      "tab_name": "수집"
+    },
+    "screen_020d8f6e6efe": {
+      "id": "screen_020d8f6e6efe",
+      "screen_type": "menu",
+      "summary": "환경 설정 화면입니다. 음악, 소리, 속도 및 알림 설정이 포함되어 있습니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_020d8f6e6efe.png",
+      "visits": 4,
+      "buttons": [
+        "close",
+        "save progress",
+        "support",
+        "terms and privacy"
+      ],
+      "fingerprint": "e090c1f0f220b330bb20d26ad024eb48fa40cc84fa20ff44000000081d704242",
+      "play_flow": false,
+      "role": "settings",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_ff9390954fb6": {
+      "id": "screen_ff9390954fb6",
+      "screen_type": "home",
+      "summary": "게임 중심 화면으로 성과 재화 정보가 포함되어 있습니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_ff9390954fb6.png",
+      "visits": 5,
+      "buttons": [
+        "back",
+        "꿀단지",
+        "보석 수"
+      ],
+      "fingerprint": "80da80c80fc01cc880fe00f0003809ba6a98e88c213ff0e836f3588c72067801",
+      "play_flow": false,
+      "role": "home",
+      "tab_index": -1,
+      "tab_name": ""
+    },
+    "screen_74d6591e8133": {
+      "id": "screen_74d6591e8133",
+      "screen_type": "level",
+      "summary": "레벨 2 시작 화면입니다. 부스터 선택과 플레이 버튼이 포함되어 있습니다.",
+      "representative": "output\\dream_mania\\runs\\run_2026-11-05_11-52-21\\navigation\\representatives\\screen_74d6591e8133.png",
+      "visits": 1,
+      "buttons": [
+        "close",
+        "플레이"
+      ],
+      "fingerprint": "989ab8880100f9c0d1e080c480c0c1649cce8d46c8ecc55cc4f8ff0084c04e89",
+      "play_flow": false,
+      "role": "level_start",
+      "tab_index": -1,
+      "tab_name": ""
+    }
+  },
+  "edges": [
+    {
+      "source": "screen_dfd9a6abae25",
+      "target": "screen_dc59b68ac442",
+      "action": "첫째 탭 (지도와 위치핀 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_dc59b68ac442",
+      "target": "screen_6deea0a55911",
+      "action": "둘째 탭 (트로피 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_6deea0a55911",
+      "target": "screen_dfd9a6abae25",
+      "action": "셋째 탭 (성문 모양 아이콘)",
+      "action_key": "a540c6bda018d2baa737e9c7aa873174525fe2ea",
+      "failures": 0
+    },
+    {
+      "source": "screen_dfd9a6abae25",
+      "target": "screen_059432a5a347",
+      "action": "넷째 탭 (방패 안 사람 세 명 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_059432a5a347",
+      "target": "screen_3086ff05cdbf",
+      "action": "다섯째 탭 (카드 아이콘 두 장)",
+      "action_key": "2c72cbcebe2789611ea13fb2119c02c8575e524d",
+      "failures": 0
+    },
+    {
+      "source": "screen_3086ff05cdbf",
+      "target": "screen_dc59b68ac442",
+      "action": "첫째 탭 (지도 아이콘 위에 핀 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_dc59b68ac442",
+      "target": "screen_dfd9a6abae25",
+      "action": "성",
+      "action_key": "afdb12efb91d53e9ea6375f63cf3a2cbd25a1e8d",
+      "failures": 0
+    },
+    {
+      "source": "screen_dfd9a6abae25",
+      "target": "screen_020d8f6e6efe",
+      "action": "설정",
+      "action_key": "779c93a3fa7c1cfe8e1cba74d600d47bfa2fef3e",
+      "failures": 0
+    },
+    {
+      "source": "screen_020d8f6e6efe",
+      "target": "screen_dfd9a6abae25",
+      "action": "X",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_dfd9a6abae25",
+      "target": "screen_ff9390954fb6",
+      "action": "태스크",
+      "action_key": "c41b39c0a5e1fd364a40a1a0eabdd5df76f0c451",
+      "failures": 0
+    },
+    {
+      "source": "screen_ff9390954fb6",
+      "target": "screen_dfd9a6abae25",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_dfd9a6abae25",
+      "target": "screen_74d6591e8133",
+      "action": "레벨 2",
+      "action_key": "e44e1e13655ebbe4846a1d1fd6c740e17a1154ea",
+      "failures": 0
+    },
+    {
+      "source": "screen_74d6591e8133",
+      "target": "screen_dfd9a6abae25",
+      "action": "닫기",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_6deea0a55911",
+      "target": "screen_059432a5a347",
+      "action": "넷째 탭 (방패에 사람 세 명 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    }
+  ]
+}

@@ -1,0 +1,145 @@
+{
+  "screen_type": "home",
+  "summary": "게임의 홈 화면으로, 레벨 번호와 관련 버튼들이 배치되어 있다.",
+  "visible_text": [
+    "5",
+    "Full",
+    "50",
+    "홈",
+    "8",
+    "9",
+    "10"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "하트 아이콘",
+      "evidence": "위쪽에 생명 수를 나타내는 하트 아이콘이 보인다."
+    },
+    {
+      "category": "ui",
+      "name": "재화 아이콘",
+      "evidence": "화폐인 골드의 수량이 화면에 표시된다."
+    },
+    {
+      "category": "ui",
+      "name": "설정 아이콘",
+      "evidence": "우측 상단에 톱니바퀴 모양의 설정 아이콘이 있다."
+    },
+    {
+      "category": "progression",
+      "name": "레벨 버튼",
+      "evidence": "아이콘이 포함된 레벨 번호 버튼들이 화면 중앙에 배열되어 있다."
+    },
+    {
+      "category": "ui",
+      "name": "홈 버튼",
+      "evidence": "중앙 하단에 '홈' 버튼이 있다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.08850726552179657,
+        "y": 0.9272997032640949
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2523117569352708,
+        "y": 0.9287833827893175
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "팀",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7490092470277411,
+        "y": 0.9250741839762612
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "활동",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.9009247027741083,
+        "y": 0.9272997032640949
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "아래 번호 10",
+      "role": "progression",
+      "bbox": {
+        "x1": 307,
+        "y1": 1092,
+        "x2": 335,
+        "y2": 1130
+      },
+      "center": {
+        "x": 0.424,
+        "y": 0.8242
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "플레이할 레벨 번호이다."
+    },
+    {
+      "label": "레벨 8",
+      "role": "progression",
+      "bbox": {
+        "x1": 238,
+        "y1": 1084,
+        "x2": 272,
+        "y2": 1114
+      },
+      "center": {
+        "x": 0.3369,
+        "y": 0.8153
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "이전 레벨 번호 8."
+    },
+    {
+      "label": "레벨 9",
+      "role": "progression",
+      "bbox": {
+        "x1": 272,
+        "y1": 1084,
+        "x2": 307,
+        "y2": 1114
+      },
+      "center": {
+        "x": 0.3824,
+        "y": 0.8153
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "다음 레벨 번호 9."
+    }
+  ],
+  "evidence_notes": [
+    "홈 화면의 UI 요소가 다양한 구성을 보여준다."
+  ],
+  "uncertainties": []
+}

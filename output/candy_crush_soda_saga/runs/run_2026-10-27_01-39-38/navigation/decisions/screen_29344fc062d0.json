@@ -1,0 +1,65 @@
+{
+  "screen_type": "popup",
+  "summary": "친구와 함께 플레이하는 것을 권장하는 안내 창으로, 하트를 보내는 기능에 대한 설명이 포함되어 있다.",
+  "visible_text": [
+    "친구들과 함께하면 더 즐거워요!",
+    "친구는 하트를 보내주고 어려운 상황에서",
+    "당신을 도와줄 수 있어요.",
+    "확인"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "X 아이콘이 오른쪽 상단에 위치"
+    },
+    {
+      "category": "other",
+      "name": "하트 보내기 안내",
+      "evidence": "하트를 보내주는 기능 설명"
+    },
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "확인 텍스트가 있는 초록색 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 252,
+        "y1": 1005,
+        "x2": 508,
+        "y2": 1080
+      },
+      "center": {
+        "x": 0.502,
+        "y": 0.7734
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "확인 버튼은 다음 화면으로 진행하는 버튼임."
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 722,
+        "y1": 16,
+        "x2": 756,
+        "y2": 51
+      },
+      "center": {
+        "x": 0.9762,
+        "y": 0.0249
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "닫기 버튼은 팝업을 닫는 기능임."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

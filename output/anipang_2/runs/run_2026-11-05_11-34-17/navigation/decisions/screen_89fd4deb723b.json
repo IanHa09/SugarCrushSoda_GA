@@ -1,0 +1,68 @@
+{
+  "screen_type": "menu",
+  "screen_role": "team",
+  "summary": "팀 가입 화면으로, 사용자 팀을 검색하고 가입할 수 있는 목록과 버튼이 있다.",
+  "visible_text": [
+    "팀 검색",
+    "팀 만들기",
+    "자유 가입",
+    "가입 승인",
+    "팀원 / 최대인원",
+    "팀 포인트"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "팀 검색 입력창",
+      "evidence": "팀 검색 텍스트 박스가 보임"
+    },
+    {
+      "category": "ui",
+      "name": "팀 목록",
+      "evidence": "팀들 리스트가 보임"
+    },
+    {
+      "category": "ui",
+      "name": "가입 버튼",
+      "evidence": "팀 가입 버튼 보임"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "팀 만들기",
+      "role": "progression",
+      "bbox": {
+        "x1": 123,
+        "y1": 1219,
+        "x2": 630,
+        "y2": 1285
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.9288
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "다음 화면으로 진행하는 버튼입니다."
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 726,
+        "y1": 29,
+        "x2": 752,
+        "y2": 56
+      },
+      "center": {
+        "x": 0.9814,
+        "y": 0.0315
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "닫기 버튼입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

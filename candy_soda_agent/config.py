@@ -8,6 +8,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from game_select import current_game
+
 
 def _enable_windows_dpi_awareness() -> None:
     """MSS 캡처와 PyAutoGUI가 동일한 물리 픽셀 좌표를 사용하게 합니다."""
@@ -79,9 +81,9 @@ CAPTURE_MODE = os.getenv("CAPTURE_MODE", "board")  # board | window | monitor
 # window 모드에서 쓸 영역. 모니터 상대 좌표로 수정 필요 ! 
 
 WINDOW_OFFSET = {
-    "left": 1763,
-    "top": 46,
-    "width": 759,
+    "left": 1761,
+    "top": 44,
+    "width": 753,
     "height": 1348,
 }
 # 안전모드 스위치: true면 API/마우스 조작 없이 로컬 실행, false면 실제로 API 호출 및 클릭까지 수행합니다.
@@ -333,9 +335,8 @@ NEW_SCREEN_EXIT_FINDER = _env_bool("NEW_SCREEN_EXIT_FINDER", True)
 # 실측(run_2026-10-12): 조사 모델이 글자 없는 탭(팀·활동)을 빠뜨리고 좌표를 왼쪽으로 몰아 적음.
 # 게임 지식의 탭바 위치가 bottom/varies일 때만 돌고, 새 화면당 호출 1번입니다.
 NAV_TAB_FINDER = _env_bool("NAV_TAB_FINDER", True)
-# 게임 재시작에 쓰는 Android 패키지 이름. autodrive 시작 때 adb로 설치 여부를 확인하고,
-# 없으면 재시작 단계만 끕니다(확인: adb shell pm list packages king).
-GAME_PACKAGE = os.getenv("GAME_PACKAGE", "com.king.candycrushsodasaga").strip()
+# 게임 재시작에 쓰는 Android 패키지 이름(GAME_PACKAGE)은 아래 [게임]에서 games.txt로 정합니다.
+# autodrive 시작 때 adb로 설치 여부를 확인하고, 없으면 재시작 단계만 끕니다.
 APP_RESTART_MAX = _env_int("APP_RESTART_MAX", "2", 0)
 # 재시작 뒤 첫 화면이 뜰 때까지 기다리는 시간(초). 로딩 화면이면 탐색이 알아서 더 기다립니다.
 APP_RESTART_WAIT = _env_float("APP_RESTART_WAIT", "20", 0.0, 300.0)
@@ -357,10 +358,15 @@ GLOBAL_ACTION_MAX_SPREAD_PX = _env_float("GLOBAL_ACTION_MAX_SPREAD_PX", "30", 1.
 # 탭 뒤에는 위 POST_TAP_* 대기가 있으므로 스텝 사이 고정 대기는 짧게 둡니다.
 AUTODRIVE_STEP_PAUSE = _env_float("AUTODRIVE_STEP_PAUSE", "0.5", 0.0, 30.0)
 
-# [게임 지식] 지금 조사하는 게임. knowledge/games.txt에서 이 제목으로 장르를 찾고,
-# knowledge/ui_knowledge.json의 장르·게임 UI 지식과 knowledge/screen_types.json의 화면
-# 타입을 조사 프롬프트에 씁니다(game_knowledge.py). games.txt에 없으면 장르 _default로 갑니다.
-GAME_TITLE = os.getenv("GAME_TITLE", "Candy Crush Soda Saga").strip() or "Candy Crush Soda Saga"
+# [게임] 지금 조사하는 게임. main.py가 시작할 때 고른 게임(--game → adb 감지 → 목록 선택,
+# game_select.py)을 output/current_game.txt에서 읽습니다. 기록이 없으면 games.txt의 첫 게임입니다.
+#   GAME_TITLE  : games.txt로 장르를 찾고 UI 지식·화면 타입을 조사 프롬프트에 씁니다(game_knowledge.py).
+#   GAME_PACKAGE: games.txt의 패키지 칸. 게임 재시작에 씁니다(비어 있으면 재시작만 끔).
+#   GAME_SLUG   : 결과 폴더 이름 output/<GAME_SLUG>/. 제목에서 만들어 게임마다 폴더가 갈립니다.
+_GAME = current_game()
+GAME_TITLE = _GAME.title
+GAME_PACKAGE = _GAME.package
+GAME_SLUG = _GAME.slug
 
 # [플레이 정책] autodrive는 화면 조사·구조도 생성용이라 기본은 플레이에 들어가지 않습니다.
 #   avoid  : 플레이 진입 버튼(ui_knowledge.json의 play_entry_labels)은 기록만 하고 누르지 않고,
@@ -437,9 +443,6 @@ def _resolve_run_id(game_root: Path) -> str:
     pointer_path.write_text(new_run_id, encoding="utf-8")
     return new_run_id
 
-
-# 게임 식별자. 나중에 게임을 추가해도 로그가 안 섞이도록 출력 경로에 항상 포함합니다.
-GAME_SLUG = os.getenv("GAME_SLUG", "candy_crush_soda")
 
 OUTPUT_DIR = Path("output")
 

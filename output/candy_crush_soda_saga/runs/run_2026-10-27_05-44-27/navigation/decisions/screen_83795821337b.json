@@ -1,0 +1,198 @@
+{
+  "screen_type": "popup",
+  "summary": "팀 관련 정보를 안내하는 팝업 화면.",
+  "visible_text": [
+    "함께하면 더 좋아요!",
+    "팀원에게 하트를 받고 계속 도움을 받을 수 있어요.",
+    "레벨 26에 도달해 팀을 잠금 해제하세요!",
+    "플레이"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "팀 팝업 아이콘",
+      "evidence": "화면 중앙에 팀 팝업으로 안내가 보이면서 관련 캐릭터가 그려져 있음."
+    },
+    {
+      "category": "ui",
+      "name": "재화 안내 아이콘",
+      "evidence": "팀 도움을 받을 수 있다는 설명."
+    },
+    {
+      "category": "core_play",
+      "name": "플레이 버튼",
+      "evidence": "'플레이' 버튼이 팝업 하단에 위치."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 0,
+        "y1": 0,
+        "x2": 32,
+        "y2": 32
+      },
+      "center": {
+        "x": 0.0211,
+        "y": 0.0119
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "왼쪽 상단에 위치한 피드백을 닫는 역할이다."
+    },
+    {
+      "label": "상점 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 0,
+        "y1": 1284,
+        "x2": 151,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.0995,
+        "y": 0.9759
+      },
+      "region": "bottom_nav",
+      "confidence": 0.85,
+      "reason": "탭바의 첫 번째 아이콘으로 상점으로 이동하는 역할."
+    },
+    {
+      "label": "팀 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 456,
+        "y1": 1284,
+        "x2": 607,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.7003,
+        "y": 0.9759
+      },
+      "region": "bottom_nav",
+      "confidence": 0.85,
+      "reason": "탭바의 네 번째 아이콘으로 팀 관련 기능으로 이동하는 역할."
+    },
+    {
+      "label": "!",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 35,
+        "y1": 1213,
+        "x2": 99,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.0883,
+        "y": 0.9247
+      },
+      "region": "bottom_nav",
+      "confidence": 0.8,
+      "reason": "알림 관련 아이콘."
+    },
+    {
+      "label": "인물 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 113,
+        "y1": 1212,
+        "x2": 177,
+        "y2": 1279
+      },
+      "center": {
+        "x": 0.191,
+        "y": 0.924
+      },
+      "region": "bottom_nav",
+      "confidence": 0.8,
+      "reason": "팀 관련 구성원 정보."
+    },
+    {
+      "label": "별 아이콘",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 192,
+        "y1": 1212,
+        "x2": 256,
+        "y2": 1279
+      },
+      "center": {
+        "x": 0.2951,
+        "y": 0.924
+      },
+      "region": "bottom_nav",
+      "confidence": 0.8,
+      "reason": "업적이나 보상을 나타내는 탭."
+    },
+    {
+      "label": "첫째 탭 (가게 외관 아이콘 위에 느낌표 배지)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.14756258234519104,
+        "y": 0.9480712166172107
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (분홍색과 파란색 사람 얼굴 말풍선 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.24769433465085638,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (노란 별 아이콘 위에 초록색 사각형)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3451910408432148,
+        "y": 0.9480712166172107
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력 아이콘 분홍색 체크 표시)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8906455862977603,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "플레이",
+      "role": "progression",
+      "bbox": {
+        "x1": 280,
+        "y1": 1145,
+        "x2": 478,
+        "y2": 1232
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.8817
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "팀 팝업 진행을 위한 플레이 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

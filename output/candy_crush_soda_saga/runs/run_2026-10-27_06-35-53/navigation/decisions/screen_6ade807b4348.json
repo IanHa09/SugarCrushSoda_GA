@@ -1,0 +1,139 @@
+{
+  "screen_type": "popup",
+  "summary": "친구에 관한 안내 팝업으로, 친구와 함께 플레이할 때의 장점 설명.",
+  "visible_text": [
+    "친구",
+    "메시지함",
+    "친구들과 함께하면 더 즐거워요!",
+    "하트를 보내주고 도와줄 수 있어요.",
+    "계속 플레이해 소설을 해주세요!",
+    "친구 더 추가하기"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "친구 팝업",
+      "evidence": "친구와 메시지함에 관련된 정보 제공"
+    },
+    {
+      "category": "ui",
+      "name": "친구 더 추가하기 버튼",
+      "evidence": "다른 친구 추가를 진행하는 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "정보 안내 팝업 i 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.08827404479578392,
+        "y": 0.04970326409495549
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "첫째 탭 (분홍색·하늘색 줄무늬 지붕 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.09090909090909091,
+        "y": 0.9428783382789317
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (노란색 별 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.4479578392621871,
+        "y": 0.9399109792284867
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍색 사람 세 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6284584980237155,
+        "y": 0.9384272997032641
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (분홍색 확인 표시 달력 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8036890645586298,
+        "y": 0.9362017804154302
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구 더 추가하기",
+      "role": "progression",
+      "bbox": {
+        "x1": 392,
+        "y1": 1102,
+        "x2": 725,
+        "y2": 1180
+      },
+      "center": {
+        "x": 0.7358,
+        "y": 0.8464
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "진행을 위한 버튼"
+    },
+    {
+      "label": "친구",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 81,
+        "y1": 85,
+        "x2": 188,
+        "y2": 133
+      },
+      "center": {
+        "x": 0.1772,
+        "y": 0.0809
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "탭 네비게이션 버튼"
+    },
+    {
+      "label": "메시지함",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 189,
+        "y1": 85,
+        "x2": 296,
+        "y2": 133
+      },
+      "center": {
+        "x": 0.3195,
+        "y": 0.0809
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "탭 네비게이션 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

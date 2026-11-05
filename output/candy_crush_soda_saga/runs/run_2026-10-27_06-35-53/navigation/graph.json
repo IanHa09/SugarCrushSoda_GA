@@ -1,0 +1,235 @@
+{
+  "nodes": {
+    "screen_d572489ed840": {
+      "id": "screen_d572489ed840",
+      "screen_type": "home",
+      "summary": "홈 화면에서 레벨 선택 및 게임 진행 상태를 보여줌. 주요 정보 제공.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_d572489ed840.png",
+      "visits": 7,
+      "buttons": [
+        "#",
+        "home"
+      ],
+      "fingerprint": "29eee1b4a27c2b850c4c6c43f29ddb398752235259e0bcc3a962a962bd56b696",
+      "play_flow": false
+    },
+    "screen_6d42d2b6afc7": {
+      "id": "screen_6d42d2b6afc7",
+      "screen_type": "shop",
+      "summary": "게임 내 구매 화면으로, 다양한 아이템과 패키지를 보여줌.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_6d42d2b6afc7.png",
+      "visits": 3,
+      "buttons": [
+        "settings",
+        "shop",
+        "별",
+        "소셜",
+        "캘린더"
+      ],
+      "fingerprint": "9f007208d68092aad6a8e03cd7549342b2aa80de822ec210d2b4d6b455b424b6",
+      "play_flow": false
+    },
+    "screen_6ade807b4348": {
+      "id": "screen_6ade807b4348",
+      "screen_type": "popup",
+      "summary": "친구에 관한 안내 팝업으로, 친구와 함께 플레이할 때의 장점 설명.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_6ade807b4348.png",
+      "visits": 17,
+      "buttons": [
+        "friends",
+        "메시지함",
+        "친구 더 추가하기"
+      ],
+      "fingerprint": "bf00f870c000928086c095f09e308b80f528f550d69481009a809828a4b6a4b6",
+      "play_flow": false
+    },
+    "screen_e1867978482d": {
+      "id": "screen_e1867978482d",
+      "screen_type": "popup",
+      "summary": "활동 참여와 보상을 안내하는 팝업 화면.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_e1867978482d.png",
+      "visits": 9,
+      "buttons": [
+        "정보",
+        "탭바",
+        "플레이",
+        "활동"
+      ],
+      "fingerprint": "bf00de008480b8c0f1e0b4c0831cb250d920ce8480809e008a00c00c9a5db25b",
+      "play_flow": false
+    },
+    "screen_29344fc062d0": {
+      "id": "screen_29344fc062d0",
+      "screen_type": "popup",
+      "summary": "보상 안내 팝업으로, 활동 참여를 독려하며 추가 보상을 제공하는 내용.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_29344fc062d0.png",
+      "visits": 18,
+      "buttons": [
+        "close",
+        "확인"
+      ],
+      "fingerprint": "3a027d02ff00fc80fce0f0e0fe10ff00ff00eb60cda0ff00ff00fe00ff007e00",
+      "play_flow": false
+    },
+    "screen_c8c659d7caac": {
+      "id": "screen_c8c659d7caac",
+      "screen_type": "level",
+      "summary": "레벨 시작 화면으로, 목표와 부스터 선택을 제공.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_c8c659d7caac.png",
+      "visits": 16,
+      "buttons": [
+        "close",
+        "friends",
+        "home",
+        "게임 시작",
+        "일정"
+      ],
+      "fingerprint": "c06ee1b4e330e180c0c0c444c68cc164caf4caacc298c658d80ca080ac52b696",
+      "play_flow": false
+    },
+    "screen_342f44ba678a": {
+      "id": "screen_342f44ba678a",
+      "screen_type": "popup",
+      "summary": "팀원과 협력할 것을 독려하는 안내 팝업으로, 팀 지원과 레벨 도달 목표를 제시하고 있다.",
+      "representative": "output\\candy_crush_soda\\runs\\run_2026-10-27_06-35-53\\navigation\\representatives\\screen_342f44ba678a.png",
+      "visits": 3,
+      "buttons": [
+        "별",
+        "일정",
+        "채팅",
+        "팀",
+        "플레이"
+      ],
+      "fingerprint": "ff00fd00a480d960a528c1d8c170d860cb14e504f5248e008a20d020b2aab2d2",
+      "play_flow": false
+    }
+  },
+  "edges": [
+    {
+      "source": "screen_d572489ed840",
+      "target": "screen_6d42d2b6afc7",
+      "action": "첫째 탭 (분홍하양 점포 모양 아이콘)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_6d42d2b6afc7",
+      "target": "screen_6ade807b4348",
+      "action": "둘째 탭 (분홍 파랑 대화 말풍선 속 사람 두 명 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_6ade807b4348",
+      "target": "screen_d572489ed840",
+      "action": "넷째 탭 (분홍색 사람 세 명 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_d572489ed840",
+      "target": "screen_e1867978482d",
+      "action": "다섯째 탭 (달력 모양 체크 표시 아이콘)",
+      "action_key": "2c72cbcebe2789611ea13fb2119c02c8575e524d",
+      "failures": 0
+    },
+    {
+      "source": "screen_e1867978482d",
+      "target": "screen_29344fc062d0",
+      "action": "i 아이콘",
+      "action_key": "01610830f09e25149f45dbda0b0a9fbd01098ce4",
+      "failures": 0
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_e1867978482d",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6",
+      "failures": 0
+    },
+    {
+      "source": "screen_e1867978482d",
+      "target": "screen_29344fc062d0",
+      "action": "정보 아이콘",
+      "action_key": "9b05d4645206114723a6c84553763f5e6917d91b",
+      "failures": 0
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_e1867978482d",
+      "action": "X 아이콘",
+      "action_key": "04244903515ec733df037bf7f153f86b383a7aef",
+      "failures": 0
+    },
+    {
+      "source": "screen_e1867978482d",
+      "target": "screen_6ade807b4348",
+      "action": "둘째 탭 (분홍색 파란색 사람 두 명 말풍선 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_6ade807b4348",
+      "target": "screen_29344fc062d0",
+      "action": "정보 안내 팝업 i 아이콘",
+      "action_key": "9da306e47fc06cb2b2b83d6c5085352a1e33b968",
+      "failures": 0
+    },
+    {
+      "source": "screen_29344fc062d0",
+      "target": "screen_6ade807b4348",
+      "action": "확인",
+      "action_key": "6cdb123d03e13bb27cbd7dd0d4c1eba4d019a1e6",
+      "failures": 1
+    },
+    {
+      "source": "screen_d572489ed840",
+      "target": "screen_c8c659d7caac",
+      "action": "8",
+      "action_key": "8bebb96a37939e76049926402db0813a6fde54bd",
+      "failures": 0
+    },
+    {
+      "source": "screen_c8c659d7caac",
+      "target": "screen_d572489ed840",
+      "action": "뒤로(키)",
+      "action_key": "73de4c736ee8d53794e804864d1add3857d9cb90",
+      "failures": 0
+    },
+    {
+      "source": "screen_d572489ed840",
+      "target": "screen_6ade807b4348",
+      "action": "둘째 탭 (분홍 파랑 사람 말풍선 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    },
+    {
+      "source": "screen_e1867978482d",
+      "target": "screen_342f44ba678a",
+      "action": "넷째 탭 (분홍색 네 명 사람 모임 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_342f44ba678a",
+      "target": "screen_6d42d2b6afc7",
+      "action": "첫째 탭 (가게 천막 아이콘에 느낌표 배지)",
+      "action_key": "8f41cdd12c36748bb803d6eefe73810157aaad95",
+      "failures": 0
+    },
+    {
+      "source": "screen_6d42d2b6afc7",
+      "target": "screen_342f44ba678a",
+      "action": "넷째 탭 (분홍 사람 세 명 아이콘)",
+      "action_key": "447b189ef2c5793f47a4221d2b556571d8807bc0",
+      "failures": 0
+    },
+    {
+      "source": "screen_342f44ba678a",
+      "target": "screen_6ade807b4348",
+      "action": "둘째 탭 (말풍선 안에 사람 두 명 아이콘)",
+      "action_key": "91a48de94b7f1113a5a8888f081197a295b4ffee",
+      "failures": 0
+    }
+  ]
+}

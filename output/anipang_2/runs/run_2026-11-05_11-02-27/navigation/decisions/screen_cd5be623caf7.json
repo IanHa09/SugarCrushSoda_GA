@@ -1,0 +1,108 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 다양한 게임 요소가 표시됩니다.",
+  "visible_text": [
+    "애니팡2",
+    "100",
+    "3150",
+    "10",
+    "MAX",
+    "25일 남음",
+    "7/100"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "하트 아이콘",
+      "evidence": "생명 수 표시"
+    },
+    {
+      "category": "ui",
+      "name": "코인 아이콘",
+      "evidence": "현재 재화 표시"
+    },
+    {
+      "category": "ui",
+      "name": "젬 아이콘",
+      "evidence": "젬 수 표시"
+    },
+    {
+      "category": "ui",
+      "name": "일일 보상 카운터",
+      "evidence": "남은 일수 표시"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 715,
+        "y1": 3,
+        "x2": 750,
+        "y2": 43
+      },
+      "center": {
+        "x": 0.9728,
+        "y": 0.0171
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "팝업 닫기 버튼"
+    },
+    {
+      "label": "100",
+      "role": "structure",
+      "bbox": {
+        "x1": 60,
+        "y1": 5,
+        "x2": 93,
+        "y2": 42
+      },
+      "center": {
+        "x": 0.1016,
+        "y": 0.0174
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "생명 수 표시"
+    },
+    {
+      "label": "3150",
+      "role": "structure",
+      "bbox": {
+        "x1": 130,
+        "y1": 5,
+        "x2": 180,
+        "y2": 42
+      },
+      "center": {
+        "x": 0.2058,
+        "y": 0.0174
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "현재 재화 표시"
+    },
+    {
+      "label": "10",
+      "role": "structure",
+      "bbox": {
+        "x1": 245,
+        "y1": 5,
+        "x2": 275,
+        "y2": 42
+      },
+      "center": {
+        "x": 0.3453,
+        "y": 0.0174
+      },
+      "region": "top_bar",
+      "confidence": 0.8,
+      "reason": "젬 수 표시"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

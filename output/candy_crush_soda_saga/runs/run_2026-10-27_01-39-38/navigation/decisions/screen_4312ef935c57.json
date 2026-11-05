@@ -1,0 +1,115 @@
+{
+  "screen_type": "popup",
+  "summary": "친구 추가를 위한 안내 창으로, 사용자가 친구와 함께 플레이할 것을 권장하는 메시지를 포함하고 있다.",
+  "visible_text": [
+    "친구",
+    "메시지함",
+    "친구 더 추가",
+    "연락처",
+    "소다 플레이어",
+    "친구들과 함께면 더 즐거운 게임을"
+  ],
+  "game_elements": [
+    {
+      "category": "social",
+      "name": "친구 추가 안내",
+      "evidence": "친구 추가하기를 권장하는 팝업"
+    },
+    {
+      "category": "social",
+      "name": "메시지함",
+      "evidence": "메시지함 버튼이 보임"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "Quick Share",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.05019815059445178,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "블루투스",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.24702774108322326,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "Chrome",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.45178335535006603,
+        "y": 0.9280415430267063
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 724,
+        "y1": 10,
+        "x2": 756,
+        "y2": 43
+      },
+      "center": {
+        "x": 0.9775,
+        "y": 0.0197
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "닫기 버튼으로 팝업을 종료할 수 있음"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": {
+        "x1": 0,
+        "y1": 155,
+        "x2": 274,
+        "y2": 215
+      },
+      "center": {
+        "x": 0.181,
+        "y": 0.1372
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "메뉴 탭으로 친구 추가하기로 이동 가능"
+    },
+    {
+      "label": "메시지함",
+      "role": "structure",
+      "bbox": {
+        "x1": 275,
+        "y1": 155,
+        "x2": 548,
+        "y2": 215
+      },
+      "center": {
+        "x": 0.5436,
+        "y": 0.1372
+      },
+      "region": "popup",
+      "confidence": 0.8,
+      "reason": "메뉴 탭으로 메시지함으로 이동 가능"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

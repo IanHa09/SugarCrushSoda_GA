@@ -1,0 +1,158 @@
+{
+  "screen_type": "menu",
+  "screen_role": "event_hub",
+  "summary": "이 화면은 특정 이벤트 지역에 대한 정보를 제공합니다.",
+  "visible_text": [
+    "영역",
+    "위",
+    "성",
+    "16%"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "영역 탭",
+      "evidence": "영역 탭으로 보이는 버튼입니다."
+    },
+    {
+      "category": "ui",
+      "name": "진행 바",
+      "evidence": "진행 상태를 나타내는 바입니다."
+    },
+    {
+      "category": "ui",
+      "name": "이벤트 아이콘",
+      "evidence": "하단에 위치한 지역 버튼입니다."
+    },
+    {
+      "category": "ui",
+      "name": "상금 트로피 아이콘",
+      "evidence": "획득할 수 있는 상금을 나타냅니다."
+    },
+    {
+      "category": "ui",
+      "name": "보상 아이콘",
+      "evidence": "보상을 받을 수 있는 아이콘입니다."
+    },
+    {
+      "category": "ui",
+      "name": "팀 아이콘",
+      "evidence": "팀과 관련된 아이콘입니다."
+    },
+    {
+      "category": "ui",
+      "name": "카드 아이콘",
+      "evidence": "카드와 관련된 아이콘입니다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.9827357237715804,
+        "y": 0.028931750741839762
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "영역",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.07304116865869854,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (트로피 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.2656042496679947,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (건물 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.4594953519256308,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (사람 셋이 들어간 방패 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.650730411686587,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (카드 세 장과 네잎클로버 장식 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8446215139442231,
+        "y": 0.9295252225519288
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "성",
+      "role": "structure",
+      "bbox": {
+        "x1": 368,
+        "y1": 1185,
+        "x2": 611,
+        "y2": 1347
+      },
+      "center": {
+        "x": 0.6501,
+        "y": 0.9392
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "특정 영역에 대한 정보를 보여주는 버튼입니다."
+    },
+    {
+      "label": "진행 바",
+      "role": "structure",
+      "bbox": {
+        "x1": 277,
+        "y1": 1201,
+        "x2": 618,
+        "y2": 1234
+      },
+      "center": {
+        "x": 0.5943,
+        "y": 0.9032
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "영역의 진행 상태를 나타냅니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

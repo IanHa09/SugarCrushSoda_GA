@@ -1,0 +1,116 @@
+{
+  "screen_type": "level",
+  "summary": "레벨 시작 화면으로, 목표와 부스터 선택을 안내하는 팝업이 나타나고, 게임 시작 버튼이 있는 구조입니다.",
+  "visible_text": [
+    "레벨 10",
+    "목표",
+    "곰돌이를 찾아주세요.",
+    "부스터 선택",
+    "게임 시작!"
+  ],
+  "game_elements": [
+    {
+      "category": "core_play",
+      "name": "목표",
+      "evidence": "곰돌이를 찾아주세요."
+    },
+    {
+      "category": "booster",
+      "name": "부스터 선택",
+      "evidence": "다양한 부스터 아이콘이 나열되어 있습니다."
+    },
+    {
+      "category": "progression",
+      "name": "게임 시작",
+      "evidence": "게임 시작 버튼이 보입니다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (상점 천막 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1080368906455863,
+        "y": 0.9399109792284867
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (말풍선 속 사람 두 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.17786561264822134,
+        "y": 0.93026706231454
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (구름 속 사람 모양 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5046113306982872,
+        "y": 0.9362017804154302
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력에 체크 표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.847167325428195,
+        "y": 0.9235905044510386
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 730,
+        "y1": 20,
+        "x2": 758,
+        "y2": 50
+      },
+      "center": {
+        "x": 0.9802,
+        "y": 0.026
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "팝업 화면의 닫기 버튼"
+    },
+    {
+      "label": "게임 시작!",
+      "role": "progression",
+      "bbox": {
+        "x1": 270,
+        "y1": 1050,
+        "x2": 490,
+        "y2": 1100
+      },
+      "center": {
+        "x": 0.5007,
+        "y": 0.7975
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "게임을 시작하는 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": [
+    "부분적으로 보이는 UI가 있으며, 이전 기록과 유사한 점이 있습니다."
+  ]
+}

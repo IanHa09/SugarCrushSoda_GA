@@ -1,0 +1,89 @@
+{
+  "screen_type": "popup",
+  "screen_role": "offer_popup",
+  "summary": "게임 내 보상을 안내하는 팝업입니다.",
+  "visible_text": [
+    "Click!",
+    "SHOP",
+    "혜택 확인하기",
+    "게임으로",
+    "SCROLL DOWN"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "팝업 제목",
+      "evidence": "Click!"
+    },
+    {
+      "category": "ui",
+      "name": "상점 아이콘",
+      "evidence": "SHOP"
+    },
+    {
+      "category": "ui",
+      "name": "혜택 안내 텍스트",
+      "evidence": "혜택 확인하기"
+    },
+    {
+      "category": "ui",
+      "name": "게임 시작 버튼",
+      "evidence": "게임으로"
+    },
+    {
+      "category": "ui",
+      "name": "스크롤 안내 텍스트",
+      "evidence": "SCROLL DOWN"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.3904382470119522,
+        "y": 0.04896142433234421
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "게임으로",
+      "role": "progression",
+      "bbox": {
+        "x1": 292,
+        "y1": 890,
+        "x2": 471,
+        "y2": 973
+      },
+      "center": {
+        "x": 0.5066,
+        "y": 0.691
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "다음 화면으로 진행하는 버튼입니다."
+    },
+    {
+      "label": "SHOP",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 281,
+        "y1": 676,
+        "x2": 516,
+        "y2": 814
+      },
+      "center": {
+        "x": 0.5292,
+        "y": 0.5527
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "구매 버튼으로 연결될 상점 아이콘입니다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

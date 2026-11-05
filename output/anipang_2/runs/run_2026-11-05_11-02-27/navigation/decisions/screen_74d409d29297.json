@@ -1,0 +1,103 @@
+{
+  "screen_type": "menu",
+  "screen_role": "profile",
+  "summary": "사용자의 프로필을 편집하는 화면으로 테두리, 배지, 닉네임 등을 설정할 수 있습니다.",
+  "visible_text": [
+    "프로필 편집",
+    "하이안",
+    "자기소개",
+    "기본 테두리",
+    "구매",
+    "할인된 가격으로",
+    "아이템입니다"
+  ],
+  "game_elements": [
+    {
+      "category": "account",
+      "name": "프로필 이미지",
+      "evidence": "프로필에 표시된 캐릭터 이미지"
+    },
+    {
+      "category": "account",
+      "name": "닉네임 변경 버튼",
+      "evidence": "닉네임 변경을 위한 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "탭 바",
+      "evidence": "프로필, 배지, 칭호, 가난아이템 탭"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 715,
+        "y1": 20,
+        "x2": 740,
+        "y2": 45
+      },
+      "center": {
+        "x": 0.9661,
+        "y": 0.0241
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "닫기 버튼"
+    },
+    {
+      "label": "구매",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 270,
+        "y1": 390,
+        "x2": 370,
+        "y2": 460
+      },
+      "center": {
+        "x": 0.425,
+        "y": 0.3153
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "구매 버튼이 포함되어 있습니다."
+    },
+    {
+      "label": "50% 할인된 가격으로",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 10,
+        "y1": 70,
+        "x2": 420,
+        "y2": 100
+      },
+      "center": {
+        "x": 0.2855,
+        "y": 0.0631
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "할인 가격 안내 문구입니다."
+    },
+    {
+      "label": "기본 테두리",
+      "role": "structure",
+      "bbox": {
+        "x1": 490,
+        "y1": 75,
+        "x2": 660,
+        "y2": 105
+      },
+      "center": {
+        "x": 0.7636,
+        "y": 0.0668
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "기본 테두리 항목"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

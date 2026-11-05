@@ -1,0 +1,131 @@
+{
+  "screen_type": "menu",
+  "screen_role": "shop",
+  "summary": "카드 수집 및 구매를 위한 화면으로, 다양한 카드 팩과 보상을 선택할 수 있는 UI입니다.",
+  "visible_text": [
+    "카드 수집 ?",
+    "종소리 시즌 56일 남음",
+    "카드 수집 완료시 보상",
+    "보유 포인트 0",
+    "브론즈",
+    "실버",
+    "골드",
+    "카드팩 구매 ?"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "카드팩 구매 버튼",
+      "evidence": "카드팩 구매 버튼이 보입니다."
+    },
+    {
+      "category": "currency",
+      "name": "보유 포인트",
+      "evidence": "현재 보유 포인트가 0으로 표시됨."
+    },
+    {
+      "category": "currency",
+      "name": "보상",
+      "evidence": "수집 완료 시 보상을 보여주는 UI."
+    },
+    {
+      "category": "ui",
+      "name": "종소리 시즌",
+      "evidence": "종소리 시즌 정보가 상단에 표시됨."
+    },
+    {
+      "category": "ui",
+      "name": "카드 아이콘",
+      "evidence": "각 카드의 아이콘이 보드에 표시됨."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기 버튼",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 719,
+        "y1": 0,
+        "x2": 752,
+        "y2": 34
+      },
+      "center": {
+        "x": 0.9768,
+        "y": 0.0126
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "닫기 버튼이 눈에 잘 띕니다."
+    },
+    {
+      "label": "보상 중 카드 아이콘",
+      "role": "structure",
+      "bbox": {
+        "x1": 231,
+        "y1": 682,
+        "x2": 264,
+        "y2": 716
+      },
+      "center": {
+        "x": 0.3287,
+        "y": 0.5185
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "보상 관련 카드가 보입니다."
+    },
+    {
+      "label": "브론즈 카드 팩",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 168,
+        "y1": 407,
+        "x2": 246,
+        "y2": 487
+      },
+      "center": {
+        "x": 0.2749,
+        "y": 0.3316
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "구매 버튼과 가격이 표시된 카드 팩."
+    },
+    {
+      "label": "실버 카드 팩",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 265,
+        "y1": 407,
+        "x2": 345,
+        "y2": 487
+      },
+      "center": {
+        "x": 0.405,
+        "y": 0.3316
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "구매 버튼과 가격이 표시된 카드 팩."
+    },
+    {
+      "label": "골드 카드 팩",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 363,
+        "y1": 407,
+        "x2": 440,
+        "y2": 487
+      },
+      "center": {
+        "x": 0.5332,
+        "y": 0.3316
+      },
+      "region": "content",
+      "confidence": 0.85,
+      "reason": "구매 버튼과 가격이 표시된 카드 팩."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -1,0 +1,73 @@
+{
+  "screen_type": "popup",
+  "screen_role": "info_popup",
+  "summary": "친구에게 하트를 보내는 방법에 대한 안내 팝업입니다.",
+  "visible_text": [
+    "친구에게 하트를 보내세요!",
+    "카카오톡 메시지 수신을 설정했어요!",
+    "친구와 하트를 주고 받아보세요.",
+    "확인"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "하트 보내기 버튼",
+      "evidence": "친구에게 하트를 보내는 정보를 나타내는 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "팝업을 닫고 진행하는 버튼"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.9322709163346613,
+        "y": 0.0586053412462908
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 530,
+        "y1": 1193,
+        "x2": 678,
+        "y2": 1263
+      },
+      "center": {
+        "x": 0.8021,
+        "y": 0.911
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "진행을 위한 버튼."
+    },
+    {
+      "label": "하트 보내기",
+      "role": "structure",
+      "bbox": {
+        "x1": 200,
+        "y1": 110,
+        "x2": 370,
+        "y2": 180
+      },
+      "center": {
+        "x": 0.3785,
+        "y": 0.1076
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "하트 보내기 기능을 나타내는 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

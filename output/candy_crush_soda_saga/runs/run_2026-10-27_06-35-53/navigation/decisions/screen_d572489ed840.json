@@ -1,0 +1,141 @@
+{
+  "screen_type": "home",
+  "summary": "홈 화면에서 레벨 선택 및 게임 진행 상태를 보여줌. 주요 정보 제공.",
+  "visible_text": [
+    "5",
+    "Full",
+    "50",
+    "10",
+    "홈"
+  ],
+  "game_elements": [
+    {
+      "category": "currency",
+      "name": "Life",
+      "evidence": "5 (상단)에 표시됨."
+    },
+    {
+      "category": "currency",
+      "name": "Gold",
+      "evidence": "50 (상단)에 표시됨."
+    },
+    {
+      "category": "objective",
+      "name": "Level Indicator",
+      "evidence": "8, 9, 10 (하단에 레벨 선택 표시됨)."
+    },
+    {
+      "category": "reward",
+      "name": "Prize Box",
+      "evidence": "중앙의 상자에 나타남."
+    },
+    {
+      "category": "ui",
+      "name": "Home Button",
+      "evidence": "하단 '홈' 아이콘."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (분홍하양 점포 모양 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.09749670619235837,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (분홍 파랑 사람 말풍선 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1857707509881423,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (분홍 사람 3명 다이아몬드 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.7220026350461133,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (달력 모양 체크 표시 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8695652173913043,
+        "y": 0.9473293768545994
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "8",
+      "role": "progression",
+      "bbox": {
+        "x1": 69,
+        "y1": 1174,
+        "x2": 136,
+        "y2": 1235
+      },
+      "center": {
+        "x": 0.135,
+        "y": 0.8935
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "레벨 선택 버튼 중 하나로 진행을 의미."
+    },
+    {
+      "label": "9",
+      "role": "progression",
+      "bbox": {
+        "x1": 149,
+        "y1": 1174,
+        "x2": 216,
+        "y2": 1235
+      },
+      "center": {
+        "x": 0.2404,
+        "y": 0.8935
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "레벨 선택 버튼 중 하나로 진행을 의미."
+    },
+    {
+      "label": "10",
+      "role": "progression",
+      "bbox": {
+        "x1": 228,
+        "y1": 1176,
+        "x2": 297,
+        "y2": 1236
+      },
+      "center": {
+        "x": 0.3458,
+        "y": 0.8947
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "레벨 선택 버튼 중 하나로 진행을 의미."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

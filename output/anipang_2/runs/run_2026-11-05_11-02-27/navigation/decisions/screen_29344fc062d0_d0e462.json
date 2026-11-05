@@ -1,0 +1,61 @@
+{
+  "screen_type": "popup",
+  "screen_role": "reward_popup",
+  "summary": "보상 프로모션을 위한 팝업으로, 다양한 보상 내용이 제시됩니다.",
+  "visible_text": [
+    "결제 관련",
+    "컬쳐랜드",
+    "남은 재고",
+    "100%"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "컬쳐랜드",
+      "evidence": "보상으로 제공되는 컬쳐랜드 관련 정보"
+    },
+    {
+      "category": "monetization",
+      "name": "결제 안내",
+      "evidence": "결제 관련 문구가 포함됨"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 625,
+        "y1": 31,
+        "x2": 684,
+        "y2": 115
+      },
+      "center": {
+        "x": 0.8692,
+        "y": 0.0542
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "UI에서는 닫기 버튼이 보임"
+    },
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 399,
+        "y1": 834,
+        "x2": 490,
+        "y2": 872
+      },
+      "center": {
+        "x": 0.5903,
+        "y": 0.6328
+      },
+      "region": "popup",
+      "confidence": 0.85,
+      "reason": "진행을 위한 확인 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

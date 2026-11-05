@@ -1,0 +1,10 @@
+{
+  "screen_type": "unknown",
+  "screen_role": "unknown",
+  "summary": "현재 화면은 게임 UI와 관련이 없는 이미지로, 게임 요소를 포함하고 있지 않음.",
+  "visible_text": [],
+  "game_elements": [],
+  "button_candidates": [],
+  "evidence_notes": [],
+  "uncertainties": []
+}

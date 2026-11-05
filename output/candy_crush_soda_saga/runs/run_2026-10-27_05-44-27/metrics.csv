@@ -1,0 +1,4 @@
+﻿session,session_id,steps,taps,taps_changed,taps_unchanged,taps_unknown,hit_rate,change_source,refine_used,refine_found,refine_not_found,refine_errors,refine_median_shift_px,back_keys,escapes,restarts,new_screens,cum_screens,new_transitions,cum_transitions,stop
+1,2026-10-27_05-44-27,40,31,18,13,0,0.581,tap_effect,36,7,29,0,115.6,3,8,0,6,6,13,13,other(stuck_other_button)
+2,2026-10-27_05-47-44,40,37,16,21,0,0.432,tap_effect,18,8,10,0,146.6,16,19,0,2,8,9,22,other(tap_executed)
+3,2026-10-27_05-50-00,40,28,14,14,0,0.5,tap_effect,25,10,15,0,59.1,6,12,0,1,9,8,30,other(reset_exit_finder)

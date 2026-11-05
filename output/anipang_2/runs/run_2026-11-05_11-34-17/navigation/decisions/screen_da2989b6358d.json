@@ -1,0 +1,87 @@
+{
+  "screen_type": "menu",
+  "screen_role": "inbox",
+  "summary": "메시지함 화면으로, 광고 및 혜택 정보를 안내하는 내용이 포함되어 있다.",
+  "visible_text": [
+    "메시지함",
+    "광고 선물 도착!",
+    "광고를 시청하고 루비 1개 선물로 받아가세요.",
+    "공식 사이트 혜택!",
+    "공식 사이트에서 매일 무료 루비 1개를 받아가세요!",
+    "광고 보기",
+    "이동",
+    "메시지는 최대 50개까지 7일간 보관 가능합니다."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "재화 표시 아이콘 (코인, 루비, 하트)",
+      "evidence": "화면 상단에 표시되어 있다."
+    },
+    {
+      "category": "ui",
+      "name": "메시지 보기 버튼",
+      "evidence": "광고 보기 버튼이 포함되어 있다."
+    },
+    {
+      "category": "ui",
+      "name": "선물 보기 버튼",
+      "evidence": "선물 탭이 화면에 존재한다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 725,
+        "y1": 30,
+        "x2": 749,
+        "y2": 54
+      },
+      "center": {
+        "x": 0.9788,
+        "y": 0.0312
+      },
+      "region": "top_bar",
+      "confidence": 0.95,
+      "reason": "닫기 버튼이 화면 구석에 위치한다."
+    },
+    {
+      "label": "이동",
+      "role": "progression",
+      "bbox": {
+        "x1": 658,
+        "y1": 395,
+        "x2": 749,
+        "y2": 428
+      },
+      "center": {
+        "x": 0.9343,
+        "y": 0.3053
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "링크 이동을 위한 진행 버튼이다."
+    },
+    {
+      "label": "광고 보기",
+      "role": "progression",
+      "bbox": {
+        "x1": 81,
+        "y1": 129,
+        "x2": 556,
+        "y2": 172
+      },
+      "center": {
+        "x": 0.423,
+        "y": 0.1116
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "광고 보기 버튼으로 보상을 위한 진행이다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

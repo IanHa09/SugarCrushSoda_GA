@@ -107,8 +107,30 @@ class GamesFileTests(unittest.TestCase):
         files = _TempFiles(self)
         path = files.write("games.txt", "# 게임제목, 장르\n\nCandy, Crush,  match3 \n Other Game ,rpg\n")
         games = load_games(path)
-        self.assertEqual(games["candy, crush"], ("Candy, Crush", "match3"))
-        self.assertEqual(games["other game"], ("Other Game", "rpg"))
+        self.assertEqual(games["candy, crush"], ("Candy, Crush", "match3", ""))
+        self.assertEqual(games["other game"], ("Other Game", "rpg", ""))
+
+    def test_package_column_is_optional_and_titles_keep_commas(self) -> None:
+        files = _TempFiles(self)
+        path = files.write(
+            "games.txt",
+            "Candy, Crush, match3, com.king.candy\nRoyal Match, match3 , com.dreamgames.royalmatch \n",
+        )
+        games = load_games(path)
+        self.assertEqual(games["candy, crush"], ("Candy, Crush", "match3", "com.king.candy"))
+        self.assertEqual(games["royal match"].package, "com.dreamgames.royalmatch")
+        self.assertEqual(list(games), ["candy, crush", "royal match"])  # 파일 순서 유지
+
+    def test_slug_comes_from_title(self) -> None:
+        files = _TempFiles(self)
+        games = load_games(files.write("games.txt", "Candy Crush Soda Saga, match3\nToon Blast!, match3\n"))
+        self.assertEqual(games["candy crush soda saga"].slug, "candy_crush_soda_saga")
+        self.assertEqual(games["toon blast!"].slug, "toon_blast")
+
+    def test_repository_games_have_packages(self) -> None:
+        # 저장소 games.txt의 게임은 모두 패키지 칸이 있어야 adb 자동 감지가 됩니다.
+        for game in load_games().values():
+            self.assertTrue(game.package, game.title)
 
     def test_bad_line_reports_line_number(self) -> None:
         files = _TempFiles(self)

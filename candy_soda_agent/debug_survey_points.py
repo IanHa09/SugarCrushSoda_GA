@@ -49,12 +49,12 @@ def _resolve_log(args: argparse.Namespace) -> Path:
     # --log > --run > current_run.txt 순서로 조사 로그 경로를 정합니다.
     if args.log:
         return Path(args.log).resolve()
-    root = game_root()  # output/<GAME_SLUG>
+    root = game_root()  # output/<게임 폴더>
     run_id = args.run
     if not run_id:
         pointer = root / "current_run.txt"
         if not pointer.exists():
-            raise SystemExit(f"{pointer}가 없습니다. --run 또는 --log를 지정하세요(GAME_SLUG 확인).")
+            raise SystemExit(f"{pointer}가 없습니다. --run 또는 --log를 지정하세요(--game으로 고른 게임 확인).")
         run_id = pointer.read_text(encoding="utf-8").strip()
     return root / "runs" / run_id / "game_survey.jsonl"
 

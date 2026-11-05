@@ -1,7 +1,7 @@
 """게임 지식 파일(knowledge/)을 읽어 autodrive가 쓰기 좋은 형태로 넘깁니다.
 
 파일 네 개를 읽습니다.
-  - knowledge/games.txt          : "게임제목, 장르" 목록. .env의 GAME_TITLE로 장르를 찾습니다.
+  - knowledge/games.txt          : "게임제목, 장르, 패키지" 목록. 실행할 게임은 game_select.py가 고릅니다.
   - knowledge/ui_knowledge.json  : 장르 공통 UI 관례 + 게임별 덧붙임(네비게이션 바, 플레이 진입/나가기 버튼 이름).
   - knowledge/screen_types.json  : 화면 타입 분류표(id, 설명, 처리 방식 policy, 적용 장르).
   - knowledge/map_knowledge.json : 장르 화면 지도(화면 역할 노드와 흔한 전환 간선, 기대 그래프).
@@ -24,7 +24,7 @@ from collections import deque
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 from survey_utils import normalize_text
 
@@ -248,10 +248,32 @@ def _normalize_title(title: str) -> str:
     return " ".join(str(title).casefold().split())
 
 
-def load_games(path: Path | None = None) -> dict[str, tuple[str, str]]:
-    """games.txt를 읽어 {정규화 제목: (제목, 장르)}를 돌려줍니다.
+# Android 패키지 이름 형태(com.king.candycrushsodasaga). 장르 이름과 구분하는 데 씁니다.
+_PACKAGE_NAME = re.compile(r"^[A-Za-z]\w*(\.\w+)+$")
 
-    한 줄 형식은 "게임제목, 장르"입니다. 제목에 쉼표가 있어도 되도록 마지막 쉼표로 나눕니다."""
+
+class GameEntry(NamedTuple):
+    """games.txt 한 줄: 제목, 장르, Android 패키지(없으면 빈 문자열)."""
+
+    title: str
+    genre: str
+    package: str = ""
+
+    @property
+    def slug(self) -> str:
+        """결과 폴더 이름(output/<slug>). 제목에서 만듭니다: 'Royal Match' -> 'royal_match'."""
+        return re.sub(r"[^0-9a-z]+", "_", self.title.casefold()).strip("_") or "game"
+
+
+def find_game(games: dict[str, GameEntry], title: str) -> GameEntry | None:
+    return games.get(_normalize_title(title))
+
+
+def load_games(path: Path | None = None) -> dict[str, GameEntry]:
+    """games.txt를 읽어 {정규화 제목: GameEntry}를 돌려줍니다(파일 순서 유지).
+
+    한 줄 형식은 "게임제목, 장르, 패키지"이고 패키지는 생략할 수 있습니다.
+    제목에 쉼표가 있어도 되도록 뒤에서부터 나눕니다: 마지막 칸이 패키지 이름 형태일 때만 패키지로 봅니다."""
 
     path = Path(path) if path is not None else GAMES_PATH
     try:
@@ -259,17 +281,22 @@ def load_games(path: Path | None = None) -> dict[str, tuple[str, str]]:
     except FileNotFoundError as error:
         raise KnowledgeError(f"지식 파일이 없습니다: {path}") from error
 
-    games: dict[str, tuple[str, str]] = {}
+    games: dict[str, GameEntry] = {}
     for line_number, raw_line in enumerate(text.splitlines(), start=1):
         line = raw_line.strip()
         if not line or line.startswith("#"):
             continue
         if "," not in line:
             raise KnowledgeError(f"{path} {line_number}번째 줄: '게임제목, 장르' 형식이 아닙니다: {line!r}")
-        title, genre = (part.strip() for part in line.rsplit(",", 1))
+        head, last = (part.strip() for part in line.rsplit(",", 1))
+        package = ""
+        if _PACKAGE_NAME.match(last) and "," in head:
+            package = last
+            head, last = (part.strip() for part in head.rsplit(",", 1))
+        title, genre = head, last
         if not title or not genre:
             raise KnowledgeError(f"{path} {line_number}번째 줄: 제목이나 장르가 비어 있습니다: {line!r}")
-        games[_normalize_title(title)] = (title, genre)
+        games[_normalize_title(title)] = GameEntry(title, genre, package)
     return games
 
 
@@ -570,7 +597,7 @@ class GameProfile:
         return matches_any_label(label, self.external_labels)
 
     def never_tap(self, label: str) -> bool:
-        """플레이 진입이나 외부 공유·초대라 눌러서는 안 되는 버튼인지."""
+        """플레이 진입이나 게임 밖·광고·뽑기(external_labels)라 눌러서는 안 되는 버튼인지."""
         return self.is_play_entry(label) or self.is_external(label)
 
     def is_play_exit(self, label: str) -> bool:
@@ -648,10 +675,9 @@ def load_game_profile(
     제목이 games.txt에 없으면 장르 _default로 계속합니다(known=False).
     map_path를 주지 않으면 저장소 지도를 저장소 화면 타입으로 검사합니다(types_path는 지도와 함께 줄 때만 씀)."""
 
-    games = load_games(games_path)
-    found = games.get(_normalize_title(title))
+    found = find_game(load_games(games_path), title)
     if found is not None:
-        title, genre = found
+        title, genre = found.title, found.genre
     else:
         genre = DEFAULT_GENRE
 

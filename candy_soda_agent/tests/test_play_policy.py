@@ -71,6 +71,7 @@ class AutodriveHarness(unittest.TestCase):
                 ("navigation.navigator.CHROME_DETECTION", False),
                 ("navigation.navigator.ADB_PATH", ""),
                 ("navigation.navigator.BACK_KEY", "esc"),
+                ("navigation.navigator.bring_game_to_front", lambda: False),  # 실제 창 전환 없음
                 *extra_patches,
             ):
                 stack.enter_context(patch(target, value))

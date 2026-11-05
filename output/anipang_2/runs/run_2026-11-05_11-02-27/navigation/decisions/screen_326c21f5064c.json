@@ -1,0 +1,144 @@
+{
+  "screen_type": "menu",
+  "screen_role": "profile",
+  "summary": "계정 정보를 표시하고 수정할 수 있는 프로필 화면입니다.",
+  "visible_text": [
+    "하이안",
+    "팀 없음",
+    "자기소개...",
+    "트로피 1/33",
+    "전시장 꾸미기",
+    "보유 트로피"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "프로필 이미지",
+      "evidence": "상단 중앙에 위치한 프로필 이미지"
+    },
+    {
+      "category": "core_play",
+      "name": "트로피 진행 상황",
+      "evidence": "트로피 수치 표시"
+    },
+    {
+      "category": "ui",
+      "name": "설정 아이콘",
+      "evidence": "톱니바퀴 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "화면 우측 상단 X 아이콘"
+    },
+    {
+      "category": "currency",
+      "name": "하트 도움 버튼",
+      "evidence": "여러 도움 아이콘 중 하나"
+    },
+    {
+      "category": "ui",
+      "name": "일반 기록 버튼",
+      "evidence": "'일반 기록' 버튼 표시"
+    },
+    {
+      "category": "ui",
+      "name": "전시장 꾸미기 버튼",
+      "evidence": "전시장 꾸미기 버튼"
+    },
+    {
+      "category": "other",
+      "name": "클리어 기록",
+      "evidence": "여러 클리어 상태 아이콘"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 715,
+        "y1": 16,
+        "x2": 733,
+        "y2": 46
+      },
+      "center": {
+        "x": 0.9615,
+        "y": 0.023
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "화면을 종료하는 버튼"
+    },
+    {
+      "label": "설정",
+      "role": "structure",
+      "bbox": {
+        "x1": 360,
+        "y1": 45,
+        "x2": 396,
+        "y2": 81
+      },
+      "center": {
+        "x": 0.502,
+        "y": 0.0467
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "프로필 설정을 위한 버튼"
+    },
+    {
+      "label": "일반 기록",
+      "role": "structure",
+      "bbox": {
+        "x1": 275,
+        "y1": 571,
+        "x2": 325,
+        "y2": 629
+      },
+      "center": {
+        "x": 0.3984,
+        "y": 0.4451
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "게임 기록을 보여주는 버튼"
+    },
+    {
+      "label": "전시장 꾸미기",
+      "role": "structure",
+      "bbox": {
+        "x1": 430,
+        "y1": 565,
+        "x2": 590,
+        "y2": 631
+      },
+      "center": {
+        "x": 0.6773,
+        "y": 0.4436
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "전시장을 꾸미는 버튼"
+    },
+    {
+      "label": "보유 트로피",
+      "role": "structure",
+      "bbox": {
+        "x1": 430,
+        "y1": 470,
+        "x2": 590,
+        "y2": 515
+      },
+      "center": {
+        "x": 0.6773,
+        "y": 0.3654
+      },
+      "region": "content",
+      "confidence": 1.0,
+      "reason": "현재 보유하고 있는 트로피를 표시하는 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

@@ -12,12 +12,15 @@ endif
 
 STEPS ?= 40
 REPEAT ?= 5
+# 조사할 게임(knowledge/games.txt의 제목). 비우면 adb로 감지하고, 못 하면 목록에서 고릅니다.
+GAME ?=
+GAME_ARG = $(if $(GAME),--game "$(GAME)",)
 
 .PHONY: help setup preview calibrate once auto survey-once autodrive autodrive-repeat autodrive-new survey-auto survey-report metrics debug-points hotkeys test
 
 help:
 	@printf '%s\n' \
-		'사용법: make <명령> [STEPS=숫자] [PYTHON=파이썬경로]' \
+		'사용법: make <명령> [STEPS=숫자] [GAME="게임제목"] [PYTHON=파이썬경로]' \
 		'(Windows는 PYTHON 기본값이 .venv/Scripts/python.exe 입니다)' \
 		'' \
 		'  setup          가상환경·의존성 설치와 .env 파일 생성' \
@@ -37,7 +40,8 @@ help:
 		'  test           단위 테스트 실행' \
 		'' \
 		'예: make autodrive STEPS=20' \
-		'예: make autodrive-new REPEAT=5 STEPS=40'
+		'예: make autodrive-new REPEAT=5 STEPS=40' \
+		'예: make autodrive GAME="Royal Match"'
 
 setup:
 	$(BOOTSTRAP_PYTHON) -m venv .venv
@@ -51,22 +55,22 @@ calibrate:
 	$(PYTHON) candy_soda_agent/calibrate_region.py
 
 once:
-	$(PYTHON) candy_soda_agent/main.py --once
+	$(PYTHON) candy_soda_agent/main.py --once $(GAME_ARG)
 
 auto:
-	$(PYTHON) candy_soda_agent/main.py --auto
+	$(PYTHON) candy_soda_agent/main.py --auto $(GAME_ARG)
 
 survey-once:
-	$(PYTHON) candy_soda_agent/main.py --survey-once
+	$(PYTHON) candy_soda_agent/main.py --survey-once $(GAME_ARG)
 
 autodrive:
-	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS)
+	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS) $(GAME_ARG)
 
 autodrive-repeat:
-	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS) --autodrive-repeat $(REPEAT)
+	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS) --autodrive-repeat $(REPEAT) $(GAME_ARG)
 
 autodrive-new:
-	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS) --autodrive-repeat $(REPEAT) --new-run
+	$(PYTHON) candy_soda_agent/main.py --autodrive --survey-taps --autodrive-steps $(STEPS) --autodrive-repeat $(REPEAT) --new-run $(GAME_ARG)
 
 metrics:
 	$(PYTHON) candy_soda_agent/survey_metrics.py
@@ -75,13 +79,13 @@ debug-points:
 	$(PYTHON) candy_soda_agent/debug_survey_points.py
 
 survey-auto:
-	$(PYTHON) candy_soda_agent/main.py --survey-auto --survey-taps --autodrive-steps $(STEPS)
+	$(PYTHON) candy_soda_agent/main.py --survey-auto --survey-taps --autodrive-steps $(STEPS) $(GAME_ARG)
 
 survey-report:
-	$(PYTHON) candy_soda_agent/main.py --survey-report
+	$(PYTHON) candy_soda_agent/main.py --survey-report $(GAME_ARG)
 
 hotkeys:
-	$(PYTHON) candy_soda_agent/main.py --hotkeys
+	$(PYTHON) candy_soda_agent/main.py --hotkeys $(GAME_ARG)
 
 test:
 	$(PYTHON) -m unittest discover -s candy_soda_agent/tests -v

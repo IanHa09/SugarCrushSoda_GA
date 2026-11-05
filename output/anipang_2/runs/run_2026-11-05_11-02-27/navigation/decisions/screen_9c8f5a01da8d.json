@@ -1,0 +1,131 @@
+{
+  "screen_type": "home",
+  "screen_role": "home",
+  "summary": "게임의 메인 화면으로 레벨을 선택하는 사가 지도 형태입니다.",
+  "visible_text": [
+    "맵 이동",
+    "EPISODE 8",
+    "EPISODE 7",
+    "EPISODE 6",
+    "EPISODE 5",
+    "EPISODE 4",
+    "EPISODE 3",
+    "EPISODE 2"
+  ],
+  "game_elements": [
+    {
+      "category": "core_play",
+      "name": "레벨 선택 버튼",
+      "evidence": "레벨 번호와 함께 있는 버튼"
+    },
+    {
+      "category": "ui",
+      "name": "탭 버튼",
+      "evidence": "홈 화면의 탭 아이콘들"
+    },
+    {
+      "category": "currency",
+      "name": "재화(다이아)",
+      "evidence": "화면 상단의 다이아 수치"
+    },
+    {
+      "category": "ui",
+      "name": "설정 버튼",
+      "evidence": "상단 우측 톱니바퀴 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "친구 버튼",
+      "evidence": "화면 하단 친구 아이콘"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "내 위치",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 337,
+        "y1": 1167,
+        "x2": 410,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.496,
+        "y": 0.9076
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "위치 안내 버튼"
+    },
+    {
+      "label": "코스모스",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 309,
+        "y1": 1165,
+        "x2": 397,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.4688,
+        "y": 0.9069
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭 버튼"
+    },
+    {
+      "label": "스페이스",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 219,
+        "y1": 1165,
+        "x2": 307,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.3493,
+        "y": 0.9069
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭 버튼"
+    },
+    {
+      "label": "아일랜드",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 126,
+        "y1": 1165,
+        "x2": 215,
+        "y2": 1280
+      },
+      "center": {
+        "x": 0.2264,
+        "y": 0.9069
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭 버튼"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 423,
+        "y1": 61,
+        "x2": 493,
+        "y2": 132
+      },
+      "center": {
+        "x": 0.6082,
+        "y": 0.0716
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "팝업 닫기 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

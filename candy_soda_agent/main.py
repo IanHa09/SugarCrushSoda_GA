@@ -13,6 +13,12 @@ load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 # --new-run은 config.py가 run_id를 정하기 전에 알려야 하므로 argparse보다 먼저 봅니다.
 if "--new-run" in sys.argv:
     os.environ["NEW_RUN"] = "1"
+# config.py가 게임 제목·결과 폴더를 current_game.txt에서 읽으므로 게임도 먼저 고릅니다.
+# (테스트가 main을 import할 때나 --help일 때는 고르지 않습니다.)
+if __name__ == "__main__" and not {"-h", "--help"} & set(sys.argv):
+    from game_select import select_game
+
+    select_game(sys.argv[1:])
 
 from openai import OpenAI
 

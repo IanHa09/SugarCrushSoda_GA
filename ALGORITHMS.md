@@ -42,7 +42,7 @@
 | 유한 상태 기계 (FSM) | `FrontierWalker`, `StepGoal.kind` | 정해진 몇 가지 상태 사이를 규칙에 따라 오가는 모델. `frontier / replay / reset / reobserve` 네 상태를 스텝마다 전환. 실제 탭은 하지 않는 순수 계획 로직이라 단위 테스트가 쉬움 |
 | 큐로 경로 재생 | `FrontierWalker._replay_queue` | 선입선출 목록. BFS로 구한 간선을 앞에서부터 하나씩 실행하고 도착 화면을 검증 |
 | 행동 원장 (해시 맵) | `ledger.LedgerStore`, `is_open_entry` | 키 `"screen_id:action_key"` → `LedgerEntry`. **눌렀는지(`attempts`)와 결과(`verdict`)를 분리**해서, 눌러도 화면이 안 바뀌는 버튼이 계속 프론티어로 뽑히는 문제를 막음. 프론티어 = 아직 안 눌렀고 탭 없이 닫히지도 않은 항목(`CLOSED_WITHOUT_TAP` 밖) 또는 빗나감(`missed`) 재시도 대기 항목. verdict는 `new_screen / known_screen / no_change / blocked / failed / not_visible / missed / not_found / global / play_entry` |
-| 빗나감 재시도 | `ledger.record_miss` | 눌렀는데 픽셀이 그대로면 바로 닫지 않고 `missed`(프론티어 유지)로 두었다가, `TAP_MISS_RETRIES`번 넘게 그대로면 `no_change`로 닫음 |
+| 빗나감 재시도 | `ledger.record_miss` | 눌렀는데 픽셀이 그대로면 바로 닫지 않고 `missed`(프론티어 유지)로 두었다가, `TAP_MISS_RETRIES`번 넘게 그대로면 `no_change`로 닫음. 다시 누를 때 위치는 화면 전체에서 다시 찾음(3장) |
 | 실패 항목 재시도 (상한 카운터) | `FrontierWalker.reopen_failed`, `ledger.reopen_failed` | 프론티어가 비어 `converged`가 나오면 끝내기 전에 실패로 닫힌 항목(`no_change / not_found / blocked`) 중 지금 화면에서 BFS 경로가 있는 것만 다시 엶(`attempts=0`). 항목마다 `retries`를 원장에 세어 `FRONTIER_RETRY_MAX`번까지만 열므로 run을 넘어도 무한 반복하지 않음. 남은 실패 수는 종료 메시지에 표시 |
 | 연속 미관측 카운터 | `ledger.note_visit` | 연속 실패 횟수를 세어 일시적 누락을 무시하는 방식. LLM이 버튼을 가끔 빠뜨리므로 `FRONTIER_MAX_MISSES`번 연속 안 보일 때만 `not_visible`로 정리 |
 | 선기록·후확정 + 복구 | `mark_attempted` → `finalize`, `LedgerStore.__init__` | 탭 직전에 시도 횟수를 먼저 저장하고, 결과는 다음 관찰 때 채움. 결과 없이 프로그램이 끊긴 항목은 재시작할 때 "안 눌러 봄"으로 되돌림 |
@@ -66,7 +66,7 @@
 | HOG (방향 그래디언트 히스토그램) | `screen_index.hog_feature` | 이미지의 "모양"을 벡터로 바꾸는 특징 추출법. 흑백 128×256으로 줄이고 Sobel(ksize=1)로 픽셀마다 밝기 변화의 세기와 방향(부호 없는 0~180도)을 구함 → 16px 칸마다 방향 9칸 히스토그램(`np.add.at`으로 한 번에 누적) → 이웃 2×2 칸을 이어 붙여 블록마다 L2 정규화 → 길이 3780 벡터를 다시 길이 1로 정규화. 블록 정규화 덕분에 화면 전체가 어두워져도 값이 거의 안 바뀜 |
 | 코사인 거리 + 행렬·벡터 곱 최근접 탐색 | `screen_index.ScreenIndex.nearest` | 길이 1인 벡터끼리는 내적 = 코사인 유사도. 대표 화면 벡터를 (노드 수 × 3780) 행렬로 쌓아 두고 새 벡터와 한 번 곱해 모든 노드와의 거리(1 − 유사도)를 구한 뒤 `argmin`. 화면 타입을 보지 않아서 LLM이 같은 화면을 다른 타입으로 불러도 같은 노드로 모임 |
 | 지연 생성 색인 + 무효화 | `GraphStore._screen_index`, `set_chrome_bands` | 처음 쓸 때 대표 이미지들로 색인을 만들고(장당 약 5ms), 새 노드는 행을 추가. 공통 띠가 바뀌면 비교 영역이 달라지므로 색인을 지워 다음에 다시 만듦 |
-| 임계값 실측 | `config.SCREEN_HOG_MAX_DISTANCE` | run_2026-10-02_08-33-21 캡처 31장: 같은 노드끼리 최대 0.071, 다른 화면끼리 최소 0.272(지도 vs 지도 위 하트 팝업) → 사이의 0.15. 기록을 다시 넣어 보면 지문만 쓰면 노드 10개(지도가 둘로 갈림), HOG를 켜면 9개. 거리는 `journeys.jsonl`의 `hog_nearest`에 남음 |
+| 임계값 실측 | `config.SCREEN_HOG_MAX_DISTANCE` | run_2026-10-02_08-33-21 캡처 31장: 같은 노드끼리 최대 0.071, 다른 화면끼리 최소 0.272(지도 vs 지도 위 하트 팝업) → 사이의 0.15. 기록을 다시 넣어 보면 지문만 쓰면 노드 10개(지도가 둘로 갈림), HOG를 켜면 9개. 거리는 `journeys.jsonl`의 `hog_nearest`에 남음. run_2026-10-27_06-35-53: 틀이 같은 안내 팝업 둘(그림·글만 다름)이 0.146으로 합쳐짐 → 이 게임은 0.10이 맞음(`.env`로 바꿈) |
 | dHash 화면 지문 | `find_fingerprint_match` | 13장의 dHash를 화면 전체에 적용. 같은 화면 타입 노드끼리만 비교해서, "팝업과 그 배경"처럼 이미지는 비슷하지만 다른 화면을 타입이 걸러 줌 |
 | 지문 거부권 | `fingerprint_conflicts` | 버튼 기준으로는 같아 보여도 지문이 멀면 다른 화면으로 봄(실측: 상점 4곳이 버튼 'close' 하나로 합쳐졌지만 지문 거리 0.46). 지문을 합치는 데뿐 아니라 나누는 데도 씀 |
 | 고정 기준(앵커) 비교 | `ScreenNode.buttons`, `ScreenNode.fingerprint` | 노드가 처음 관찰될 때 저장한 버튼 목록·지문만 비교 기준으로 씀. 조금씩 다른 관찰이 이어져도 기준이 떠내려가지 않음 |
@@ -87,7 +87,7 @@
 | 26진법 열 이름 | `column_name`, `parse_cell` | 0 → A, 25 → Z, 26 → AA(엑셀 열 이름). "C5" ↔ (열 2, 행 4)로 바꾸고, 형식이 틀리거나 격자 밖이면 None |
 | 좌표 역변환 | `GridView.to_source` | 확대 이미지 좌표를 원본 좌표로: `x0 + x / scale` (배율을 되돌리고 평행이동) |
 | 두 신호 교차 검증 | `resolve_location` | 모델에게 칸 이름과 픽셀을 둘 다 받음. 픽셀이 칸에서 한 칸 이내면 픽셀(더 정밀), 어긋나면 칸 중심(덜 틀림), 둘 다 못 쓰면 None |
-| 2단계 폴백 (확대 → 전체) | `refine_tap_target` | 확대본에서 못 찾거나 확신도가 낮으면 전체 화면에서 한 번 더 물음(`TAP_REFINE_FULL_FALLBACK`, 실측에서 엉뚱한 좌표가 나와 기본 끔). 못 찾으면 누르지 않음(`not_found`). API 오류면 탐색을 멈추지 않고 처음 좌표로 누름 |
+| 2단계 폴백 (확대 → 전체) | `refine_tap_target` | 확대본에서 못 찾거나 확신도가 낮으면 전체 화면에서 한 번 더 물음(`TAP_REFINE_FULL_FALLBACK`, 실측에서 엉뚱한 좌표가 나와 기본 끔). 못 찾으면 누르지 않음(`not_found`). API 오류면 탐색을 멈추지 않고 처음 좌표로 누름. 빗나간(`missed`) 프론티어를 다시 누를 때는 확대 없이 전체 화면만 봄(`full_only`): 처음 좌표가 틀렸으면 그 주변을 잘라도 버튼이 잘린 영역 끝에 걸림. 찾은 자리에 보인 글자(`seen_label`)가 `never_tap`(광고·뽑기·외부·플레이 진입)이면 누르지 않음(`not_found`): 이름으로 찾다 보니 글자가 겹치는 옆 버튼('무료 뽑기' → '광고 보고 무료 뽑기')을 고름 |
 | 화면 안정 대기 (폴링 + 디바운싱) | `tap_effect.wait_for_settle` | 탭 뒤 최소 대기 후 일정 간격으로 캡처해, 직전 프레임과 차이가 기준 미만인 상태가 `POST_TAP_STABLE_FRAMES`번 이어지면 멈췄다고 봄. 제한 시간이 지나면 그 시점 화면으로 판정. 탭 전 화면 대비 최대 변화(`peak_change`)와 최종 변화(`final_change`)를 같이 기록 |
 | 탭 효과 판정 (임계값) | `TapEffect.changed`, `same_screen` | 실측: 같은 화면 캡처끼리 0.0000~0.0038, 실제 전환은 0.054 이상 → 0.01 미만이면 "화면 그대로" = 빗나감 의심 |
 
@@ -96,14 +96,18 @@
 | 기법 | 위치 | 설명 |
 | --- | --- | --- |
 | 탈출 사다리 (단계 순서 상태 기계) | `navigator._plan_escape`, `ESCAPE_STAGES` | 정해진 단계를 순서대로 시도: Android 뒤로 → 나가기 요소 찾기 → 닫기류 버튼 다시 누르기 → 다시 분석(`resurvey`, 화면당 1번) → 다른 버튼 눌러보기(`other_buttons`, 화면당 `STUCK_OTHER_BUTTONS_MAX`개) → 게임 재시작. 원장에서 이 화면의 `not_found`·`no_change` 행동과 이번 세션에 못 찾은 행동(`_Journey.dead_keys`)은 3·5단계와 리셋에서 건너뜀. 상태는 정수 두 개(`escape_stage` 지금 단계, `escape_tries` 이 단계 시도 수). 쓸 수 없거나 상한을 넘은 단계는 건너뛰고, 화면을 바꾼 단계는 시도 수만 0으로 돌려 계속 씀. 정상 탭 없이 탈출이 `ESCAPE_MAX_STREAK`(8)번 이어지면 재시작 단계로 바로 감 |
-| 단계 순서 교체 | `PLAY_FLOW_POPUP_STAGES` | 같은 사다리를 순서 튜플만 바꿔 재사용. 플레이 중 확인창에서는 뒤로를 먼저 보내면 창이 닫혀 보드로 돌아가므로 나가기 요소 찾기를 먼저 씀 |
+| 단계 순서 교체 | `PLAY_FLOW_POPUP_STAGES`, `POPUP_EXIT_STAGES` | 같은 사다리를 순서 튜플만 바꿔 재사용. 플레이 중 확인창에서는 뒤로를 먼저 보내면 창이 닫혀 보드로 돌아가므로 나가기 요소 찾기를 먼저 씀. 팝업 나가기는 화면의 나가기 버튼 → 나가기 찾기(바깥 어두운 곳) → 뒤로 → 재시작 |
+| 팝업 판정 (밝기 비율 + 후보) | `_is_popup_screen`, `_tab_bar_hidden`, `_root_band_brightness` | 화면 아래 10% 띠 평균 밝기 ÷ 루트 대표 화면의 같은 띠가 0.7~1.3 밖이거나(팝업이 탭바를 어둡게 덮음·탭바 없는 화면), 조사 후보 중 팝업 안 나가기 버튼(X·닫기·확인·나중에·취소)이 있으면 팝업. 탭바 찾기 건너뛰기와 팝업 나가기가 같은 함수를 씀(예전에는 둘이 닫기만/나가기류 전부로 따로 판정해 '확인'만 있는 팝업에서 엇갈림). LLM 없이 픽셀 평균 하나라 결정적. 루트 밝기는 세션마다 한 번 읽음. 실측 19화면: 탭 화면 1.00~1.01, 그 밖 0.07~0.38·1.44~2.54. 띠를 16%로 넓히면 팝업 아래쪽이 섞여 갈리지 않았음 |
+| 팝업 나가기 | `_popup_exit_keys`, `leave_popup`, `_Journey.popup_node` | 팝업 화면(`_is_popup_screen`)의 나가기 버튼. 그 버튼들은 원장에 등록하지 않고(프론티어 아님) `candidates`에는 남김(아는 간선으로 나갈 때 찾으려고). 더 볼 것이 없어 갈 길을 모르거나(`unreachable`), 아는 길 없이 루트로 리셋 중이거나, 전부 확인했는데(`converged`) 루트가 아닌 팝업 위면 `POPUP_EXIT_STAGES`로 나감. 팝업이 바뀌면 사다리를 처음 단계부터 |
+| 나가기 버튼 순서 | `_exit_candidates` | (X·닫기 → 뒤로·홈 → 확인 같은 낱말, 확신도) 순으로 정렬. 눌러도 그대로였던 버튼 자리는 `exit_failed_points`에 남겨 나가기 찾기가 다시 고르지 않음 |
 | 나가기 요소 찾기 | `tap_refine.find_exit_target` | 화면 전체에 격자(3장)를 그려 X/닫기/뒤로/홈 탭을, 없으면 팝업 바깥 어두운 곳 한 점을 물음. 효과 없던 좌표는 프롬프트에 넣어 다시 고르지 않게 함 |
 | 위험 낱말 차단 목록 | `tap_refine.is_risky_exit_label` | 구매·광고·로그인·상점 같은 낱말이 들어간 라벨은 나가기 요소로 고르지 않음 |
 | 순환 감지 (슬라이딩 윈도 + 집합 크기) | `_Journey.idle_nodes`, `_is_cycling`, `stuck_cycle` | 마지막 진전(새 노드 또는 프론티어 탭) 이후 관찰한 노드 목록을 쌓고, 최근 `STUCK_CYCLE_STEPS`개의 서로 다른 노드가 2개 이하면 순환. 순환 노드 집합을 `stuck_cycle`로 기억해 그 밖으로 나가거나 진전이 있을 때까지 재생·리셋 대신 사다리 4단계부터 씀. 5단계는 원장에서 순환 노드로 가는 행동(`_keys_leading_to`)을 뺌. 같은 화면에서 `STUCK_CYCLE_GIVE_UP`(3)번째 감지하면 그 화면들과 그때 가려던 목표의 남은 프론티어를 포기(`_count_cycle`, `FrontierWalker.give_up`) |
-| 탭바 전용 찾기 (잘라 보기 + 격자) | `tap_refine.find_nav_tabs`, `navigator._add_nav_tabs` | 새 화면 첫 분석 때 화면 아래 16% 띠만 잘라 격자를 그려 고해상도로 탭을 왼쪽부터 모두 묻고(칸 + 픽셀, `resolve_location`으로 원본 좌표 복원), 조사 모델의 `bottom_nav` 후보를 그 결과로 교체. 선택된 탭·플레이 진입 탭 제외, 팝업에 가려졌으면(`covered`) 그대로 둠. 라벨은 보이는 글자 > `홈` > 왼쪽부터의 순서(`넷째 탭 (아이콘 묘사)`, 괄호는 키에서 빠짐)라 화면마다 같은 탭이 같은 키. 찾은 버튼은 누르기 전 확대 확인을 건너뜀(`_LOCATED_REASONS`) |
+| 탭바 전용 찾기 (잘라 보기 + 격자) | `tap_refine.find_nav_tabs`, `navigator._add_nav_tabs` | 새 화면 첫 분석 때 화면 아래 16% 띠만 잘라 격자를 그려 고해상도로 탭을 왼쪽부터 모두 묻고(칸 + 픽셀, `resolve_location`으로 원본 좌표 복원), 조사 모델의 `bottom_nav` 후보를 그 결과로 교체. 선택된 탭·플레이 진입 탭 제외, 팝업에 가려졌으면(`covered`) 그대로 둠. 라벨은 보이는 글자 > `홈` > 왼쪽부터의 순서(`넷째 탭 (아이콘 묘사)`, 괄호는 키에서 빠짐)라 화면마다 같은 탭이 같은 키. 찾은 탭은 누르기 전 확대 확인을 거침(건너뛰는 건 나가기 찾기 버튼만, `_LOCATED_REASONS`): 띠에서 받은 좌표가 한 칸씩 왼쪽으로 밀려 'N번째 탭'이 N-1번째 아이콘을 눌렀음(실측: 애니팡 홈 넷째 탭 296px → 곰, 하트는 397px. x는 실제의 약 0.75배, y는 약 1.33배로 가로로 긴 띠 탓으로 보이나 모델 원답이 기록에 없어 미확인). 선택된 탭의 순서·글자는 노드의 `tab_index`·`tab_name`에 남김. 팝업 화면(`_is_popup_screen`)은 건너뜀: 띠만 보면 팝업이 있는지 몰라 어둡게 비친 탭을 넣었음(실측: 애니팡 환경설정 12스텝, GIFT BOX·안내 팝업·광고 프레임 등 run_2026-11-05_10-04-35에서 약 38스텝) |
+| 빗나간 탭 판정 | `navigator._opened_other_tab`, `_finalize_previous_attempt` | 순서 이름 탭(`넷째 탭 …`, `policy.nav_tab_index`로 순서를 읽음)을 눌렀는데 도착 화면의 선택 탭 순서가 다르면 픽셀이 그대로인 경우와 같은 빗나감으로 처리: 간선을 안 만들고, 프론티어면 `missed`(재시도), 공통 버튼이면 목적지로 안 배움. 실측: 친구 화면 탭 좌표가 반 칸 밀려 "넷째 탭 → 홈"이 지름길로 퍼졌음 |
 | 막힘 재분석 (병합) | `run_resurvey`, `_stuck_hint`, `_merge_candidates` | 눌러 본·화면에 없는 버튼 목록과 "탭바가 또렷하면 팝업 아님" 지시를 프롬프트에 붙여 다시 분석하고, 새 행동 키만 앞에 붙여(후보 상한 10개에 안 잘리게) `save_decision(overwrite=True)`. 다음 스텝에 원장이 새 키를 프론티어로 등록 |
 | 플레이 흐름 (상태 플래그) | `_Journey.play_flow`, `_play_flow_finished` | 플레이 화면(`policy=leave`)에 들어가면 켜지고, 루트·홈 타입 화면·흐름 전부터 알던 화면(집합)에 오면 꺼짐. 켜진 동안은 프론티어 대신 나가기 버튼 → 탈출 사다리만 실행. 흐름 중 처음 본 화면은 `play_flow` 표시로 프론티어와 경로 계획에서 뺌. `PLAY_EXIT_MAX_STEPS`를 넘기면 재시작, 그것도 못 하면 `play_stuck`으로 멈춤 |
-| 플레이 진입 차단 | `_split_play_entries`, `ledger.close_play_entry` | 안전 후보를 (탐색할 것, 플레이 진입)으로 나눠, 진입 버튼은 원장에 `play_entry`로 닫고 누르지 않음 |
+| 플레이 진입 차단 | `_split_play_entries`, `ledger.close_play_entry` | 안전 후보를 (탐색할 것, 플레이 진입)으로 나눠, 진입 버튼은 원장에 `play_entry`로 닫고 누르지 않음. `external_labels`(게임 밖·고객센터·광고·뽑기)는 `external`로 같은 방식 |
 | adb 명령 | `action_executor.execute_back_key`, `restart_game` | 좌표 없이 에뮬레이터에 직접 명령을 보냄: 뒤로 `input keyevent 4`, 재시작 `am force-stop` → `monkey -p <패키지> 1`. `subprocess`에 제한 시간을 걸고 반환 코드·출력으로 실패를 판정 |
 | 사전 점검 (fail-fast) | `check_adb`, `check_game_package` | 탐색 시작 전 `adb get-state`와 `pm list packages`로 연결·설치를 확인. adb가 안 되면 API를 쓰기 전에 멈추고, 패키지만 없으면 재시작 단계만 끔 |
 | 3단 폴백 선택 | `back_method` | `ADB_PATH`가 있으면 adb, 없고 `BACK_KEY`가 있으면 키보드, 둘 다 없으면 끔 |
@@ -188,6 +192,7 @@
 | 정규화 좌표 역변환 | `execute_button_tap` | 0~1 좌표에 캡처 영역 크기를 곱하고 원점을 더해 실제 좌표로 바꿈 |
 | 타임아웃 폴링 | `_wait_until_active` | 조건이 맞을 때까지 짧게 반복 확인하되 제한 시간(`time.monotonic()` 기준)을 둠 |
 | 다단계 폴백 | `activate_application` | 앞 방법이 실패하면 다음 방법을 시도. Windows는 `pygetwindow`로 최소화 안 된 창을 골라 activate, 거부되면 최소화 → 복원으로 우회. macOS는 AppKit → `open -b/-a` → `osascript` 순서 |
+| 캡처 전 창 올리기 | `bring_game_to_front`, `navigator._bring_game_to_front` | 캡처는 화면 영역을 그대로 찍으므로 스텝마다 캡처 전에 전면 창 제목을 비교해 게임 창이 아니면 올리고 0.5초 기다림(실제 탭 모드만). 실패하면 로그만 남기고 진행 |
 | 경계 검사 + FAILSAFE | `execute_decision`, `execute_button_tap` | 계산한 좌표가 영역 밖이면 차단하고, `pyautogui.FAILSAFE`로 마우스를 화면 모서리로 옮기면 비상 정지 |
 | 합성 키 표식 | `hotkeys.SYNTHETIC_KEY_ACTIVE` | 프로그램이 직접 누른 키(키보드 뒤로)를 단축키 훅이 ESC 종료로 오해하지 않게, 누르는 동안 `threading.Event`를 켜 둠 |
 
@@ -234,6 +239,9 @@
 | --- | --- | --- |
 | 재귀 전위 순회 (DFS) | `_append_screen_hierarchy._walk` | 부모를 먼저 출력하고 자식으로 내려가는 순회. BFS 스패닝 트리를 깊이만큼 들여쓴 목록으로 출력 |
 | Mermaid 다이어그램 생성 | `_append_game_structure_diagram` | 텍스트로 그리는 다이어그램 문법. 트리 간선은 실선 `-->`, 교차 링크는 점선 `-.->`. 간선 라벨은 항상 따옴표로 감싸고 `"`, `\|`, 백틱을 바꿈(괄호 라벨 "뒤로(키)"가 다이어그램 전체를 깨뜨렸던 문제). 같은 화면으로 돌아오는 간선(self-loop)은 그리지 않고 개수만 셈. 노드가 `MERMAID_MAX_NODES`를 넘으면 생략 |
+| 탭 화면 묶기 | `_structure_view`, `_tab_screens`, `_tab_labels` | 탭 화면 = 선택 탭이 보이고 그 탭(순서 또는 이름)을 눌러 도착한 화면, 또는 루트. 구조도·계층용 그래프를 새로 만들어 루트→탭 화면 간선을 탭 순서대로 앞에 두고, 탭 화면끼리 오간 간선은 빼고 개수만 셈(탭바는 어느 탭에서나 보여 탭끼리는 완전 그래프). 탭 라벨은 순서마다 하나: 선택 탭 아래 뜬 이름(`둘째 탭 (친구)`) > 처음 기록된 라벨. graph.json은 그대로 |
+| 화면 이름 번호 | `_node_names` | 탭 화면은 탭 이름, 나머지는 타입 이름. `Counter`로 같은 이름 수를 세어 둘 이상이면 발견 순서로 `Popup(1)`, `Popup(2)` |
+| 합쳐짐 의심 | `_append_merge_warning` | (출발 화면, 행동 키)마다 도착 화면 집합을 모아 둘 이상이면 Overview에 경고. 뒤로 가기는 지나온 길에 따라 달라 뺌 |
 | 도달 불가 화면 표시 | `_append_orphan_screens` | `unreached_from` 결과를 대표 이미지와 함께 따로 적어, 트리에서 빠진 화면도 관찰 여부를 확인할 수 있게 함 |
 | 이름 기준 묶기 + 최빈값 대표 | `generate_survey_markdown`, `_group_by_category`, `_representative_name` | 요소를 정규화 이름 튜플(14장)로 묶고 `Counter`로 표기·분류 횟수를 셈. 대표 이름 = 많이 나온 것 → 짧은 것 → 사전순, 대표 분류 = 가장 많이 붙은 분류. 다른 분류는 옆에 적어 분류가 흔들렸다는 사실을 남김 |
 | 동시출현 집계 | `generate_survey_markdown` | 어떤 요소가 어느 화면들에 함께 나왔는지 세는 것. 요소마다 등장 화면을 `set`으로 모두 모음 |
@@ -290,7 +298,7 @@
 
 | 기법 | 설명 |
 | --- | --- |
-| `unittest` | 파이썬 기본 테스트 프레임워크 (`make test`로 실행, README 기준 233개) |
+| `unittest` | 파이썬 기본 테스트 프레임워크 (`make test`로 실행, README 기준 340개) |
 | `unittest.mock.patch`, `patch.object` | 설정값, API, 마우스·adb 호출을 가짜로 바꿔 네트워크나 실제 입력 없이 검증 |
 | 함수 인자로 의존성 주입 | `wait_for_settle(sleep=, clock=)`, `refine_tap_target(request=)`, `restart_game(sleep=)`처럼 시계·대기·API 요청을 인자로 받아, 테스트에서 실제로 기다리거나 API를 부르지 않고 시간 흐름과 응답을 재현 |
 | 고정 시드 난수 이미지 | `np.random.default_rng(시드)`로 매번 같은 가짜 화면·잡음을 만들어 HOG·공통 띠 검사를 재현 가능하게 함 |

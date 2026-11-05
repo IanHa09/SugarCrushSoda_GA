@@ -1,0 +1,139 @@
+{
+  "screen_type": "menu",
+  "screen_role": "friends",
+  "summary": "친구 목록에서 친구에게 하트를 보내는 화면입니다.",
+  "visible_text": [
+    "하트 보내기",
+    "친구",
+    "랭킹",
+    "친밀도",
+    "하이안",
+    "김동주",
+    "박민호",
+    "차수연"
+  ],
+  "game_elements": [
+    {
+      "category": "social",
+      "name": "친구 목록",
+      "evidence": "하트 보내기와 함께 친구의 카운트 표시가 있음."
+    },
+    {
+      "category": "ui",
+      "name": "하트 버튼",
+      "evidence": "친구에게 하트를 보낼 수 있는 버튼이 있음."
+    },
+    {
+      "category": "ui",
+      "name": "삭제 버튼",
+      "evidence": "X버튼으로 프로필 화면을 닫을 수 있는 UI가 있음."
+    },
+    {
+      "category": "ui",
+      "name": "채팅 창",
+      "evidence": "메시지를 입력할 수 있는 텍스트 박스가 존재."
+    },
+    {
+      "category": "currency",
+      "name": "하트 수",
+      "evidence": "보이늬 하트 수가 화면에 표시됨."
+    },
+    {
+      "category": "currency",
+      "name": "코인 수",
+      "evidence": "코인 갯수가 화면 상단에 존재."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "친구 초대",
+      "role": "structure",
+      "bbox": {
+        "x1": 239,
+        "y1": 106,
+        "x2": 321,
+        "y2": 168
+      },
+      "center": {
+        "x": 0.3718,
+        "y": 0.1016
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "친구 추가 기능으로 게임 구조를 보여줍니다."
+    },
+    {
+      "label": "+ 버튼",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 610,
+        "y1": 55,
+        "x2": 654,
+        "y2": 100
+      },
+      "center": {
+        "x": 0.8393,
+        "y": 0.0575
+      },
+      "region": "top_bar",
+      "confidence": 0.6,
+      "reason": "재화 상승 버튼에 해당하며 구매와 관련이 있습니다."
+    },
+    {
+      "label": "하트 보내기",
+      "role": "structure",
+      "bbox": {
+        "x1": 0,
+        "y1": 105,
+        "x2": 752,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.0886
+      },
+      "region": "content",
+      "confidence": 0.9,
+      "reason": "하트를 보내는 기능이므로 UI의 구조를 보여줌."
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 708,
+        "y1": 20,
+        "x2": 752,
+        "y2": 80
+      },
+      "center": {
+        "x": 0.9695,
+        "y": 0.0371
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "닫기 버튼 있음."
+    },
+    {
+      "label": "ON",
+      "role": "progression",
+      "bbox": {
+        "x1": 641,
+        "y1": 56,
+        "x2": 726,
+        "y2": 78
+      },
+      "center": {
+        "x": 0.9077,
+        "y": 0.0497
+      },
+      "region": "content",
+      "confidence": 0.7,
+      "reason": "친구에게 하트를 보내는 스위치."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": [
+    "화면 우측에서 하트 수의 최대값이 MAX로 부각되어 있음.",
+    "램X 버튼이 하트 보내기를 위한 별도 면에서 나타날 가능성이 있음."
+  ]
+}

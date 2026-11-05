@@ -1,0 +1,220 @@
+{
+  "screen_type": "shop",
+  "screen_role": "shop",
+  "summary": "게임 내 재화를 구매하는 화면으로, 다양한 패키지를 판매하고 있습니다.",
+  "visible_text": [
+    "첫 구매 루비 2배!",
+    "애니 패키지",
+    "무제한 1시간",
+    "블루 패키지",
+    "무제한 15분",
+    "더 보기",
+    "₩33,000",
+    "₩99,000"
+  ],
+  "game_elements": [
+    {
+      "category": "monetization",
+      "name": "패키지 판매",
+      "evidence": "게임 내 다양한 패키지 구매 목록."
+    },
+    {
+      "category": "currency",
+      "name": "재화",
+      "evidence": "화면 상단의 코인과 하트 아이콘."
+    },
+    {
+      "category": "ui",
+      "name": "상단 UI",
+      "evidence": "상단의 재화 표시 및 설정 아이콘."
+    },
+    {
+      "category": "ui",
+      "name": "패키지 목록",
+      "evidence": "상점에 나열된 다양한 패키지."
+    },
+    {
+      "category": "monetization",
+      "name": "보상 창",
+      "evidence": "첫 구매 시 보상 안내."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "첫째 탭 (왕관 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.04249667994687915,
+        "y": 0.9851632047477745
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "둘째 탭 (깔때기 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.10358565737051793,
+        "y": 0.9703264094955489
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "셋째 탭 (트로피 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.1699867197875166,
+        "y": 0.9807121661721068
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "넷째 탭 (하트+화살표 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.23904382470119523,
+        "y": 0.978486646884273
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "다섯째 탭 (사람 두 명 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.3147410358565737,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "여섯째 탭 (편지(봉투) 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.548472775564409,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "일곱째 탭 (톱니바퀴 아이콘)",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.648074369189907,
+        "y": 0.9792284866468842
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 725,
+        "y1": 22,
+        "x2": 752,
+        "y2": 50
+      },
+      "center": {
+        "x": 0.9807,
+        "y": 0.0267
+      },
+      "region": "top_bar",
+      "confidence": 0.9,
+      "reason": "팝업 닫기 버튼."
+    },
+    {
+      "label": "더 보기",
+      "role": "progression",
+      "bbox": {
+        "x1": 440,
+        "y1": 1234,
+        "x2": 620,
+        "y2": 1286
+      },
+      "center": {
+        "x": 0.7039,
+        "y": 0.9347
+      },
+      "region": "content",
+      "confidence": 0.8,
+      "reason": "패키지 추가 정보 보기."
+    },
+    {
+      "label": "루비",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 100,
+        "y1": 22,
+        "x2": 150,
+        "y2": 50
+      },
+      "center": {
+        "x": 0.166,
+        "y": 0.0267
+      },
+      "region": "top_bar",
+      "confidence": 0.7,
+      "reason": "재화 구매 옵션."
+    },
+    {
+      "label": "코인",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 180,
+        "y1": 22,
+        "x2": 230,
+        "y2": 50
+      },
+      "center": {
+        "x": 0.2722,
+        "y": 0.0267
+      },
+      "region": "top_bar",
+      "confidence": 0.7,
+      "reason": "재화 구매 옵션."
+    },
+    {
+      "label": "하트",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 300,
+        "y1": 22,
+        "x2": 350,
+        "y2": 50
+      },
+      "center": {
+        "x": 0.4316,
+        "y": 0.0267
+      },
+      "region": "top_bar",
+      "confidence": 0.7,
+      "reason": "재화 구매 옵션."
+    }
+  ],
+  "evidence_notes": [
+    "상단에 재화 아이콘들 존재.",
+    "패키지 구매 라벨이 여러 개 있는 구조."
+  ],
+  "uncertainties": [
+    "화면 요소들이 중복되어 나타나는 경우가 있음. 최근 기록과 유사한 점이 있음."
+  ]
+}

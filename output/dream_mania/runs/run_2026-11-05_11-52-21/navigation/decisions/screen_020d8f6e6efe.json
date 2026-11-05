@@ -1,0 +1,129 @@
+{
+  "screen_type": "menu",
+  "screen_role": "settings",
+  "summary": "환경 설정 화면입니다. 음악, 소리, 속도 및 알림 설정이 포함되어 있습니다.",
+  "visible_text": [
+    "Settings",
+    "Music",
+    "Sound",
+    "Speed",
+    "Notification",
+    "진행 상황을 저장하세요",
+    "서포트",
+    "약관 및 개인정보"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "Settings title",
+      "evidence": "Settings"
+    },
+    {
+      "category": "ui",
+      "name": "Music button",
+      "evidence": "Music"
+    },
+    {
+      "category": "ui",
+      "name": "Sound button",
+      "evidence": "Sound"
+    },
+    {
+      "category": "ui",
+      "name": "Speed button",
+      "evidence": "Speed"
+    },
+    {
+      "category": "ui",
+      "name": "Notification toggle",
+      "evidence": "Notification"
+    },
+    {
+      "category": "ui",
+      "name": "Save progress button",
+      "evidence": "진행 상황을 저장하세요"
+    },
+    {
+      "category": "ui",
+      "name": "Support button",
+      "evidence": "서포트"
+    },
+    {
+      "category": "ui",
+      "name": "Terms and privacy button",
+      "evidence": "약관 및 개인정보"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 709,
+        "y1": 28,
+        "x2": 744,
+        "y2": 62
+      },
+      "center": {
+        "x": 0.9648,
+        "y": 0.0334
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "Close button is visible."
+    },
+    {
+      "label": "Save progress",
+      "role": "progression",
+      "bbox": {
+        "x1": 183,
+        "y1": 271,
+        "x2": 569,
+        "y2": 317
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.2181
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "Save progress button to proceed."
+    },
+    {
+      "label": "Support",
+      "role": "structure",
+      "bbox": {
+        "x1": 183,
+        "y1": 360,
+        "x2": 296,
+        "y2": 396
+      },
+      "center": {
+        "x": 0.3181,
+        "y": 0.2804
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "Support button for help."
+    },
+    {
+      "label": "Terms and privacy",
+      "role": "structure",
+      "bbox": {
+        "x1": 305,
+        "y1": 360,
+        "x2": 569,
+        "y2": 396
+      },
+      "center": {
+        "x": 0.5803,
+        "y": 0.2804
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "Terms and privacy button."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

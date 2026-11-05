@@ -1,0 +1,67 @@
+{
+  "screen_type": "popup",
+  "screen_role": "info_popup",
+  "summary": "랭킹 점수 수신을 안내하는 팝업입니다.",
+  "visible_text": [
+    "랭킹 점수가 반영되었습니다.",
+    "0 원",
+    "클리어 스테이지",
+    "랭킹 점수",
+    "확인"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "랭킹 점수 팝업",
+      "evidence": "게임 내에서 랭킹 점수를 안내하는 팝업이다."
+    },
+    {
+      "category": "currency",
+      "name": "코인",
+      "evidence": "코인 아이콘이 있는 위치에서 코인 수치가 확인 가능하다."
+    },
+    {
+      "category": "currency",
+      "name": "하트",
+      "evidence": "하트 아이콘이 있는 위치에서 하트 수치가 확인 가능하다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 417,
+        "y1": 1218,
+        "x2": 590,
+        "y2": 1298
+      },
+      "center": {
+        "x": 0.6687,
+        "y": 0.9332
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "팝업에서 다음으로 진행하기 위한 버튼"
+    },
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 671,
+        "y1": 56,
+        "x2": 735,
+        "y2": 134
+      },
+      "center": {
+        "x": 0.9336,
+        "y": 0.0705
+      },
+      "region": "top_bar",
+      "confidence": 1.0,
+      "reason": "팝업을 닫기 위한 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

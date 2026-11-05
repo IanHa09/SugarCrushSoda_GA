@@ -1,0 +1,2 @@
+﻿session,session_id,steps,taps,taps_changed,taps_unchanged,taps_unknown,hit_rate,change_source,refine_used,refine_found,refine_not_found,refine_errors,refine_median_shift_px,back_keys,escapes,restarts,new_screens,cum_screens,new_transitions,cum_transitions,stop
+1,2026-11-05_11-52-21,40,33,17,16,0,0.515,tap_effect,39,29,10,0,71.2,1,3,0,8,8,14,14,other(tap_executed)

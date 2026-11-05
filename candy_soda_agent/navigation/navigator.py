@@ -52,6 +52,7 @@ import numpy as np
 
 from action_executor import (
     back_method,
+    bring_game_to_front,
     check_adb,
     check_game_package,
     execute_back_key,
@@ -105,6 +106,8 @@ from navigation.graph import GraphStore, resolve_root_screen_id, screen_type_nod
 from navigation.ledger import GLOBAL_SCREEN_ID, LedgerStore
 from navigation.policy import (
     canonical_action_label,
+    nav_tab_index,
+    nav_tab_ordinal,
     navigation_action_key,
     navigation_action_key_from_label,
 )
@@ -179,6 +182,9 @@ ESCAPE_STAGES = ("back", "exit_finder", "retry_exit", "resurvey", "other_buttons
 # 플레이 흐름에서 보드가 아닌 화면(나가기 확인창·일시정지 메뉴 등)의 순서. 여기서 Android
 # 뒤로를 먼저 보내면 확인창이 닫혀 보드로 되돌아가므로, 나가기 요소 찾기를 먼저 씁니다.
 PLAY_FLOW_POPUP_STAGES = ("exit_finder", "back", "retry_exit", "restart")
+# 팝업에서 더 볼 것이 없을 때 나가는 순서: 화면의 나가기 버튼(X·닫기 → 확인·나중에·취소) →
+# 나가기 찾기(X, 없으면 팝업 바깥의 어두운 곳) → 뒤로 → 재시작. 화면이 그대로면 다음 수단으로.
+POPUP_EXIT_STAGES = ("retry_exit", "exit_finder", "back", "restart")
 # 탈출 기록에 남기는 outcome 이름입니다(갇힘 탈출일 때).
 _ESCAPE_OUTCOMES = {
     "back": "stuck_back_key",
@@ -188,9 +194,12 @@ _ESCAPE_OUTCOMES = {
     "other_buttons": "stuck_other_button",
     "restart": "stuck_restart",
 }
-# 탭바 찾기·나가기 찾기가 고해상도 격자로 위치를 이미 찍은 버튼(reason). 누르기 전 확대 확인을
-# 건너뜁니다: 확인은 이름으로 찾는데 글자 없는 아이콘 탭은 "그런 이름 없음"으로 답해 못 눌렀습니다.
-_LOCATED_REASONS = frozenset({"탭바 찾기", "새 화면 나가기 찾기"})
+# 나가기 찾기가 격자로 위치를 이미 찍은 버튼(reason). 누르기 전 확대 확인을 건너뜁니다.
+# 탭바 찾기 버튼은 확대 확인을 거칩니다: 가로로 긴 띠에서 받은 좌표가 한 칸씩 왼쪽으로 밀려
+# 'N번째 탭'이 N-1번째 아이콘을 눌렀고(실측: 애니팡 홈 넷째 탭 296px → 곰 아이콘, 하트는 397px),
+# 건너뛰면 빗나감 재시도도 같은 자리를 다시 눌렀습니다. 라벨에 아이콘 모양이 들어 있어
+# (`넷째 탭 (하트와 화살표 아이콘)`) 예전처럼 기능 이름으로 찾다 거부되는 일은 줄었습니다.
+_LOCATED_REASONS = frozenset({"새 화면 나가기 찾기"})
 # 같은 화면 묶음에서 맴돌기를 이 횟수만큼 다시 감지하면, 그 화면들과 그쪽으로 가던 목표의
 # 남은 프론티어를 포기합니다(막힘을 빠져나와도 같은 길로 다시 들어가 끝나지 않던 것을 막음).
 STUCK_CYCLE_GIVE_UP = 3
@@ -231,6 +240,10 @@ class _Journey:
     escape_streak: int = 0
     exit_failed_points: list = field(default_factory=list)
     tried_exit_keys: set = field(default_factory=set)
+    # 팝업 나가기 사다리를 쓰고 있는 팝업 화면. 다른 팝업이면 사다리를 처음 단계부터 씁니다.
+    popup_node: str | None = None
+    # 루트 화면의 탭바 띠 밝기(루트 ID, 밝기). 팝업 판정(_tab_bar_hidden)의 기준입니다.
+    root_band: tuple | None = None
     restarts: int = 0
     restart_available: bool = False
     # 막힘 대응(세션 동안 유지): 다시 분석한 화면, 화면별로 "다른 버튼"으로 눌러 본 행동,
@@ -313,6 +326,21 @@ class _Journey:
         self.note_progress()
 
 
+def _opened_other_tab(pressed_label: str | None, node) -> bool:
+    """순서 이름 탭("넷째 탭 …")을 눌렀는데 도착 화면에서 선택된 탭이 다른 순서면 True.
+    도착 화면의 선택 탭을 모르면(탭바 없음·예전 노드) 판정하지 않습니다."""
+
+    pressed = nav_tab_index(pressed_label)
+    if pressed is None or node.tab_index < 0 or node.tab_index == pressed:
+        return False
+    name = f"({node.tab_name})" if node.tab_name else ""
+    print(
+        f"[TAB] '{pressed_label}'을 눌렀는데 {nav_tab_ordinal(node.tab_index)} 탭 화면{name}이 "
+        "열렸습니다. 좌표가 빗나간 것으로 보고 간선·지름길로 배우지 않습니다."
+    )
+    return True
+
+
 def _finalize_previous_attempt(
     journey: _Journey,
     store: GraphStore,
@@ -326,8 +354,9 @@ def _finalize_previous_attempt(
     결과를 확정합니다.
 
     same_pixels: 이번 캡처가 직전 캡처와 픽셀로 같은지(=탭이 화면을 바꾸지 못함).
-    그때는 간선을 만들지 않고, 프론티어 탭이면 빗나감(missed)으로 기록해 다시
-    시도하게 합니다. 반환: 원장에 남긴 판정(없으면 None)."""
+    그때와 탭바 탭이 다른 탭 화면을 열었을 때(_opened_other_tab)는 간선을 만들지 않고,
+    프론티어 탭이면 빗나감(missed)으로 기록해 다시 시도하게 합니다.
+    반환: 원장에 남긴 판정(없으면 None)."""
 
     if journey.node_id is None or journey.pending_kind is None:
         return None
@@ -340,15 +369,17 @@ def _finalize_previous_attempt(
     if journey.pending_escape_stage is not None:
         if same_pixels:
             # 이 탈출 동작은 효과가 없었습니다. 같은 자리를 다시 고르지 않게 기억합니다.
-            if journey.pending_escape_stage == "exit_finder" and journey.pending_point:
+            if journey.pending_escape_stage in ("exit_finder", "retry_exit") and journey.pending_point:
                 journey.exit_failed_points.append(journey.pending_point)
         else:
             # 효과가 있었으니 이 단계를 계속 씁니다(실패 횟수만 0으로).
             journey.escape_tries = 0
 
-    if same_pixels:
-        # 눌렀는데 화면 픽셀이 그대로입니다. 간선은 만들지 않습니다(빗나간 탭이 만든
-        # "같은 화면으로 돌아옴" 간선이 그래프를 어지럽히던 주원인이었습니다).
+    wrong_tab = not same_pixels and _opened_other_tab(journey.pending_action_label, node)
+    if same_pixels or wrong_tab:
+        # 눌렀는데 화면 픽셀이 그대로이거나, 탭바 탭을 눌렀는데 다른 탭 화면이 열렸습니다(좌표
+        # 빗나감). 간선은 만들지 않습니다: 빗나간 탭이 만든 간선이 그래프를 어지럽혔고, 공통
+        # 버튼이면 잘못 배운 목적지가 모든 화면의 지름길로 퍼졌습니다(실측: "넷째 탭 → 홈").
         if kind == "frontier" and action_key:
             verdict = ledger.record_miss(ledger_screen, action_key, TAP_MISS_RETRIES)
         elif kind == "replay" and action_key:
@@ -545,9 +576,57 @@ def _add_exit_button(client, decision, image, node, profile: GameProfile):
     return decision.model_copy(update={"button_candidates": [button, *decision.button_candidates]})
 
 
-def _add_nav_tabs(client, decision, image, node, profile: GameProfile):
+# 탭바 띠(화면 아래 10%)의 평균 밝기를 루트 화면과 견줘 이 범위 밖이면 탭바가 팝업에 가려졌거나 없는
+# 화면입니다. 실측(애니팡·캔디 19화면): 탭 화면 1.00~1.01, 팝업·광고·전체 화면 메뉴 0.07~0.38 또는
+# 1.44~2.54. 띠를 탭바 찾기만큼(16%) 넓히면 팝업 아래쪽이 섞여 갈리지 않았습니다(GIFT BOX 1.37).
+_TAB_BAND_FRACTION = 0.10
+_TAB_BAND_RATIO_RANGE = (0.7, 1.3)
+
+
+def _tab_band_brightness(image) -> float:
+    height = image.shape[0]
+    return float(image[int(height * (1 - _TAB_BAND_FRACTION)):].mean())
+
+
+def _root_band_brightness(store: GraphStore, journey, root_id: str | None) -> float | None:
+    """루트 화면 대표 이미지의 탭바 띠 밝기(세션 동안 기억). 루트나 그 이미지가 없거나 새까마면 None."""
+
+    if root_id is None:
+        return None
+    if journey.root_band is None or journey.root_band[0] != root_id:
+        image = store.load_image(root_id)
+        if image is None:
+            return None
+        journey.root_band = (root_id, _tab_band_brightness(image))
+    return journey.root_band[1] or None
+
+
+def _tab_bar_hidden(image, root_brightness: float | None) -> bool:
+    """탭바 띠 밝기가 루트와 많이 다르면(팝업이 어둡게 덮었거나 탭바 없는 화면) True. 루트를 모르면 False."""
+
+    if root_brightness is None:
+        return False
+    low, high = _TAB_BAND_RATIO_RANGE
+    return not low <= _tab_band_brightness(image) / root_brightness <= high
+
+
+def _is_popup_screen(decision, profile: GameProfile | None, tab_bar_hidden: bool) -> bool:
+    """팝업 화면 판정. 탭바 찾기 건너뛰기(_add_nav_tabs)와 팝업 나가기(_popup_exit_keys)가 같이 씁니다.
+    탭바 띠가 루트와 다르거나(_tab_bar_hidden), 조사 모델이 팝업 안(region=popup)에 나가기 버튼
+    (X·닫기·확인·나중에·취소)을 적었으면 팝업입니다. 조사 모델의 region만으로는 자주 놓쳤습니다
+    (실측: GIFT BOX는 X를 아예 안 적고, 환경설정은 X를 top_bar로 적어 뒤로 비친 탭을 눌렀음)."""
+
+    return tab_bar_hidden or any(
+        button.region == "popup" for button in _exit_candidates(decision, set(), profile)
+    )
+
+
+def _add_nav_tabs(client, decision, image, node, profile: GameProfile, *, tab_bar_hidden: bool = False):
     """처음 분석한 화면의 탭바 후보(region=bottom_nav)를 탭바 전용 찾기 결과로 바꿉니다.
-    지금 선택된 탭과 플레이 진입 탭은 빼고, 찾은 탭이 없으면 조사 결과를 그대로 둡니다."""
+    지금 선택된 탭과 플레이 진입 탭은 빼고, 찾은 탭이 없으면 조사 결과를 그대로 둡니다.
+    선택된 탭의 순서와 글자(탭 아래 뜬 이름)는 노드에 남깁니다(node.tab_index·tab_name).
+    팝업 화면(_is_popup_screen)은 찾지 않습니다. 탭바 찾기는 화면 아래 띠만 잘라 봐서 팝업을
+    모르고, 어둡게 비친 탭을 넣어 눌러도 안 바뀌는 탭을 2번씩 눌렀습니다."""
 
     if (
         not NAV_TAB_FINDER
@@ -556,12 +635,22 @@ def _add_nav_tabs(client, decision, image, node, profile: GameProfile):
         or screen_policy(node.screen_type) == "leave"
     ):
         return decision
+    if _is_popup_screen(decision, profile, tab_bar_hidden):
+        why = "탭바 띠 밝기가 루트와 달라" if tab_bar_hidden else "팝업 안에 나가기 버튼이 있어"
+        print(f"[NAV] {node.id}: {why} 팝업 화면으로 보고 탭바 찾기를 건너뜁니다.")
+        return decision
     height, width = image.shape[:2]
+    found = find_nav_tabs(client, image)
+    selected = next((tab for tab in found if tab.selected), None)
+    if selected is not None:
+        node.tab_index = selected.index
+        # 순서 이름("둘째 탭 …")이면 글자를 못 읽은 것이라 이름은 비워 둡니다.
+        node.tab_name = "" if nav_tab_index(selected.label) is not None else selected.label
     tabs = [
         _synthetic_button(tab.label, tab.x, tab.y, width, height, reason="탭바 찾기").model_copy(
             update={"role": "structure", "region": "bottom_nav"}
         )
-        for tab in find_nav_tabs(client, image)
+        for tab in found
         if not tab.selected and not profile.never_tap(tab.label)
     ]
     if not tabs:
@@ -593,7 +682,23 @@ def _exit_candidates(decision, tried: set, profile: GameProfile | None = None) -
             token in lowered for token in _EXIT_TOKENS
         ):
             buttons.append(button)
-    return sorted(buttons, key=lambda b: -b.confidence)
+
+    def rank(button) -> tuple[int, float]:
+        # X·닫기 → 뒤로·홈 → 확인·나중에 같은 낱말 순, 같은 순위면 확신도 높은 것부터.
+        canonical = canonical_action_label(button.label)
+        order = 0 if canonical == "close" else 1 if canonical in _EXIT_CANONICAL else 2
+        return order, -button.confidence
+
+    return sorted(buttons, key=rank)
+
+
+def _popup_exit_keys(decision, profile: GameProfile, *, tab_bar_hidden: bool = False) -> set[str]:
+    """팝업 화면(_is_popup_screen)이면 그 화면 나가기 버튼들의 행동 키, 아니면 빈 집합. 이 버튼들은
+    프론티어가 아니라 나가는 수단으로만 씁니다(실측: 안내 팝업의 X를 따로 눌러 보려고 팝업을 다시 열었음)."""
+
+    if not _is_popup_screen(decision, profile, tab_bar_hidden):
+        return set()
+    return {navigation_action_key(button) for button in _exit_candidates(decision, set(), profile)}
 
 
 def _other_buttons(decision, exclude: set, profile: GameProfile | None = None) -> list:
@@ -777,7 +882,11 @@ def _plan_escape(
                 button = candidates[0]
                 key = navigation_action_key(button)
                 journey.tried_exit_keys.add(key)
-                plan = _EscapePlan(stage, "tap", button.label, key, button=button, refine=True)
+                # 눌러도 그대로면 이 점을 나가기 찾기가 다시 고르지 않게 남깁니다(exit_failed_points).
+                point = (round(button.center.x * width), round(button.center.y * height))
+                plan = _EscapePlan(
+                    stage, "tap", button.label, key, button=button, refine=True, point=point
+                )
         elif stage == "resurvey":
             if (
                 STUCK_RESURVEY
@@ -872,6 +981,21 @@ def _try_play_handoff(node, decision) -> bool:
     return False
 
 
+# 게임 창을 앞으로 올린 뒤 화면이 다시 그려질 때까지 기다리는 시간(초).
+_FOCUS_SETTLE_SECONDS = 0.5
+
+
+def _bring_game_to_front() -> None:
+    """캡처 전에 게임 창을 맨 앞으로 올립니다(action_executor.bring_game_to_front). 실패해도
+    탐색은 멈추지 않습니다. 누를 때는 execute_button_tap이 다시 확인합니다."""
+
+    try:
+        if bring_game_to_front():
+            time.sleep(_FOCUS_SETTLE_SECONDS)
+    except Exception as error:  # noqa: BLE001 - 창 전환 실패로 탐색 전체를 멈추지 않습니다.
+        print(f"[FOCUS] 게임 창을 앞으로 올리지 못했습니다({error}). 이번 캡처는 다른 창일 수 있습니다.")
+
+
 def _run_autodrive_step(
     client,
     sct,
@@ -898,10 +1022,16 @@ def _run_autodrive_step(
             return _StepResult("stop", stop_reason=reason, stop_kind="cancelled")
 
     profile = profile or active_profile()
+    if allow_taps and not dry_run:
+        _bring_game_to_front()
     bundle = capture_bundle(
         sct, CAPTURE_MODE, MONITOR_INDEX, BOARD_OFFSET, WINDOW_OFFSET
     )
     recent_records = load_recent_survey_records(SURVEY_DEDUP_SCAN_LIMIT)
+    # 탭바 띠가 루트와 다르면 팝업 화면입니다(_is_popup_screen: 탭바 찾기 건너뛰기·팝업 나가기).
+    tab_bar_hidden = _tab_bar_hidden(
+        bundle.full_image, _root_band_brightness(store, journey, walker.root_screen_id)
+    )
 
     # 직전 캡처와 픽셀이 같으면 LLM이 화면 타입을 다르게 불러도 같은 노드입니다.
     first_observation = journey.node_id is None
@@ -914,6 +1044,9 @@ def _run_autodrive_step(
     # 확실히 아는 화면이면 LLM을 부르지 않고 그 화면을 처음 분석한 결과를 다시 씁니다.
     known = store.known_decision(bundle.full_image, journey.node_id if same_pixels else None)
     reused = known is not None
+    # 조사 모델이 낸 버튼 후보 수(탭바 찾기·나가기 찾기가 바꾸기 전). 상한에 닿았으면 잘려서 빠진
+    # 버튼이 있을 수 있습니다(실측: 홈의 설정 톱니가 후보에 없었음). journeys.jsonl의 survey_buttons.
+    survey_buttons = None
     if reused:
         node_id, decision = known
         node = store.revisit(node_id)
@@ -924,6 +1057,12 @@ def _run_autodrive_step(
         decision = analyze_survey_screen(
             client, bundle.full_image, None, survey_context=recent_records, profile=profile
         )
+        survey_buttons = len(decision.button_candidates)
+        if survey_buttons >= profile.button_limit:
+            print(
+                f"[SURVEY] 버튼 후보가 상한 {profile.button_limit}개에 닿았습니다. "
+                "잘려서 빠진 버튼이 있을 수 있습니다."
+            )
         # 로딩처럼 policy=wait인 화면은 기다렸다 다시 봅니다(screen_types.json).
         if screen_policy(decision.screen_type) == "wait":
             time.sleep(1.0)
@@ -938,14 +1077,17 @@ def _run_autodrive_step(
                 _refresh_chrome_bands(chrome, store)
         if store.load_decision(node.id) is None:
             # 처음 분석한 화면: 나가기 버튼을 따로 찾아 더한 뒤 저장하고, 다음부터 다시 씁니다.
-            decision = _add_nav_tabs(client, decision, bundle.full_image, node, profile)
+            decision = _add_nav_tabs(
+                client, decision, bundle.full_image, node, profile, tab_bar_hidden=tab_bar_hidden
+            )
             decision = _add_exit_button(client, decision, bundle.full_image, node, profile)
             store.save_decision(node.id, decision)
+            store.save()  # _add_nav_tabs가 채운 선택 탭(node.tab_index·tab_name)
     previous_verdict = _finalize_previous_attempt(
         journey, store, ledger, walker, node, same_pixels=same_pixels
     )
     if previous_verdict == "missed":
-        print("[AUTODRIVE] 직전 탭 뒤 화면이 그대로입니다(빗나감 의심). 다시 시도 후보로 둡니다.")
+        print("[AUTODRIVE] 직전 탭이 빗나간 것 같습니다. 다시 시도 후보로 둡니다.")
     journey.prev_image = bundle.full_image
 
     # 플레이 흐름: 플레이 화면(policy=leave)이나 예전 흐름에서 본 화면에 오면 시작하고,
@@ -1007,19 +1149,25 @@ def _run_autodrive_step(
     )
     visible_keys: list[str] = []
     global_visible: set[str] = set()
+    exit_keys: set[str] = set()
     goal: StepGoal | None = None
     if not journey.play_flow:
         # 플레이 진입·외부 공유 버튼은 기록만 하고 프론티어에서 뺍니다(PLAY_POLICY, external_labels).
         candidates, skipped = _split_play_entries(candidates, profile)
         for button, verdict in skipped:
             if ledger.close_play_entry(node.id, navigation_action_key(button), button.label, verdict):
-                why = "플레이 진입" if verdict == "play_entry" else "외부 공유·초대"
+                why = "플레이 진입" if verdict == "play_entry" else "게임 밖·광고·뽑기"
                 print(f"[SKIP] '{button.label}'은(는) {why} 버튼이라 누르지 않습니다(기록만).")
+
+        # 팝업의 나가기 버튼(X·닫기·확인…)은 프론티어로 등록하지 않습니다(나갈 때 씀, 아래 leave_popup).
+        # candidates에는 남겨 둡니다: 아는 길(간선)로 나갈 때 그 버튼을 찾아야 합니다.
+        exit_keys = _popup_exit_keys(decision, profile, tab_bar_hidden=tab_bar_hidden)
+        explorable = [c for c in candidates if navigation_action_key(c) not in exit_keys]
 
         # 이번 화면에서 본 안전 후보를 원장에 등록합니다(처음 보는 것만 프론티어로 추가).
         # 네비게이션 바 같은 공통 버튼은 화면별 대신 공통 항목 하나로 등록합니다.
-        visible_keys = [navigation_action_key(candidate) for candidate in candidates]
-        for candidate, key in zip(candidates, visible_keys):
+        visible_keys = [navigation_action_key(candidate) for candidate in explorable]
+        for candidate, key in zip(explorable, visible_keys):
             if chrome is not None:
                 became_global = chrome.observe(
                     node.id, key, candidate.label,
@@ -1075,6 +1223,7 @@ def _run_autodrive_step(
             "executed": executed,
             "strategy": strategy,
             "reused_analysis": reused,
+            "survey_buttons": survey_buttons,
             # 가장 가까운 대표 화면과 HOG 거리(임계값 조정용). 픽셀이 직전과 같으면 비교하지 않아 null.
             "hog_nearest": (
                 {"screen_id": store.last_hog_match[0], "distance": round(store.last_hog_match[1], 4)}
@@ -1091,14 +1240,27 @@ def _run_autodrive_step(
             strategy="frontier_backtracking",
         )
 
-    def refine_button(button) -> tuple[SurveyButtonCandidate | None, dict | None, bool]:
-        """확대 재확인. (누를 버튼 또는 None, 기록, 못 찾았는지)."""
+    def refine_button(
+        button, *, full_screen: bool = False
+    ) -> tuple[SurveyButtonCandidate | None, dict | None, bool]:
+        """확대 재확인. (누를 버튼 또는 None, 기록, 못 찾았는지).
+        full_screen: 확대 없이 화면 전체에서 찾습니다(빗나간 버튼 재시도)."""
         if not TAP_REFINE or dry_run or not allow_taps:
             return button, None, False
         if button.reason in _LOCATED_REASONS:
             return button, {"skipped": button.reason}, False
-        refine = refine_tap_target(client, bundle.full_image, button)
+        if full_screen:
+            print(f"[TAP REFINE] {button.label!r}: 빗나간 적이 있어 화면 전체에서 다시 찾습니다.")
+        refine = refine_tap_target(client, bundle.full_image, button, full_only=full_screen)
         record_data = refine.to_record()
+        if refine.found and profile.never_tap(refine.seen_label):
+            # 확대 확인이 옆의 광고·뽑기·플레이 버튼으로 옮겼으면 누르지 않습니다(못 찾음과 같은 처리).
+            # 실측: '무료 뽑기'가 바로 위 '광고 보고 무료 뽑기'로 옮겨져 광고에 5번 들어갔음.
+            print(
+                f"[TAP REFINE] {button.label!r}: 찾은 자리에 {refine.seen_label!r}이(가) 보여 "
+                "누르지 않습니다(누르면 안 되는 버튼)."
+            )
+            return None, {**record_data, "blocked_seen_label": refine.seen_label}, True
         if refine.found:
             print(
                 f"[TAP REFINE] {button.label!r}: {refine.initial} -> ({refine.x}, {refine.y}) "
@@ -1152,7 +1314,7 @@ def _run_autodrive_step(
         return _StepResult("advance", node_id=node.id)
 
     def run_escape(plan: _EscapePlan, goal_kind: str) -> _StepResult:
-        """탈출 동작 하나를 실행하고 기록합니다. goal_kind: "stuck" | "reset"."""
+        """탈출 동작 하나를 실행하고 기록합니다. goal_kind: "stuck" | "reset" | "play" | "popup"."""
         if plan.kind == "resurvey":
             return run_resurvey(goal_kind)
         tap_button = plan.button
@@ -1201,7 +1363,7 @@ def _run_autodrive_step(
         )
         journey.escape_tries += 1
         journey.escape_streak += 1
-        # 갇힘 탈출은 stuck_*, 루트 리셋은 reset_*, 플레이에서 나오기는 play_* 입니다.
+        # 갇힘 탈출은 stuck_*, 루트 리셋은 reset_*, 플레이에서 나오기는 play_*, 팝업 나가기는 popup_* 입니다.
         outcome = (
             _ESCAPE_OUTCOMES[plan.stage] if goal_kind == "stuck" else f"{goal_kind}_{plan.stage}"
         )
@@ -1366,6 +1528,28 @@ def _run_autodrive_step(
             stop_kind="unreachable",
         )
 
+    # 팝업에서 더 볼 것이 없고 아는 길로 나갈 수도 없으면(갈 길 모름, 또는 루트로 리셋 중인데 아는
+    # 길 없음) 팝업 나가기 사다리로 나갑니다. 화면이 그대로면 다음 스텝에 다음 수단을 씁니다.
+    # 전부 확인한(converged) 때도 팝업 위에서 끝내지 않고 나간 뒤 끝냅니다(나가는 간선이 남고
+    # 다음 run이 루트에서 시작).
+    leave_popup = bool(exit_keys) and (
+        (goal is None and walker.stop_reason == "unreachable")
+        or (goal is None and walker.stop_reason == "converged" and node.id != walker.root_screen_id)
+        or (goal is not None and goal.kind == "reset" and not goal.action_key)
+    )
+    if leave_popup:
+        if journey.popup_node != node.id:
+            journey.reset_escape()
+            journey.popup_node = node.id
+        plan = _plan_escape(
+            client, journey, decision, bundle.full_image,
+            stages=POPUP_EXIT_STAGES, profile=profile, node_id=node.id, ledger=ledger,
+        )
+        if plan is not None:
+            print(f"[POPUP] {node.id}: 팝업에서 더 볼 것이 없어 나갑니다({plan.stage}: {plan.label!r}).")
+            return run_escape(plan, "reset" if goal is not None else "popup")
+        # 나가기 수단을 다 썼습니다. 아래 평소 처리(탈출 사다리·종료)로 넘어갑니다.
+
     if goal is None and walker.stop_reason == "converged":
         # "모두 확인"으로 끝내기 전에 실패로 닫힌 항목(화면 그대로·못 찾음·길 막힘)을
         # 한 번 더 엽니다. 항목마다 FRONTIER_RETRY_MAX번까지라 무한 반복하지 않습니다.
@@ -1460,8 +1644,11 @@ def _run_autodrive_step(
     refine_record = None
 
     if not is_back_key:
-        # 1단계: 누르기 직전 확대 재확인.
-        tap_button, refine_record, not_found = refine_button(button)
+        # 1단계: 누르기 직전 확대 재확인. 빗나간(missed) 프론티어를 다시 누를 때는 처음 좌표가
+        # 틀렸을 가능성이 커서 그 주변 대신 화면 전체에서 찾습니다.
+        entry = ledger.entry(ledger_screen, action_key) if goal.kind == "frontier" else None
+        retry_after_miss = entry is not None and entry.verdict == "missed"
+        tap_button, refine_record, not_found = refine_button(button, full_screen=retry_after_miss)
         if not_found:
             # 확대본과 전체 화면 어디서도 버튼을 못 찾았습니다. 없는 버튼을 누르면
             # 엉뚱한 화면으로 가서 틀린 간선이 생기므로 누르지 않습니다.

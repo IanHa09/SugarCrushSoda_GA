@@ -1,0 +1,129 @@
+{
+  "screen_type": "level",
+  "summary": "레벨 시작 화면으로, 목표와 부스터 선택을 제공.",
+  "visible_text": [
+    "레벨 8",
+    "목표",
+    "곰돌이를 찾아주세요.",
+    "부스터 선택",
+    "게임 시작!"
+  ],
+  "game_elements": [
+    {
+      "category": "objective",
+      "name": "목표: 곰돌이를 찾아주세요.",
+      "evidence": "보드 시작 전 목표 설명이 나타남."
+    },
+    {
+      "category": "ui",
+      "name": "부스터 선택",
+      "evidence": "부스터 아이콘들이 보임."
+    },
+    {
+      "category": "progression",
+      "name": "게임 시작 버튼",
+      "evidence": "플레이를 시작하기 위한 버튼 존재."
+    },
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "X 아이콘 포함된 팝업."
+    },
+    {
+      "category": "ui",
+      "name": "레벨 번호 표시",
+      "evidence": "레벨 번호가 화면 상단에 위치."
+    },
+    {
+      "category": "ui",
+      "name": "탭바",
+      "evidence": "화면 아래에 위치한 탭바."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "스토어",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.04479578392621871,
+        "y": 0.9710682492581603
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.15019762845849802,
+        "y": 0.9703264094955489
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.6732542819499341,
+        "y": 0.9710682492581603
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "체크표시",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.8089591567852438,
+        "y": 0.9703264094955489
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 714,
+        "y1": 35,
+        "x2": 758,
+        "y2": 80
+      },
+      "center": {
+        "x": 0.9697,
+        "y": 0.0427
+      },
+      "region": "popup",
+      "confidence": 0.95,
+      "reason": "팝업의 닫기 버튼."
+    },
+    {
+      "label": "게임 시작!",
+      "role": "progression",
+      "bbox": {
+        "x1": 261,
+        "y1": 1165,
+        "x2": 403,
+        "y2": 1220
+      },
+      "center": {
+        "x": 0.4374,
+        "y": 0.8846
+      },
+      "region": "content",
+      "confidence": 0.95,
+      "reason": "게임 시작을 위한 버튼."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

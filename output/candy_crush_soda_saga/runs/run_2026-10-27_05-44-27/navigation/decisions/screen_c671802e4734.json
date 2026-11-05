@@ -1,0 +1,59 @@
+{
+  "screen_type": "popup",
+  "summary": "참여 활동을 안내하는 보상 팝업 화면.",
+  "visible_text": [
+    "즐기고, 이기고, 전진해요!",
+    "활동에 참여해 더 재미있고 큰 보상을 받고,",
+    "더 힘차게 진행하세요."
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "확인 버튼",
+      "evidence": "화면 하단에 확인 버튼이 보인다."
+    },
+    {
+      "category": "ui",
+      "name": "팝업 내용",
+      "evidence": "재미있고 보상을 안내하는 텍스트가 보인다."
+    },
+    {
+      "category": "other",
+      "name": "캐릭터 이미지",
+      "evidence": "파란색 박쥐와 여러 아이템이 보여진다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X 아이콘",
+      "role": "safe_navigation",
+      "bbox": null,
+      "center": {
+        "x": 0.9486166007905138,
+        "y": 0.04673590504451038
+      },
+      "region": "unknown",
+      "confidence": 1.0,
+      "reason": "새 화면 나가기 찾기"
+    },
+    {
+      "label": "확인",
+      "role": "progression",
+      "bbox": {
+        "x1": 284,
+        "y1": 1063,
+        "x2": 475,
+        "y2": 1133
+      },
+      "center": {
+        "x": 0.5,
+        "y": 0.8145
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "사용자가 확인 버튼을 눌러 다음으로 진행할 수 있다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

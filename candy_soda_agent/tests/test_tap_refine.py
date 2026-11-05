@@ -159,6 +159,16 @@ class RefineTapTargetTests(unittest.TestCase):
         self.assertIsNone(result.error)
         self.assertEqual(result.api_calls, 2)
 
+    def test_full_only_skips_the_zoom_around_the_old_point(self) -> None:
+        # 빗나간 버튼 재시도: 처음 좌표 주변을 잘라 보지 않고 화면 전체에서만 찾습니다.
+        request = FakeRequest([TapLocation(found=True, cell="", x=480, y=140, confidence=0.9)])
+        result = refine_tap_target(
+            object(), self.image, _button(), full_fallback=False, full_only=True, request=request
+        )
+        self.assertTrue(result.found)
+        self.assertEqual((result.used_pass, result.api_calls), ("full", 1))
+        self.assertEqual(result.passes[0]["box"], [0, 0, 757, 1348])
+
     def test_no_full_pass_when_disabled(self) -> None:
         request = FakeRequest([TapLocation(found=False)])
         result = refine_tap_target(

@@ -1,0 +1,119 @@
+{
+  "screen_type": "menu",
+  "screen_role": "team",
+  "summary": "팀 만들기 화면으로, 팀 이름과 설명 입력을 포함하고 팀 가입 방식을 선택한다.",
+  "visible_text": [
+    "팀 만들기",
+    "팀 이름",
+    "팀 소개",
+    "가입 방식",
+    "자유 가입",
+    "가입 승인",
+    "만들기",
+    "10원"
+  ],
+  "game_elements": [
+    {
+      "category": "account",
+      "name": "팀 이름 입력란",
+      "evidence": "텍스트 입력란이 있다."
+    },
+    {
+      "category": "account",
+      "name": "팀 소개 입력란",
+      "evidence": "텍스트 입력란이 있다."
+    },
+    {
+      "category": "account",
+      "name": "팀 마크 변경 버튼",
+      "evidence": "팀 마크를 변경하는 버튼이 있다."
+    },
+    {
+      "category": "account",
+      "name": "가입 방식 선택",
+      "evidence": "가입 방식 선택 버튼이 두 개 있다."
+    },
+    {
+      "category": "account",
+      "name": "가입 조건",
+      "evidence": "가입 조건을 표시하는 UI가 있다."
+    },
+    {
+      "category": "monetization",
+      "name": "만들기 버튼",
+      "evidence": "팀 생성을 위한 비용 표시 및 버튼이 있다."
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "X",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 723,
+        "y1": 10,
+        "x2": 743,
+        "y2": 30
+      },
+      "center": {
+        "x": 0.9734,
+        "y": 0.0148
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "닫기 버튼"
+    },
+    {
+      "label": "자유 가입",
+      "role": "progression",
+      "bbox": {
+        "x1": 166,
+        "y1": 210,
+        "x2": 290,
+        "y2": 238
+      },
+      "center": {
+        "x": 0.3028,
+        "y": 0.1662
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "가입 방식 선택 버튼"
+    },
+    {
+      "label": "가입 승인",
+      "role": "progression",
+      "bbox": {
+        "x1": 288,
+        "y1": 210,
+        "x2": 410,
+        "y2": 238
+      },
+      "center": {
+        "x": 0.4635,
+        "y": 0.1662
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "가입 방식 선택 버튼"
+    },
+    {
+      "label": "만들기",
+      "role": "risky_monetization",
+      "bbox": {
+        "x1": 212,
+        "y1": 980,
+        "x2": 440,
+        "y2": 1050
+      },
+      "center": {
+        "x": 0.4329,
+        "y": 0.753
+      },
+      "region": "popup",
+      "confidence": 1.0,
+      "reason": "팀 생성 시 재화 지불을 요구한다."
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

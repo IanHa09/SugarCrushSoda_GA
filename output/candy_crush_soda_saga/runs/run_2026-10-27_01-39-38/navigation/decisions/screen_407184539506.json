@@ -1,0 +1,113 @@
+{
+  "screen_type": "popup",
+  "summary": "Chrome 알림 설정 안내 팝업으로, 알림을 관리할 수 있는 방법을 제공하며, 사용안함이나 계속 버튼이 있다.",
+  "visible_text": [
+    "Chrome 알림으로 더 간편하게 작업하세요",
+    "미디어 제어, 시크릿 세션, 다운로드 등을 간편하게 관리할 수 있습니다.",
+    "사용 안함",
+    "계속"
+  ],
+  "game_elements": [
+    {
+      "category": "ui",
+      "name": "닫기 버튼",
+      "evidence": "X 아이콘"
+    },
+    {
+      "category": "ui",
+      "name": "계속 버튼",
+      "evidence": "계속 텍스트"
+    },
+    {
+      "category": "ui",
+      "name": "사용 안함 버튼",
+      "evidence": "사용 안함 텍스트"
+    }
+  ],
+  "button_candidates": [
+    {
+      "label": "아이템",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.17040951122853368,
+        "y": 0.9250741839762612
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "친구",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.26420079260237783,
+        "y": 0.9250741839762612
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "이벤트",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.45442536327608984,
+        "y": 0.9250741839762612
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "상점",
+      "role": "structure",
+      "bbox": null,
+      "center": {
+        "x": 0.5482166446499339,
+        "y": 0.9250741839762612
+      },
+      "region": "bottom_nav",
+      "confidence": 1.0,
+      "reason": "탭바 찾기"
+    },
+    {
+      "label": "계속",
+      "role": "progression",
+      "bbox": {
+        "x1": 41,
+        "y1": 1211,
+        "x2": 715,
+        "y2": 1287
+      },
+      "center": {
+        "x": 0.4993,
+        "y": 0.9266
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "게임 진행을 위한 버튼"
+    },
+    {
+      "label": "닫기",
+      "role": "safe_navigation",
+      "bbox": {
+        "x1": 700,
+        "y1": 49,
+        "x2": 756,
+        "y2": 106
+      },
+      "center": {
+        "x": 0.9617,
+        "y": 0.0575
+      },
+      "region": "popup",
+      "confidence": 0.9,
+      "reason": "팝업을 닫기 위한 버튼"
+    }
+  ],
+  "evidence_notes": [],
+  "uncertainties": []
+}

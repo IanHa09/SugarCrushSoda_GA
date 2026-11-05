@@ -139,7 +139,7 @@ class LedgerStore:
         action_key: str,
         max_retries: int,
     ) -> Verdict:
-        """눌렀는데 화면 픽셀이 그대로였던 시도를 기록합니다(2단계).
+        """눌렀는데 화면 픽셀이 그대로였거나, 탭바 탭이 다른 탭 화면을 연 시도를 기록합니다.
 
         빗나간 탭일 가능성이 커서 바로 no_change로 닫지 않고 missed(프론티어 유지)로
         두었다가, 다시 눌러도(attempts > max_retries) 그대로면 no_change로 닫습니다.
@@ -178,7 +178,7 @@ class LedgerStore:
     def close_play_entry(
         self, screen_id: str, action_key: str, action_label: str, verdict: str = "play_entry"
     ) -> bool:
-        """플레이 진입 버튼(PLAY_POLICY=avoid, verdict=play_entry)이나 외부 공유·초대 버튼
+        """플레이 진입 버튼(PLAY_POLICY=avoid, verdict=play_entry)이나 게임 밖·광고·뽑기 버튼
         (verdict=external)을 기록만 하고 프론티어에서 뺍니다.
 
         보고서에 "봤지만 누르지 않음"으로 남도록 처음 보는 버튼도 항목을 만들어 닫습니다.
